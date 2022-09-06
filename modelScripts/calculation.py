@@ -1,0 +1,1199 @@
+from osgeo import gdal
+import numpy as np
+from numba import jit
+from scipy.stats.mstats import mquantiles
+from scipy.special import logit
+
+from .preProcessing import NZTM_WKT
+from . import calcresults
+
+# for resampleRasterDown
+RESAMPLE_SUM = 0
+RESAMPLE_AVERAGE = 1
+
+def round_up_to_odd(f):
+    """
+    Window sizes must be odd for calculations to work
+    """
+    f = int(np.ceil(f))
+    return f + 1 if f % 2 == 0 else f
+
+def inv_logit(x):
+    """
+    Inverse of the logit function
+    """
+    return np.exp(x) / (1 + np.exp(x))
+
+def runModel(rawdata, params=None, loopIter=0):
+    """
+    Run the Kiwi model for a given iteration number.
+    rawdata should be an instance of preProcessing.KiwiData.
+    params should be a params.KiwiParams. If not given, the one
+    in rawdata is used.
+    loopIter is the iteration number that this model run is for.
+    Returns an instance of calcresults.KiwiResults.
+    """
+    if params is None:
+        params = rawdata.params
+
+
+#    print('in dict', 'All' in rawdata.rodentControlList)
+
+
+#    print('loopIter in runModel', loopIter)
+
+    # create results object.
+    results = calcresults.KiwiResults()
+    # stash the params in case useful for plotting.
+    results.params = params 
+
+    nControlAreas = len(rawdata.kiwiSpatialDictByMgmt)
+    nYears = len(params.years)
+    
+    ### MAKE BURNIN AND KEEP MASK ARRAY
+    totalYears = nYears + params.burnin
+    keepMask = np.arange(totalYears) >= params.burnin
+
+    # NOTE: data just for this iteration
+    results.kiwiDensity_2D = np.zeros((nControlAreas, totalYears))
+    results.stoatDensity_2D = np.zeros((nControlAreas, totalYears))
+    results.rodentDensity_2D = np.zeros((nControlAreas, totalYears))
+    results.kiwiDensity_2D_mth = np.zeros((nControlAreas, totalYears*12))
+    results.stoatDensity_2D_mth = np.zeros((nControlAreas, totalYears*12))
+    results.rodentDensity_2D_mth = np.zeros((nControlAreas, totalYears*12))
+
+
+    ## COUNT NUMBER OF CONTROL OPERATIONS
+    results.controlCount = 0
+
+    stoatShp = np.shape(rawdata.kiwiExtentMask)
+
+    # are we storing result.popAllYears_3D for this iteration?
+    # if so, create the array.
+    if loopIter == 0:
+        rodentShp = np.shape(rawdata.rodentExtentMask)
+        results.popAllYears_3D = {'Mastt': np.zeros((nYears, rodentShp[0], rodentShp[1]), 
+                                        dtype = np.bool),
+                      'ControlT': np.zeros((nYears, rodentShp[0], rodentShp[1]), 
+                                        dtype = np.bool),     
+                      'rodentDensity': np.zeros((nYears, rodentShp[0], rodentShp[1]), 
+                                        dtype = float),
+                      'stoatDensity': np.zeros((nYears, stoatShp[0], stoatShp[1]), 
+                                        dtype = float),
+                      'kiwiDensity': np.zeros((nYears, stoatShp[0], stoatShp[1]), 
+                                        dtype = float)}
+
+    # For each year in params.years
+    # 1. Masting Event (or not)
+    # 2. Control (or not)
+    # 3. Rodent Peak
+    # 4. Rodent Dispersal
+    # 5. Stoat Peak (using Rodent Population at control, and num dead toxic rodents)
+    # 6. Stoat Dispersal
+    # 7. Analysis of shape of Stoat Population Tail 
+    # 8. Kiwi population decrease
+
+    # Create our internal rasters
+    rodentRasterShape = rawdata.DEM.shape
+
+ 
+    ## KEEP THE SEEDS PER M^2 SAME FOR ALL RESOLUTIONS
+    rodent_kMap = rawdata.paramRodentCCLU[rawdata.kClasses] * 1
+    # modify rodent K when mast or crash occurs
+    rodent_kMapMast = rawdata.paramRodentMastCCLU[rawdata.kClasses] * 1
+    rodent_kMapCrash = rawdata.paramRodentCrashCCLU[rawdata.kClasses] * 1
+
+    # number of hectares in a rodent pixel; for getting stoat_K
+    nHectInRodent = (params.resolutions[0] / 100.0)**2
+
+    # update rawdata.rodentExtentMask so we don't include areas where kmap == 0
+    rawdata.rodentExtentMask = rawdata.rodentExtentMask & (rodent_kMap != 0)
+
+    # update the rodent kMap to set k = 0 at elevation
+    rodent_kMap[~rawdata.rodentExtentMask] = 0
+    rodent_kMapMast[~rawdata.rodentExtentMask] = 0
+    rodent_kMapCrash[~rawdata.rodentExtentMask] = 0
+
+    # convert from window sizes in pixels to metres
+    mastWindowSizePxls = round_up_to_odd(params.mastWindowSize / 
+                params.resolutions[0])
+    masthalfwinsize = int(mastWindowSizePxls / 2)
+
+    rodentEmigrationWindowSizePxls = round_up_to_odd(
+                params.emigrationWindowSize[0] / params.resolutions[0])
+
+    stoatEmigrationWindowSizePxls = round_up_to_odd(
+                params.emigrationWindowSize[1] / params.resolutions[1])
+
+    kiwiEmigrationWindowSizePxls = round_up_to_odd(
+                params.emigrationWindowSize[2] / params.resolutions[2])
+
+    distArray = makeDistArray(mastWindowSizePxls, 
+            params.mastRho, masthalfwinsize, params.resolutions[0])
+    if np.isnan(distArray).any():
+        raise ValueError("NaNs in distArray")
+
+    beechMask = rawdata.mastingLU[rawdata.kClasses] & rawdata.rodentExtentForStoats
+    
+
+    #########
+    ##  Generate initial populations at t-1
+    ##  Assume no control, no mast and no dispersal
+    #########
+    # Eqn 8
+    # random rodent population
+    rodentPresence = np.random.binomial(1, params.pRodentPres, (rodentRasterShape))
+    rodentPresence[~rawdata.rodentExtentMask] = 0
+
+    ## GET INITIAL RODENT DENSITY FOR EACH CELL AT RODENT RESOL (4 HA)
+#    rodent_raster = initialPopWrapper(params.rodentProd,
+#        params.rodentSurv, params.rodentSurvDecay, params.rodentRecDecay,
+#        params.initialRodentN, params.rodentT,  
+#        rodentPresence, rodentRasterShape, rodent_kMap)
+
+
+    rodent_raster = rodentPresence * np.random.poisson(params.initialRodentN,
+            rodentRasterShape)
+
+
+    rodent_raster[~rawdata.rodentExtentMask] = 0
+
+    # get rodent population and toxic rodents at stoat resolution
+    # sum rodents at rodent resolution, but raster is at stoat resol.
+
+    ## RESCALE TO PER HA FOR STOAT CALCULATIONS
+    haPixelRescale = (params.resolutions[1] / 100.0)**2
+
+    islandPixRescale = (params.resolutions[1] / params.resolutions[0])**2 
+    
+    ## RODENTS DENSITY/HA AT STOAT RESOL
+    rodent_raster_stoat = resampleRasterDown(rodent_raster, 
+            rawdata.stoatExtentMask.shape, statMethod = RESAMPLE_SUM, 
+            pixelRescale = haPixelRescale)
+
+    # update for islands - stoatIslandPrp is a proportion
+    stoatIslandPrp = resampleRasterDown(rawdata.islands, 
+            rawdata.stoatExtentMask.shape, statMethod = RESAMPLE_SUM, 
+            pixelRescale = islandPixRescale)
+    stoatIslandMask = stoatIslandPrp > 0
+    ## ARRAY OF RODENT DENSITY (PER HA) IN TRAPPED AREAS; SCALED FOR RODENT HABITAT
+    stoatIslandKArray = params.islandK * (stoatIslandPrp[stoatIslandMask]) 
+    ## ASSIGN NOTIONAL RODENT DENSITY TO ISLANDS
+    rodent_raster_stoat[stoatIslandMask] = stoatIslandKArray
+    # ## MAKE RODENT RASTER FOR t-lag
+    # rodentRasterStoatT_lag = rodent_raster_stoat.copy()    
+    
+    #  Random stoat population and mask out 
+    stoatExtentShape = rawdata.stoatExtentMask.shape
+    # Eqn 22
+    stoatPresence = np.random.binomial(1, params.pStoatPres, stoatExtentShape)
+    stoatPresence[~rawdata.stoatExtentMask] = 0
+
+    ## GET INITIAL STOAT DENSITY FOR EACH CELL AT STOAT RESOL (1 KM)
+    # Eqn 23
+    stoat_raster = stoatPresence * np.random.poisson(0.75 * params.initialStoatN,
+                stoatShp) 
+#    stoat_raster = stoatPresence * np.exp(np.random.normal(np.log(params.initialStoatN),
+#        params.stoatPopSD), stoatShp).astype(int)
+
+    ## REMOVE ALL NON-STOAT HABITAT
+    stoat_raster[~rawdata.stoatExtentMask] = 0    
+
+    ## Get initial kiwi population
+    kiwiPresence = np.random.binomial(1, params.pKiwiPres, 
+            rawdata.kiwiCorrectionK.shape)
+    # Eqn 38 
+    kiwi_raster = (np.random.poisson(params.kiwiInitialMultiplier * params.kiwiK, 
+                            rawdata.kiwiCorrectionK.shape) * kiwiPresence )
+ 
+    adjustKiwiIsland = (kiwi_raster > 3) & stoatIslandMask
+    kiwi_raster[adjustKiwiIsland] = 2
+
+
+    kiwi_raster[~rawdata.kiwiExtentMask] = 0
+
+
+    ## CORRECT KIWI RECRUIT AND SURVIVAL PARAMETERS FOR HABITAT AREA
+    kiwiRecDecay_1D = ((params.kiwiRecDDcoef* 
+            rawdata.kiwiCorrectionK)[rawdata.kiwiExtentMask])
+    kiwiSurvDecay_1D = ((params.kiwiSurvDDcoef * 
+            rawdata.kiwiCorrectionK)[rawdata.kiwiExtentMask])
+
+
+    # record when last control happens for each mask
+    lastControlArray = np.zeros(len(rawdata.rodentControlList), dtype=int)
+
+    # set initial no mast in year t-1
+    mastT_1 = False
+    oldMastingMask = np.zeros_like(beechMask, dtype=np.bool) 
+    propControlMaskMasting = np.zeros((nControlAreas,2), dtype=float) 
+    
+    ### SET INITIAL KEEP YEAR TO 0
+    year = 0
+    
+    for year_all in range(totalYears):
+        print('Year', year_all)
+
+        ### BOOLEAN INDICATOR OF A POST-BURNIN YEAR
+        keepYear = keepMask[year_all]
+
+        #reactiveControlMask = None # nothing by default
+
+        mastingMask  = np.zeros_like(beechMask, dtype=np.bool)
+
+        ##create an monthly control schedule for this year
+        mthlyCtrlSched = np.full((nControlAreas), -1)
+        if keepYear:
+            for count, (dummask, startYear, ctrlMth, revisit, shp) in enumerate(rawdata.rodentControlList):
+                lastControl = lastControlArray[count]
+                nYearsSinceControl = year - lastControl
+                if (year == startYear) or (year > startYear and nYearsSinceControl >= revisit):
+                    ## add control area to schedule
+                    mthlyCtrlSched[count] = ctrlMth
+
+                       
+        # Masting affects rodents the same year now
+        #but year starts in Sept, spring cos that's when beech flowering starts
+        #mastT = np.random.rand() < params.mastPrEvent
+        #have all iterations mast in same year for some sims
+        mastYrarr=np.array([2,7,9,11,15,20,23,27])
+        if (year_all in mastYrarr):
+        #if (year_all==3):
+            mastT=True
+        else:
+            mastT=False   
+            
+        if mastT:
+            print('Masting Year', year_all)
+            mastingMask = doMasting(rawdata, params, distArray, masthalfwinsize, 
+                        beechMask)
+            
+            #if masting year and doing control reactive to masting then assess prop mgmt areas masting
+            if (params.reactivePropMgmtMasting > 0):
+                for count, (controlMask, startYear, ctrlMth, revisit, shp) in enumerate(rawdata.rodentControlList):
+                    if shp == 'ALL':
+                        continue
+                    propControlMaskMasting[count,0] = (np.count_nonzero(mastingMask & controlMask)
+                                / np.count_nonzero(controlMask))
+
+      
+        for mth in range(12):
+            
+            tMth = (year_all * 12) + mth
+            ## DO RODENT GROWTH, first have to do some bodging to get seasonal stuff 
+            ## use different kmaps depending on if crash or mast year, needs to be this
+            #order so if double mast, the mast overrrides using the crash k map
+            rodent_kMth = rodent_kMap.copy()
+            rodent_kMth[~mastingMask] = rodent_kMth[~mastingMask]*rawdata.seasAdjRes['nonmast'][mth]
+            if mastT_1:
+                rodent_kMth[oldMastingMask] = rodent_kMapCrash[oldMastingMask]*rawdata.seasAdjRes['crash'][mth]
+            if mastT:
+                rodent_kMth[mastingMask] = rodent_kMapMast[mastingMask]*rawdata.seasAdjRes['mast'][mth]
+
+            rodent_raster = doRodentGrowth(rawdata, params,
+                rodent_raster, rodent_kMth, mth)
+
+            #assess need for control (due to mega mast or high tracking rates) in params.reactiveAssessMth 
+            #but don't actually apply control until a few months later
+            #all in the same month for now until figure out how to vary
+            #only do assessment and control after burnin (i.e. in a 'keep year')
+            if (mth==params.reactiveAssessMth) and keepYear:
+                if (params.reactivePropMgmtMasting > 0):
+                    #this is a fudge so if assess in Mar-Aug use prop mast this year
+                    #in earlier months use prop masting in previous year
+                    if mastT and (mth>5):                   
+                        for i in range(nControlAreas):
+                            if propControlMaskMasting[i,0] >= params.reactivePropMgmtMasting:                      
+                                mthlyCtrlSched[i] = params.reactiveCtrlMth
+                    if mastT_1 and (mth<=5):                   
+                        for i in range(nControlAreas):
+                            if propControlMaskMasting[i,1] >= params.reactivePropMgmtMasting:                      
+                                mthlyCtrlSched[i] = params.reactiveCtrlMth                                
+   
+                    # Assess reactive control to tracking tunnels 
+                if (params.threshold_TT < 1.0):
+                    for count, (controlMask, startYear, ctrlMth, revisit, shp) in enumerate(rawdata.rodentControlList):
+                        if shp == 'ALL':
+                            continue
+                       
+                        nPixelsZone = rawdata.pixelsInControlAndBeechMask[shp]
+                        nRodentsinControlAndBeechMask = np.sum(rodent_raster[rawdata.controlAndBeechMask[shp]])
+                        rodentsInControlAndBeechMaskDensity = (nRodentsinControlAndBeechMask / nPixelsZone)
+
+                        TT_rate = trackingTunnelRate(rodentsInControlAndBeechMaskDensity, 
+                                params.g0_TT, params.sigma_TT, 
+                                params.nights_TT, params.nTunnels, params.resolutions[0])
+                            
+                        if TT_rate > params.threshold_TT:
+                            mthlyCtrlSched[count] = params.reactiveCtrlMth
+
+
+            # Rodent Control. Get the combined control masks for this year
+            # It's a bit hard to work out the mask ahead of time with the
+            # revisits and reactive control, so we do it here.
+            control_mth = False
+            if (mth in mthlyCtrlSched):
+                schedControlMask = None
+                if keepYear:
+                    areaList = [i for i, mthlyCtrlSched in enumerate(mthlyCtrlSched) if mthlyCtrlSched == mth ]
+                    for i in range(len(areaList)):
+                        mArea=areaList[i]
+                        cmask = rawdata.rodentControlList[mArea][0]
+ 
+                        if schedControlMask is None:
+                            schedControlMask = cmask.copy()
+                        else:
+                            schedControlMask |= cmask
+    
+                        lastControlArray[mArea] = year
+                        results.controlCount += 1
+
+                control_mth = schedControlMask is not None and keepYear # and past burn in
+        #        print('year', year, 'control_mth', control_mth)
+                # if reactiveControlMask is not None:
+                #     # we are defintely doing control due to reactive control
+                #     control_mth = True
+    
+            if control_mth:
+                
+                # if schedControlMask is not None:
+                #     # add in any reactive control
+                #     if reactiveControlMask is not None:
+                #         schedControlMask = schedControlMask | reactiveControlMask
+                # else:
+                #     # the control is just due to reactive control
+                #     schedControlMask = reactiveControlMask
+    
+                (rodent_raster, nToxicRodents) = doControl(rawdata, params, 
+                    schedControlMask, rodent_raster)
+    
+            else:
+                # no control
+                schedControlMask = np.zeros_like(beechMask)
+                nToxicRodents = np.zeros_like(beechMask, dtype = np.uint16)
+ 
+    
+             ## stoat population grows
+            (stoat_raster, rodent_raster_stoat) = calcStoatPopulation(stoat_raster, 
+                    rodent_raster, nToxicRodents, rawdata.stoatExtentMask, params, 
+                    mastT_1, schedControlMask, control_mth, keepYear, 
+                    stoatIslandMask, haPixelRescale, stoatIslandKArray, mth)
+    
+    #        print('stoat', np.sum(stoat_raster[rawdata.stoatExtentMask]),
+    #            'rodents', np.sum(rodent_raster[rawdata.rodentExtentMask]),
+    #            'extmask', type(rawdata.rodentExtentMask), 
+    #            rawdata.rodentExtentMask[100:120,100:105])
+    
+    
+            ### Do Dispersal of three species
+            # Rodent immigrat/emigrat occurs after stoats respond to rodents
+            if params.rodentSeasDisp[mth]:
+                rodent_raster = doRodentDispersal(rawdata, params, rodent_raster, 
+                            rodent_kMth, rodentEmigrationWindowSizePxls)
+    
+    
+            ## Do stoat dispersal follows rodent dispersal
+            rodent_raster_stoat = resampleRasterDown(rodent_raster, 
+                rawdata.stoatExtentMask.shape, statMethod = RESAMPLE_SUM, 
+                pixelRescale = haPixelRescale)
+            ## ASSIGN NOTIONAL RODENT DENSITY TO ISLANDS
+            rodent_raster_stoat[stoatIslandMask] = stoatIslandKArray
+    
+    
+    
+    #        ## CONVERT TO RODENTS PER HECTARE
+    #        rodent_raster_stoat = rodent_raster_stoat / nHectInRodent
+    
+    
+    
+            ## STOAT DISPERSAL
+            if params.stoatSeasDisp[mth]:
+                stoat_raster = doStoatDispersal(rawdata, params, stoat_raster,
+                    rodent_raster_stoat, stoatEmigrationWindowSizePxls)
+    
+    
+    
+            ## TODO: WHAT RODENT COUNTS DO WE WANT? PER HA OR KM?
+    
+            # ## STORE COPY OF RODENT_RASTER FOR T-lag CALC FOR STOAT DYNAMICS
+            # if mastT:
+            #     rodentRasterStoatT_lag = rodent_raster_stoat.copy()
+    
+    
+    
+    
+    
+    
+    
+            # kiwi population growth after stoat and rodent dispersal
+            ## IF KIWI RESOL != STOAT RESOL, HAVE TO REPLACE "rodent_raster_stoat" in
+            ## THE FOLLOWING FX AND GET 'rodent_raster_kiwi' WITHIN THE FX. THIS IS
+            ## FOR THE COMPETITION EFFECT BETWEEN RODENTS AND KIWI.
+            kiwi_raster = doKiwiGrowth(kiwi_raster, stoat_raster, params, 
+                    rawdata.kiwiExtentMask, rodent_raster_stoat,
+                    nHectInRodent, kiwiRecDecay_1D, kiwiSurvDecay_1D, mth)
+    
+    
+    
+    
+            ## Kiwi dispersal
+            if params.kiwiSeasDisp[mth]:            
+                kiwi_raster = doKiwiDispersal(rawdata, kiwi_raster, params, 
+                            rawdata.kiwiExtentMask, kiwiEmigrationWindowSizePxls)
+    
+    
+            #populate storage arrays with just densities each mth
+            populateResultDensity(rodent_raster, rawdata.rodentExtentMask, 
+                            rawdata.rodentControlList, rawdata.rodentAreaDictByMgmt, 
+                            results.rodentDensity_2D_mth, stoat_raster, 
+                            rawdata.stoatExtentMask, rawdata.stoatAreaDictByMgmt, 
+                            results.stoatDensity_2D_mth, kiwi_raster, rawdata.kiwiExtentMask, 
+                            rawdata.kiwiSpatialDictByMgmt, rawdata.kiwiAreaDictByMgmt, 
+                            results.kiwiDensity_2D_mth, tMth)
+
+            ## Populate storage arrays with updated densities and maps - full output 
+            #only once per year in Jan (mth 4)
+            if (mth==4):
+                populateResultArrays(loopIter, mastingMask, schedControlMask, rodent_raster, 
+                    rawdata.rodentExtentMask, rawdata.rodentControlList, 
+                    rawdata.rodentAreaDictByMgmt, results.rodentDensity_2D,
+                    stoat_raster, rawdata.stoatExtentMask, rawdata.stoatAreaDictByMgmt, 
+                    results.stoatDensity_2D, kiwi_raster, rawdata.kiwiExtentMask, 
+                    rawdata.kiwiSpatialDictByMgmt, rawdata.kiwiAreaDictByMgmt, 
+                    results.kiwiDensity_2D, results.popAllYears_3D, year, year_all, keepYear)
+            ### IF BEYOND BURN IN PERIOD, STORE THE RESULTS
+            
+        if keepYear:
+            ## update the year
+            year += 1
+
+        # update the masting status of T_1 for next year
+        mastT_1 = mastT
+        oldMastingMask = mastingMask.copy()
+        if mastT_1:
+            propControlMaskMasting[:,1] = propControlMaskMasting[:,0]
+
+    return results
+        
+
+def calcStoatPopulation(stoat_raster, rodent_raster, nToxicRodents, stoatMask, params, 
+        mastT_1, schedControlMask, control_mth, keepYear, stoatIslandMask, 
+        haPixelRescale, stoatIslandKArray, mth):
+    """
+    ## Do the stoat processes at stoat resolution: control, growth, dispersal
+    """
+    # get rodent population and toxic rodents at stoat resolution
+    # it is rodents per ha -> sum and divid by 100 
+    rodent_raster_stoat = resampleRasterDown(rodent_raster, 
+                stoatMask.shape, statMethod = RESAMPLE_SUM, 
+                pixelRescale = haPixelRescale)
+####    ## ASSIGN NOTIONAL RODENT DENSITY TO ISLANDS - PRE-CALCULATED
+####    rodent_raster_stoat[stoatIslandMask] = stoatIslandKArray
+
+#    print('rodent', np.sum(rodent_raster), 'rodentStoat', np.sum(rodent_raster_stoat))
+
+
+    ## IF CONTROL IS DONE
+    if control_mth:
+        # Eqn 25        # resample toxic rodents at stoat resolution
+        toxic_raster_stoat = resampleRasterDown(nToxicRodents, 
+                stoatMask.shape, statMethod = RESAMPLE_SUM, pixelRescale = 1)
+        
+        ## stoats eat toxic rodents
+        stoat_raster = eatToxicRodents(stoat_raster, toxic_raster_stoat, params)
+
+    # ### Stoats decline more slowly than rodents following a mast,
+    # ### Calc ave of current R_T and R_T_1
+    # if mastT_1:
+    #     ## GET AVERAGE FOR T AND T-1
+    #     rodent_t = (rodent_raster_stoat + rodentRasterStoatT_lag) / 2.0
+    #     ## USE CURRENT YEAR RODENT POP
+    # else:
+    #     rodent_t = rodent_raster_stoat.copy()
+    rodent_t = rodent_raster_stoat.copy()    
+    ###################################################### IS THIS DOUBLING FROM ABOVE?
+    ## SET RODENT DENSITY LOW ON ISLANDS AND TRAPPED AREAS
+    rodent_t[stoatIslandMask] = stoatIslandKArray       # params.islandK
+    ######################################################
+    ## MAKE 1-D ARRAYS FOR POPULATION UPDATE
+    rodent_t = rodent_t[stoatMask]     ## RODENTS PER HA
+    stoat_t = stoat_raster[stoatMask]
+
+
+#    print('stoat grow 0', np.mean(stoat_t), np.min(stoat_t), np.max(stoat_t),
+#        'sRas', stoat_raster[75:80, 75:80], rodent_raster_stoat[75:80, 75:80])
+
+
+    ## WHERE HAVE ZERO RODENTS IN A KM CELL, SET TO 0.5 RODENT SO DON'T DIVIDE BY 0
+    rodent_t = np.where(rodent_t < 0.25, 0.25, rodent_t)
+    
+
+    ## Stoat popn growth
+    seasRec = params.stoatSeasRec[mth]
+    pSurv = (params.stoatSurv * np.exp(-((stoat_t/(params.stoatSurvDDcoef*rodent_t))
+                                         **params.stoatTheta)))
+    recRate = (seasRec * params.stoatProd * np.exp(-((stoat_t/(params.stoatRecDDcoef*rodent_t))
+                                                     **params.stoatTheta)))
+    stoat_t = stoat_t * pSurv * (1 + recRate) 
+
+
+#    stoat_t = np.random.poisson(stoat_t)
+    ## EQN 28: ADD STOCHASTICITY GAUSSIAN PROCESS
+    stoat_t = (np.exp(np.random.normal(np.log(stoat_t + 1.0), 
+                params.stoatPopSD)) - 1.0)
+
+#    print('stoat_t min, max', np.min(stoat_t),
+#        np.max(stoat_t))
+
+
+    ## FIX UP INAPPROPRIATE VALUES WHEN USING NORMAL DISTRIBUTION
+    stoat_raster[stoatMask] = np.round(stoat_t, 0).astype(int)
+    stoat_raster = np.where(stoat_raster < 0, 0, stoat_raster)
+    stoat_raster[~stoatMask] = 0
+
+
+#    print('stoat grow 11111', np.mean(stoat_t), np.min(stoat_t), np.max(stoat_t),
+#        'sRas', stoat_raster[75:80, 75:80], rodent_raster_stoat[75:80, 75:80])
+
+#    stoat_raster[stoatMask] = stoat_t
+    ## RETURN STOAT RASTER
+    return(stoat_raster, rodent_raster_stoat)        # Return stoat raster
+
+
+
+def eatToxicRodents(stoat_raster, toxic_raster_stoat, params):
+    """
+    ## update stoat_raster by consuming toxic rodents
+    """
+    # Eqn 27        # probability of encounter 
+    pEnc = 1.0 - np.exp(-params.pEncToxic * toxic_raster_stoat)
+    # probability individ. stoat eating a toxic rodent
+    pEat = params.pEatEncToxic * pEnc
+    # Eqn 26     # update stoat_raster
+    stoat_raster = np.random.binomial(stoat_raster, (1.0 - pEat))
+    return(stoat_raster)                   
+
+
+def doRodentDispersal(rawdata, params, rodent_raster, rodent_kMth,
+                rodentEmigrationWindowSizePxls):
+
+    # First Emigrants out of each cell
+    # Eqn 18
+    pEm = params.gammaProbEmigrate[0]
+    probRodentEmigrate = np.where(rawdata.rodentExtentMask, 
+        (1.0 - np.exp(-rodent_raster * pEm)) *  
+        np.exp(-rodent_kMth * params.tauImmigrate[0]), 0.0)
+
+#    probRodentEmigrate[rawdata.rodentExtentMask] = ((1.0 - 
+#        np.exp(-rodent_raster[rawdata.rodentExtentMask] * pEm)) * 
+#        np.exp(-rodent_kMth[rawdata.rodentExtentMask] * params.tauImmigrate[0]))
+
+    # Eqn 17
+    rodent_emigrant_raster = np.random.binomial(rodent_raster, probRodentEmigrate)
+
+
+
+    # updates rodent_change_raster
+    # Eqn 19-21
+    rodent_immigrant_raster = calcImmigration(rodent_emigrant_raster, 
+        rodentEmigrationWindowSizePxls, params.deltaImmigrate[0], 
+        rawdata.rodentExtentMask, params.resolutions[0], 
+        rodent_raster, pEm, rawdata.rodentPercentArea, 
+        params.tauImmigrate[0], rodent_kMth)
+
+    ### Eqn 16:  UPDATE TO rodent_raster by immigrants/emigrants
+    rodent_raster += rodent_immigrant_raster
+    rodent_raster -= rodent_emigrant_raster
+
+    return(rodent_raster)
+
+
+def doStoatDispersal(rawdata, params, stoat_raster, rodent_raster_stoat,
+                stoatEmigrationWindowSizePxls):
+    """
+    ## calc emigration and immigration by stoats
+    """
+    # First Emigrants out of each cell
+    pEm = params.gammaProbEmigrate[1]
+    rodentRasterStoat = np.where(rodent_raster_stoat < 0.25, 0.25, rodent_raster_stoat) 
+    # Eqn 34
+    probstoatEmigrate = np.where(rawdata.stoatExtentMask,
+        (1.0 - np.exp(-stoat_raster*pEm)) * 
+        np.exp(-rodentRasterStoat*params.tauImmigrate[1]), 0.0)
+
+    # Eqn 33
+    stoat_emigrant_raster = np.random.binomial(stoat_raster, probstoatEmigrate)
+
+    # updates stoat_change_raster
+    # Eqn 34-36
+    stoat_immigrant_raster = calcImmigration(stoat_emigrant_raster, 
+        stoatEmigrationWindowSizePxls, 
+        params.deltaImmigrate[1], rawdata.stoatExtentMask, 
+        params.resolutions[1], stoat_raster, pEm, rawdata.stoatPercentArea,
+        params.tauImmigrate[1], rodentRasterStoat)
+
+    ### EQN 32 Update stoat_raster by immigrants/emigrants
+    stoat_raster += stoat_immigrant_raster
+    stoat_raster -= stoat_emigrant_raster
+
+    return(stoat_raster)
+
+
+
+@jit
+def calcImmigration(emigrant_raster, winsize, 
+            deltaImmigrate, mask, resolution, raster, gammaPara,
+            areaCorrection, tauPara, kMap):
+    """
+    Note: same for rodents and stoats, but for kiwi correct for area in cell
+    """
+    halfwinsize = int(winsize / 2)
+
+    (ysize, xsize) = emigrant_raster.shape
+    probEmigrate = np.empty((winsize, winsize))
+    immigrant_raster = np.zeros(emigrant_raster.shape, dtype=np.uint32)
+
+    for x in range(xsize):
+        for y in range(ysize):
+            if not mask[y, x]:
+                continue
+
+            if emigrant_raster[y, x] == 0:
+                # no rodents to move out of here
+                continue
+
+            # offset into dist array - deal with top and left edges
+            xdistoff = 0
+            ydistoff = 0
+            # top left x
+            tlx = x - halfwinsize
+            if tlx < 0:
+                xdistoff = -tlx
+                tlx = 0
+            tly = y - halfwinsize
+            if tly < 0:
+                ydistoff = -tly
+                tly = 0
+            brx = x + halfwinsize
+            if brx > xsize - 1:
+                brx = xsize - 1
+            bry = y + halfwinsize
+            if bry > ysize - 1:
+                bry = ysize - 1
+            # calculate the relative probability of emigrating to each cell
+            sumRelProbEm = 0.0
+            for cx in range(tlx, brx):
+                for cy in range(tly, bry):
+                    if not mask[cy, cx]:
+                        continue
+                    distx = (x - cx) * resolution
+                    disty = (y - cy) * resolution
+                    dist = np.sqrt(distx*distx + disty*disty)
+
+
+#####                    if dist < 50.0:
+#####                        relProbEm = 0.0     # force emigrants to leave.
+#####                    elif dist >= 50.0:
+                    if tauPara == 0.0:
+                        ## EQN 45: KIWI DISPERSAL
+                        relProbEm = (np.exp(-(raster[cy,cx] * gammaPara) /
+                            areaCorrection[cy, cx]) *
+                            np.exp(-dist / 1000.0 * deltaImmigrate))
+                    else:
+                        ## EQN 20 AND 36: RODENT AND STOAT DISPERSAL
+                        relProbEm = (np.exp(-raster[cy,cx] * gammaPara / 
+                            areaCorrection[cy, cx]) * 
+                            (1.0 - np.exp(-kMap[cy, cx] * tauPara)) * 
+                            np.exp(-dist / 1000.0 * deltaImmigrate))
+
+                    sumRelProbEm += relProbEm
+                    probEmigrate[ydistoff + cy - tly, xdistoff + cx - tlx] = relProbEm
+
+            sumProbsUsed = 0.0
+            emRemain = emigrant_raster[y, x] 
+            for cx in range(tlx, brx):
+                for cy in range(tly, bry):
+                    if not mask[cy, cx]:
+                        continue
+                    if emRemain <= 0:
+                        break
+                    subx = xdistoff + cx - tlx
+                    suby = ydistoff + cy - tly
+                    # change probEmigrate to be the probability (sum to 1)
+                    # Eqn 21, 37, 46
+
+                    if sumRelProbEm <= 0.0:
+                        print('bad sum relprobs =', sumRelProbEm)
+
+                    absprob = probEmigrate[suby, subx] / sumRelProbEm
+
+                    prob_fg = absprob / (1.0 - sumProbsUsed)
+                    
+                    if prob_fg > 1.0:
+                        prob_fg = 1.0
+                    elif prob_fg < 0.0:
+                        prob_fg = 0.0
+
+                    # Eqn 19, 35, 44    Multinomial draw 
+                    X_fg = np.random.binomial(emRemain, prob_fg)
+
+                    sumProbsUsed += absprob
+
+                    immigrant_raster[cy, cx] += X_fg
+                    emRemain -= X_fg
+                if emRemain <= 0:
+                    break
+
+    return immigrant_raster
+
+
+def doControl(rawdata, params, schedControlMask, rodent_raster):
+    """
+    ## calc number of rodents eating toxin and dieing
+    """
+    # Eqn 14
+    nToxicRodents = np.where(schedControlMask, 
+                np.random.binomial(rodent_raster, params.rodentProbEatBait), 0)
+    ## update rodent pop. with mortality
+    # Eqn 15
+    rodent_raster = rodent_raster - nToxicRodents
+    return rodent_raster, nToxicRodents
+
+
+def doRodentGrowth(rawdata, params, rodent_raster, rodent_kMth, mth):
+    """
+    ## calc rodent growth
+    """
+    ## mask by rawdata.rodentExtentMask
+    mu = np.zeros_like(rodent_raster, dtype=float)
+    #get seas adj to rec
+    seasRec = params.rodentSeasRec[mth]
+    ## RODENTS AND SEEDS FOR MTH MASKED BY EXTENT & seas adj
+    rodent_t = rodent_raster[rawdata.rodentExtentMask]
+    seed_t = rodent_kMth[rawdata.rodentExtentMask]
+    ## SURVIVAL PROBABLITY
+    pSurv = params.rodentSurv * np.exp(-((rodent_t/(seed_t*params.rodentSurvDDcoef))**params.rodentTheta))
+    ## RECRUITMENT RATE
+    recRate = (seasRec * params.rodentProd * 
+               np.exp(-((rodent_t/(seed_t*params.rodentRecDDcoef))**params.rodentTheta)))
+    ## Eqn. 13 POPULATE MU RASTER
+    mu[rawdata.rodentExtentMask] = rodent_t * pSurv * (1 + recRate) 
+    # Eqn 12: Add stochasticity
+    rodent_raster = np.random.poisson(mu, rodent_raster.shape)
+    ## RETURN RASTER
+    return rodent_raster
+
+
+
+def calcKiwiPopulation(stoat_raster, kiwi_raster, params):
+    """
+    ## get first year kiwi population by pixel
+    """
+    if kiwi_raster is None:
+        # first year kiwi population by pixel
+        kiwi_raster = np.random.poisson(params.kiwiInitialMultiplier * kiwi_kMap, 
+                            stoat_raster.shape)
+    return kiwi_raster
+
+
+def doKiwiGrowth(kiwi_raster, stoat_raster, params, mask, 
+        rodent_raster_kiwi, nHectInRodent, kiwiRecDecay_1D, 
+        kiwiSurvDecay_1D, mth):
+    """
+    ## calc kiwi population growth by pixel
+    """
+###    s = np.exp(-params.kiwiPsi * stoat_raster)
+    # get rodent population and toxic rodents at kiwi resolution
+    # it is rodents per 4 ha because we take the average
+
+    ###################################################################
+    ###################################################################
+    ## DO THE FOLLOWING ONLY IF STOAT AND KIWI RESOL ARE NOT EQUAL
+###    rodent_raster_kiwi = resampleRasterDown(rodent_raster, 
+###                mask.shape, statMethod = RESAMPLE_AVERAGE)
+###    rodentsPerHect = rodent_raster_kiwi / nHectInRodent
+
+    ###################################################################
+    ###################################################################
+    ## REMOVE COMPETITION EFFECT FOR NOW
+    # competition effect of rodents
+###    c = np.exp(-params.competEffect * rodentsPerHect)
+    # competition and predation survival 
+###    CS = s * c
+    ###################################################################
+    ###################################################################
+
+    ## MAKE 1-D ARRAYS FOR POPULATION UPDATE
+    kiwi_t = kiwi_raster[mask]
+    stoat_t = stoat_raster[mask]
+    ## KIWI POPN DYNAMICS
+    seasRec = params.kiwiSeasRec[mth]
+    pSurv = params.kiwiSurv * np.exp(-((kiwi_t/(kiwiSurvDecay_1D))**params.kiwiTheta))
+    recRate = (seasRec * params.kiwiProd *np.exp(-((kiwi_t/(kiwiRecDecay_1D))**params.kiwiTheta))
+               * np.exp(-params.kiwiPsi * stoat_t))
+    kiwi_t = kiwi_t* pSurv * (1 + recRate) 
+ 
+    ## ADD STOCHASTICITY GAUSSIAN PROCESS
+    # Eqn. 38
+    kiwi_t = np.exp(np.random.normal(np.log(kiwi_t + 1.0), 
+                params.kiwiPopSD)) - 1.0
+    ## FIX UP INAPPROPRIATE VALUES
+    kiwi_raster[mask] = np.round(kiwi_t, 0).astype(int)
+    kiwi_raster = np.where(kiwi_raster < 0, 0, kiwi_raster)
+    kiwi_raster[~mask] = 0
+    ## RETURN KIWI RASTER
+    return(kiwi_raster)
+
+
+def doKiwiDispersal(rawdata, kiwi_raster, params, mask, kiwiEmigrationWindowSizePxls):
+    # First Emigrants out of each cell
+    # Eqn 43
+    ## EMIGRATION
+    probKiwiEmigrate = np.zeros_like(kiwi_raster)
+    probKiwiEmigrate[mask] = (1.0 - np.exp(-params.gammaProbEmigrate[2] * 
+                kiwi_raster[mask] / rawdata.kiwiCorrectionK[mask]))
+    # Eqn 42
+    kiwi_emigrant_raster = np.random.binomial(kiwi_raster, probKiwiEmigrate)
+
+
+    # Eqn 44-46
+    ## IMMIGRATION
+    kiwi_immigrant_raster = calcImmigration(kiwi_emigrant_raster, 
+        kiwiEmigrationWindowSizePxls, params.deltaImmigrate[2], mask, 
+        params.resolutions[2], kiwi_raster, params.gammaProbEmigrate[2], 
+        rawdata.kiwiCorrectionK, params.tauImmigrate[2], rawdata.kiwiKDummy)
+
+
+    ## POPULATE RASTERS
+    # Eqn. 47
+    kiwi_raster += kiwi_immigrant_raster
+    kiwi_raster -= kiwi_emigrant_raster
+    return kiwi_raster
+
+
+def doMasting(rawdata, params, distArray, halfwinsize, beechMask):
+    # risk of masting for a given cell
+    a, b = params.mastCellParams
+    mastingRisk = np.random.gamma(a, b, (rawdata.rodentNrows, rawdata.rodentNcols))
+    if np.isnan(mastingRisk).any():
+        raise ValueError("NaNs in mastingRisk")
+
+    # aggregate values weighted by distance
+    absolMastingRisk = np.zeros((rawdata.rodentNrows, rawdata.rodentNcols))
+
+    maxMastingRisk = np.zeros((rawdata.rodentNrows, rawdata.rodentNcols))
+    spatialRandMast(mastingRisk, maxMastingRisk, absolMastingRisk, beechMask, 
+        halfwinsize, params.mastSpatialSD, distArray)
+
+    if np.isnan(absolMastingRisk).any():
+        raise ValueError("NaNs in absolMastingRisk")
+
+    a, b = params.mastProportionParams
+    propMastingCells = np.random.beta(a, b)
+
+    # invert proportion so we can use greater than
+    # Eqn 2
+    quantLevels = mquantiles(absolMastingRisk[beechMask], 
+            prob=[1.0 - propMastingCells])
+
+    mastingMask = (absolMastingRisk >= quantLevels)
+    mastingMask[~beechMask] = False
+
+    # for debugging
+#    driver = gdal.GetDriverByName('GTiff')
+#    ds = driver.Create('mast_%d.tif' % year, rawdata.rodentNcols, rawdata.rodentNrows, 
+#            1, gdal.GDT_Byte)
+#    ds.SetProjection(NZTM_WKT)
+#    ds.SetGeoTransform(rawdata.rodentGeoTrans)
+#    band = ds.GetRasterBand(1)
+#    band.WriteArray(np.where(mastingMask, 1, 0))
+#    del ds
+
+    return mastingMask
+
+@jit
+def makeDistArray(winsize, rho, halfwinsize, resolution):
+    """
+    Pre calculate this so we don't have to do it each time
+    """
+    distWt = np.empty((winsize, winsize))
+    
+    for x in range(winsize):
+        for y in range(winsize):
+            distx = (x - halfwinsize) * resolution
+            disty = (y - halfwinsize) * resolution
+            dist = np.sqrt(distx*distx + disty*disty)
+            # Eqn 4
+            distWt[y, x] = np.exp(-(dist**2.0) / 2.0 / rho**2)
+
+    return distWt
+
+
+@jit
+def spatialRandMast(randRisk, maxRisk, absolRisk, mask, halfwinsize, 
+        mastSpatialSD, distWt):
+    """
+    return a spatial effect raster se1 from the input raster and mask
+    """
+    (ysize, xsize) = absolRisk.shape
+    for x in range(xsize):
+        for y in range(ysize):
+            if not mask[y, x]:
+                absolRisk[y, x] = 0
+                continue
+            # offset into dist array - deal with top and left edges
+            xdistoff = 0
+            ydistoff = 0
+            # top left x
+            tlx = x - halfwinsize
+            if tlx < 0:
+                xdistoff = -tlx
+                tlx = 0
+            tly = y - halfwinsize
+            if tly < 0:
+                ydistoff = -tly
+                tly = 0
+            brx = x + halfwinsize
+            if brx > xsize - 1:
+                brx = xsize - 1
+            bry = y + halfwinsize
+            if bry > ysize - 1:
+                bry = ysize - 1
+            maxRisk_xy = 0.0
+            for cx in range(tlx, brx):
+                for cy in range(tly, bry):
+                    if not mask[cy, cx]:
+                        continue
+                    risk_cxcy = randRisk[cy, cx]    # [ydistoff + cy - tly, xdistoff + cx - tlx]
+                    if risk_cxcy > maxRisk_xy:
+                        maxRisk_xy = risk_cxcy
+            ## Eqn 3
+            ## add random variation
+            maxRisk[y, x] = np.exp(np.random.normal(np.log(maxRisk_xy), mastSpatialSD))
+    ## loop thru again to get mean to smooth surface
+    for x in range(xsize):
+        for y in range(ysize):
+            if not mask[y, x]:
+                absolRisk[y, x] = 0
+                continue
+            # offset into dist array - deal with top and left edges
+            xdistoff = 0
+            ydistoff = 0
+            # top left x
+            tlx = x - halfwinsize
+            if tlx < 0:
+                xdistoff = -tlx
+                tlx = 0
+            tly = y - halfwinsize
+            if tly < 0:
+                ydistoff = -tly
+                tly = 0
+            brx = x + halfwinsize
+            if brx > xsize - 1:
+                brx = xsize - 1
+            bry = y + halfwinsize
+            if bry > ysize - 1:
+                bry = ysize - 1
+            ### distance weighted average
+            sumWtRisk = 0.0
+            sumWt = 0.0
+            for cx in range(tlx, brx):
+                for cy in range(tly, bry):
+                    if not mask[cy, cx]:
+                        continue
+                    wt = distWt[ydistoff + cy - tly, xdistoff + cx - tlx]
+                    sumWtRisk += maxRisk[cy, cx] * wt
+                    sumWt += wt
+            if sumWt != 0 and sumWtRisk != 0:
+                absolRisk[y, x] = sumWtRisk / sumWt
+               #if np.isnan(absolRisk[y, x]):
+                #    print(x, y, sumWtRisk, sumWt, randRisk[cy, cx])
+            else:
+                absolRisk[y, x] = 0
+    return absolRisk
+
+
+@jit
+def resampleRasterDown(inarray, outSize, statMethod, pixelRescale):
+    """
+    Resamples an input array down to the given resolution 
+    using the resampling method specified by statMethod (either RESAMPLE_AVERAGE
+    or RESAMPLE_SUM).
+    """
+    if outSize[0] >= inarray.shape[0] or outSize[1] >= inarray.shape[1]:
+        raise ValueError('Array can only be reduced in size')
+
+    # assume same x and y and that it needs to be rounded up - 
+    # appears to be issues with the rasterisation that need to be addressed...
+    oldPixPerNewPix = int(np.ceil(inarray.shape[0] / outSize[0]))
+
+    outArray = np.empty(outSize, inarray.dtype)
+
+    # go through each new pixel
+    for newy in range(outSize[0]):
+        for newx in range(outSize[1]):
+            oldx = newx * oldPixPerNewPix
+            oldy = newy * oldPixPerNewPix
+            total = 0.0
+            for x in range(oldPixPerNewPix):
+                for y in range(oldPixPerNewPix):
+                    total += inarray[oldy + y, oldx + x]
+            if statMethod == RESAMPLE_AVERAGE:
+                outArray[newy, newx] = total / (oldPixPerNewPix * oldPixPerNewPix)
+            else:
+                outArray[newy, newx] = total / pixelRescale
+    return outArray
+
+def getRodentMaskForFile(rodentControlList, shpFile):
+    """
+    Helper function. Goes through rodentControlList and returns the
+    mask for the file specified in shpPath
+    """
+    mask = None
+    for testmask, startYear, ctrlMth, revisit, testShpFile in rodentControlList:
+        if testShpFile == shpFile:
+            mask = testmask
+            break
+    return mask
+
+def populateResultArrays(loopIter, mastingMask, schedControlMask, rodent_raster, 
+        rodentExtentMask, rodentControlList, rodentAreaDictByMgmt, rodentDensity_2D,
+        stoat_raster, stoatExtentMask, stoatAreaDictByMgmt, stoatDensity_2D,
+        kiwi_raster, kiwiExtentMask, kiwiSpatialDictByMgmt, kiwiAreaDictByMgmt, 
+        kiwiDensity_2D, popAllYears_3D, year, year_all, keepYear):
+    """
+    ## Populate storage arrays
+    """
+    ## loop thru management areas (includes a key for total area)
+    # NB: using sorted() keys to ensure the relation between i and key
+    # is always consistent (might already be - not sure)
+    for i, key in enumerate(sorted(kiwiSpatialDictByMgmt.keys())):
+        # for each control area, and for the entire area, calculate the mean proportion of
+            # of kiwi_KMap that is in kiwi_raster, excluding kmap values == 0.
+
+        ### (1) DO KIWIS
+        mgmtMask = kiwiSpatialDictByMgmt[key]               #mask kiwi cells in mgmt zone
+        ### KIWI DENSITY
+        sppMgmtMask = mgmtMask & kiwiExtentMask            # kiwi habitat in mgmt zone
+        sppDensity = np.sum(kiwi_raster[sppMgmtMask]) / kiwiAreaDictByMgmt[key]
+        kiwiDensity_2D[i, year_all] = sppDensity        
+
+        ### (2) DO STOAT DENSITY  - use kiwi mgmtMask
+        sppMgmtMask = mgmtMask & stoatExtentMask            # stoat habitat in mgmt zone
+        sppDensity = np.sum(stoat_raster[sppMgmtMask]) / stoatAreaDictByMgmt[key]
+        stoatDensity_2D[i, year_all] = sppDensity        
+
+        ### (3) DO RODENT DENSITY
+        mgmtMask = getRodentMaskForFile(rodentControlList, key)             # mask rodent cells in mgmt
+        sppMgmtMask = mgmtMask & rodentExtentMask           # rodent habitat in mgmt zone
+        sppDensity = np.sum(rodent_raster[sppMgmtMask]) / rodentAreaDictByMgmt[key]
+        rodentDensity_2D[i, year_all] = sppDensity        
+
+    if (loopIter == 0) & keepYear:
+        # 2) populate 3-D array on given iteration
+        # copying of arrays not needed since we are inserting into
+        # a given layer of popAllYears_3D - copy done implicitly
+        popAllYears_3D['Mastt'][year] = mastingMask
+        popAllYears_3D['ControlT'][year] = schedControlMask
+        popAllYears_3D['rodentDensity'][year] = rodent_raster
+        popAllYears_3D['stoatDensity'][year] = stoat_raster
+        popAllYears_3D['kiwiDensity'][year] = kiwi_raster
+
+def populateResultDensity(rodent_raster, rodentExtentMask, rodentControlList, 
+        rodentAreaDictByMgmt, rodentDensity_2D_mth, stoat_raster, stoatExtentMask, 
+        stoatAreaDictByMgmt, stoatDensity_2D_mth, kiwi_raster, kiwiExtentMask, 
+        kiwiSpatialDictByMgmt, kiwiAreaDictByMgmt, kiwiDensity_2D_mth, tMth):
+    """
+    ## Populate storage arrays
+    """
+    ## loop thru management areas (includes a key for total area)
+    # NB: using sorted() keys to ensure the relation between i and key
+    # is always consistent (might already be - not sure)
+    for i, key in enumerate(sorted(kiwiSpatialDictByMgmt.keys())):
+        # for each control area, and for the entire area, calculate the mean proportion of
+            # of kiwi_KMap that is in kiwi_raster, excluding kmap values == 0.
+
+        ### (1) DO KIWIS
+        mgmtMask = kiwiSpatialDictByMgmt[key]               #mask kiwi cells in mgmt zone
+        ### KIWI DENSITY
+        sppMgmtMask = mgmtMask & kiwiExtentMask            # kiwi habitat in mgmt zone
+        sppDensity = np.sum(kiwi_raster[sppMgmtMask]) / kiwiAreaDictByMgmt[key]
+        kiwiDensity_2D_mth[i, tMth] = sppDensity        
+
+        ### (2) DO STOAT DENSITY  - use kiwi mgmtMask
+        sppMgmtMask = mgmtMask & stoatExtentMask            # stoat habitat in mgmt zone
+        sppDensity = np.sum(stoat_raster[sppMgmtMask]) / stoatAreaDictByMgmt[key]
+        stoatDensity_2D_mth[i, tMth] = sppDensity        
+
+        ### (3) DO RODENT DENSITY
+        mgmtMask = getRodentMaskForFile(rodentControlList, key)             # mask rodent cells in mgmt
+        sppMgmtMask = mgmtMask & rodentExtentMask           # rodent habitat in mgmt zone
+        sppDensity = np.sum(rodent_raster[sppMgmtMask]) / rodentAreaDictByMgmt[key]
+        rodentDensity_2D_mth[i, tMth] = sppDensity        
+
+
+
+def trackingTunnelRate(densityRodent, g0_TT, sigma_TT, 
+        nights_TT, nTunnels, rodentResolution):
+    """
+    # Estimate the expected tracking tunnel rate in a management zone
+    # Use rodent density at the rodent resolution, ie 200 m (4 ha)
+    """
+    # Area for single tracking tunnel
+    TTArea = np.pi * ((4.0 * sigma_TT)**2)
+    # density per m2
+    den_m2 = densityRodent / (rodentResolution**2)         
+    # number of rats in the tracking tunnel area (TTArea)
+    nRats = np.int8(np.round((den_m2 * TTArea), 0))
+    ## Eqn. 7
+    # generate some random distances
+    dist = np.random.uniform(0.0, (4.0 * sigma_TT), nRats)
+    # probability of detection by a single tracking tunnel over 1 night
+    pdect = g0_TT * np.exp(-(dist**2) / 2.0 / (sigma_TT**2))
+    ## Eqn. 6
+    # probability of detection over multiple nights
+    PD = 1.0 - np.prod((1.0 - pdect)**nights_TT)
+    ## Eqn. 5
+    trackingRate = np.random.binomial(nTunnels, PD, 1) / nTunnels
+    return(trackingRate)
+
+
+
+def initialPopWrapper(sppProd, sppSurv, sppSurvDecay,
+        sppRecDecay, sppInitialN, sppT, sppPresence, sppRasterShape, sppKMap):
+    """
+    ## calc stoat growth by pixel
+    """
+    mu = np.zeros(sppRasterShape)
+    ## NUMBA LOOPING FUNCTION
+    mu = growthLoop(mu, sppRasterShape, sppProd, 
+        sppSurv, sppSurvDecay, sppRecDecay, sppInitialN, sppT, sppKMap, sppPresence)
+    # Eqn 9: Add stochasticity
+    spp_raster = np.random.poisson(mu * 0.7, sppRasterShape)
+    return(spp_raster)
+
+
+@jit
+def growthLoop(mu, sppRasterShape, growthRate, 
+        sppSurv, sppSurvDecay, sppRecDecay,
+        initialN, sppT, sppKMap, sppPresence):
+    ## LOOP ROWS AND COLS
+    for row in range(sppRasterShape[0]):
+        for col in range(sppRasterShape[1]):
+            N = initialN
+            if ((sppPresence[row, col] == 0) | (sppKMap[row,col] == 0)):
+                continue
+            for t in range(sppT):
+                ## Eqn. 10
+                surv_i = sppSurv * (np.exp(-N**2 / 
+                    sppKMap[row, col]**sppSurvDecay))
+                NStar = N * surv_i
+                ## Eqn 11
+                pMaxRec = np.exp(-NStar**2 / 
+                    sppKMap[row, col]**sppRecDecay)
+                recRate = growthRate * pMaxRec
+                ## Eqn 12
+                N = (1 + recRate) * NStar
+            mu[row,col] = N
+    return(mu)
+

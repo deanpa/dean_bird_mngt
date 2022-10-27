@@ -4,7 +4,7 @@
 Set the following variables for a SLURM run on Pan:
 
 export RIOS_DFLT_JOBMGRTYPE=slurm
-export RIOS_SLURMJOBMGR_SBATCHOPTIONS="--job-name=kiwiTest --account=landcare00074 --time=00:06:00 --mem-per-cpu=10000"
+export RIOS_SLURMJOBMGR_SBATCHOPTIONS="--job-name=keaTest --account=landcare00074 --time=00:06:00 --mem-per-cpu=10000"
 export RIOS_SLURMJOBMGR_INITCMDS="export PYTHONPATH=$PWD;module load Python-Geo"
 
 """
@@ -12,9 +12,9 @@ export RIOS_SLURMJOBMGR_INITCMDS="export PYTHONPATH=$PWD;module load Python-Geo"
 import os
 import multiprocessing
 import pickle
-from kiwimodelMthlyTS import calculation
-from kiwimodelMthlyTS import preProcessing
-from kiwimodelMthlyTS import calcresults
+from modelScripts import calculation
+from modelScripts import preProcessing
+from modelScripts import calcresults
 from rios.parallel import jobmanager
 
 # Use the same environment variable as RIOS to define the type of
@@ -47,19 +47,19 @@ def parallelRunModel(data, iteration, results):
     results.params = newresults.params
     results.rodentDensity_2D = newresults.rodentDensity_2D
     results.stoatDensity_2D = newresults.stoatDensity_2D
-    results.kiwiDensity_2D = newresults.kiwiDensity_2D
+    results.keaDensity_2D = newresults.keaDensity_2D
     results.popAllYears_3D = newresults.popAllYears_3D
     results.rodentDensity_2D_mth = newresults.rodentDensity_2D_mth
     results.stoatDensity_2D_mth = newresults.stoatDensity_2D_mth
-    results.kiwiDensity_2D_mth = newresults.kiwiDensity_2D_mth
+    results.keaDensity_2D_mth = newresults.keaDensity_2D_mth
 
     results.controlCount = newresults.controlCount
 
 
-class KiwiJobInfo(jobmanager.JobInfo):
+class KeaJobInfo(jobmanager.JobInfo):
     """
     Contains an implementation of RIOS's jobmanager.JobInfo
-    for the kiwi model.
+    for the kea model.
     """
     def __init__(self, data, iteration):
         self.data = data
@@ -67,7 +67,7 @@ class KiwiJobInfo(jobmanager.JobInfo):
 
     def getFunctionParams(self):
         "make input suitable for parallelRunModel"
-        results = calcresults.KiwiResults()
+        results = calcresults.KeaResults()
         return self.data, self.iteration, results
 
     def getFunctionResult(self, params):
@@ -97,7 +97,7 @@ def runMultipleJobs(data, resultsDataPath):
 
 #        print('iter', i)
 
-        jobInfo = KiwiJobInfo(data, i)
+        jobInfo = KeaJobInfo(data, i)
         jobInputs.append(jobInfo)
     # run all in parallel and collect results
     results = jobmgr.runSubJobs(parallelRunModel, jobInputs)
@@ -112,12 +112,12 @@ if __name__ == '__main__':
 #    print("script starting - main mod1_calcmulti")
 
 
-    preProcessDataPath = os.path.join(os.getenv('KIWIPROJDIR', default='.'), 
-               'KiwiProjResults', 'modC_Results', 'preProcData.pkl')
-    resultsDataPath = os.path.join(os.getenv('KIWIPROJDIR', default='.'), 
-                'KiwiProjResults', 'modC_Results', 'results.pkl')
+    preProcessDataPath = os.path.join(os.getenv('KEAPROJDIR', default='.'), 
+               'modelResults', 'modC_Results', 'preProcData.pkl')
+    resultsDataPath = os.path.join(os.getenv('KEAPROJDIR', default='.'), 
+                'modelResults', 'modC_Results', 'results.pkl')
 
-    data = preProcessing.KiwiData.unpickleFromFile(preProcessDataPath)
+    data = preProcessing.KeaData.unpickleFromFile(preProcessDataPath)
     runMultipleJobs(data, resultsDataPath)
 
 

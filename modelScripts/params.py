@@ -1,8 +1,8 @@
 import numpy as np
 
-class KiwiParams(object):
+class KeaParams(object):
     """
-    The parameters to the Kiwi model
+    The parameters to the Kea model
     """
     def __init__(self):
         self.extentShp = None
@@ -10,8 +10,8 @@ class KiwiParams(object):
         self.islands = None
         self.islandK = 1.3
         self.DEM = None
-        # resolution for rodent, stoats, and kiwi, respectively.
-        self.resolutions = (200.0, 1000.0, 1000.0)
+        # resolution for rodent, stoats, and kea, respectively.
+        self.resolutions = (200.0, 1000.0, 2000.0)
         self.controlFile = None
         self.controlPathPrefix = None
         self.seasAdjResFile = None
@@ -58,17 +58,17 @@ class KiwiParams(object):
         self.nTunnels = 120                 # number of tracking tunnels
 
 
-        self.gammaProbEmigrate = np.array([0.1, 0.2, 0.1])   # gamma for rodent, stoats, 
+        self.gammaProbEmigrate = np.array([0.1, 0.2, 0.4])   # gamma for rodent, stoats, 
                                                     # Eqn 18, 20 and others 
-        self.deltaImmigrate = np.array([0.8, 0.4, 0.6])    # delta (rodents, stoats, kiwis)         
+        self.deltaImmigrate = np.array([0.8, 0.4, 0.05])    # delta (rodents, stoats, keas)         
                                                         # Eqn 20 and others
         self.tauImmigrate = np.array([0.003, 0.25, 0.0])      # Eqn 18, 20 and others
-                                                 # rate parameter Imm (rodent, stoat, kiwi)
+                                                 # rate parameter Imm (rodent, stoat, kea)
         self.emigrationWindowSize = (self.resolutions[0] * 13, 
-                    self.resolutions[1] * 20, self.resolutions[2] * 11) # in metres
+                    self.resolutions[1] * 20, self.resolutions[2] * 20) # in metres
 
         self.rodentMaxAltitude = 1000.0  # metres
-        self.kiwiMaxAltitude = 1340.0  # metres
+        self.keaMaxAltitude = 2000.0  # metres
         self.stoatMaxAltitude = 1100.0
         ############
         ############    Stoat parameters
@@ -89,23 +89,25 @@ class KiwiParams(object):
         self.initialStoatN = 3.0
         
         ############
-        ############    Kiwi parameters
+        ############    Kea parameters
 
-        self.kiwiK = 20.0
-        self.pKiwiPres = 0.68
-        self.initialkiwiN = 5.0
-        self.kiwiInitialMultiplier = 0.5
-        self.kiwiPsi = 2.0  # Eqn 32
+        self.keaK = 20.0
+        self.pKeaPres = 0.68
+        self.initialkeaN = 5.0
+        self.keaInitialMultiplier = 0.5
+        self.keaPsi = 2.0  # Eqn 32
         self.competEffect = 0.0
-        self.kiwiPopSD = .12
+        self.keaPopSD = .12
 
-        self.kiwiSurv = 0.9913       
-        self.kiwiSurvDDcoef =120.0
-        self.kiwiProd = 0.1067
-        self.kiwiRecDDcoef =20
-        self.kiwiTheta = 2
-        self.kiwiSeasRec = [0,1.,1.,1.,1.,1.,1.,0,0,0,0,0] #kiwi become indep Oct-Mar
-        self.kiwiSeasDisp = np.array([0,0,0,1,1,1,1,0,0,0,0,0], dtype=bool) #disperse Dec-Mar
+        self.keaSurv = [0.982,0.992,0.995,0.995,0.997]
+
+        self.keaSurvDDcoef =120.0
+        self.keaProd = 0.1067
+        self.keaRecDDcoef =20
+        self.keaTheta = 2
+        self.keaSeasRec = [0,1.,1.,1.,1.,1.,1.,0,0,0,0,0] #kea become indep Oct-Mar
+        self.keaSeasDisp = np.array([0,0,0,1,1,1,1,0,0,0,0,0], dtype=bool) #disperse Dec-Mar
+        self.keaInitAgeStr = np.array([0.3,0.1,0.1,0.1,0.4], dtype=float)
         
         # model for control that is reactive to masting
         self.reactivePropMgmtMasting = 0.5 # set > 0 to enable
@@ -116,7 +118,7 @@ class KiwiParams(object):
 
         ## MODEL FOR CONTROL REACTIVE TO RODENT TRACKING TUNNEL RATE
         
-        ## NUMBER OF YEARS OVER WHICH CALC KIWI ANN GROWTH RATE
+        ## NUMBER OF YEARS OVER WHICH CALC KEA ANN GROWTH RATE
         self.annGrowthYears = 10
 
 
@@ -141,7 +143,7 @@ class KiwiParams(object):
 
     def setResolutions(self, resolutions):
         """
-        Resolutions for rodent, stoats, and kiwi, respectively.
+        Resolutions for rodent, stoats, and kea, respectively.
         """
         self.resolutions = resolutions
 
@@ -316,24 +318,24 @@ class KiwiParams(object):
 
 
 
-    ### KIWI FUNCTIONS AND PARAMETERS
-    def setPKiwiPresence(self, pKiwiPres):
-        self.pKiwiPres = pKiwiPres
+    ### KEA FUNCTIONS AND PARAMETERS
+    def setPKeaPresence(self, pKeaPres):
+        self.pKeaPres = pKeaPres
 
-    def setKiwiInitialMultiplier(self, kiwiInitialMultiplier):
-        self.kiwiInitialMultiplier = kiwiInitialMultiplier
+    def setKeaInitialMultiplier(self, keaInitialMultiplier):
+        self.keaInitialMultiplier = keaInitialMultiplier
 
-    def setKiwiPsi(self, kiwiPsi):
-        self.kiwiPsi = kiwiPsi
+    def setKeaPsi(self, keaPsi):
+        self.keaPsi = keaPsi
 
-#    def setKiwiGrowthRate(self, kiwiGrowthRate):
-#        self.kiwiGrowthRate = kiwiGrowthRate
+#    def setKeaGrowthRate(self, keaGrowthRate):
+#        self.keaGrowthRate = keaGrowthRate
 
-    def setKiwiK(self, kiwiK):
-        self.kiwiK = kiwiK
+    def setKeaK(self, keaK):
+        self.keaK = keaK
 
-    def setKiwiPopSD(self, kiwiPopSD):
-        self.kiwiPopSD = kiwiPopSD
+    def setKeaPopSD(self, keaPopSD):
+        self.keaPopSD = keaPopSD
 
 #    def setMinPredationSurv(self, minPredationSurv):
 #        self.minPredationSurv = minPredationSurv
@@ -341,31 +343,33 @@ class KiwiParams(object):
     def setCompetitionEffect(self, competEffect):
         self.competEffect = competEffect
 
-    ### NEW FUNCTIONS FOR KIWI GROWTH
-    def setKiwiSurv(self, kiwiSurv):
-        self.kiwiSurv = kiwiSurv
+    ### NEW FUNCTIONS FOR KEA GROWTH
+    def setKeaSurv(self, keaSurv):
+        self.keaSurv = np.array(keaSurv, dtype=float)    
 
-    def setKiwiSurvDDcoef(self, kiwiSurvDDcoef):
-        self.kiwiSurvDDcoef = kiwiSurvDDcoef
+    def setKeaSurvDDcoef(self, keaSurvDDcoef):
+        self.keaSurvDDcoef = keaSurvDDcoef
 
-    def setInitialKiwiN(self, initialkiwiN):
-        self.initialkiwiN = initialkiwiN
+    def setInitialKeaN(self, initialkeaN):
+        self.initialkeaN = initialkeaN
 
-    def setKiwiProd(self, kiwiProd):
-        self.kiwiProd = kiwiProd
+    def setKeaProd(self, keaProd):
+        self.keaProd = keaProd
 
-    def setKiwiRecDDcoef(self, kiwiRecDDcoef):
-        self.kiwiRecDDcoef = kiwiRecDDcoef 
+    def setKeaRecDDcoef(self, keaRecDDcoef):
+        self.keaRecDDcoef = keaRecDDcoef 
 
-    def setKiwiTheta(self, kiwiTheta):
-        self.kiwiTheta = kiwiTheta
+    def setKeaTheta(self, keaTheta):
+        self.keaTheta = keaTheta
 
-    def setKiwiSeasRec(self, seasRec):
-        self.kiwiSeasRec= seasRec       
+    def setKeaSeasRec(self, seasRec):
+        self.keaSeasRec= seasRec       
         
-    def setKiwiSeasDisp(self, seasDisp):
-        self.kiwiSeasDisp = np.array(seasDisp, dtype=bool)
+    def setKeaSeasDisp(self, seasDisp):
+        self.keaSeasDisp = np.array(seasDisp, dtype=bool)
         
+    def setKeaInitAgeStr(self, initAgeStr):
+        self.keaInitAgeStr = np.array(initAgeStr, dtype=float)    
 
     def setReactiveMode(self, prop):
         """

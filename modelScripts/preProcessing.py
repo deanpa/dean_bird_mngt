@@ -20,7 +20,7 @@ NZTM_WKT = sr.ExportToWkt()
 class FormatError(Exception):
     "Was unable to read the format"
 
-class KiwiData(object):
+class KeaData(object):
     """
     Holds the data used for the model run. This is calculated from 
     the parameters. Use the pickleSelf() method to save this to a pickle.
@@ -34,7 +34,7 @@ class KiwiData(object):
             self.rasterizeShape(self.params.extentShp, self.params.resolutions[0]))
         self.rodentExtentMask = originalExtent > 0
 
-        # do the other extentMasks (stoats and kiwis)
+        # do the other extentMasks (stoats and keas)
         self.stoatGeoTrans, self.stoatNcols, self.stoatNrows, stoatMask = (
             self.rasterizeShape(self.params.extentShp, self.params.resolutions[1]))
 
@@ -45,11 +45,11 @@ class KiwiData(object):
         self.kClasses = self.resampleRasterRodent(self.params.kClasses, self.params.resolutions[0],
                     GDTMethod = gdal.GDT_UInt16, GRAMethod = gdal.GRA_NearestNeighbour)
 
-        self.kiwiGeoTrans, self.kiwiNcols, self.kiwiNrows, kiwiMask = (
+        self.keaGeoTrans, self.keaNcols, self.keaNrows, keaMask = (
             self.rasterizeShape(self.params.extentShp, self.params.resolutions[2]))
 
 
-        print('kiwinrows', self.kiwiNcols, self.kiwiNrows, type(self.kiwiNrows))
+        print('keanrows', self.keaNcols, self.keaNrows, type(self.keaNrows))
 
 
         # add the self.rodentMaxAltitude to the self.rodentExtentMask
@@ -74,29 +74,32 @@ class KiwiData(object):
 ####        # remove rodents from Resolution and Secretary islands
 ####        self.rodentExtentMask[self.rodentIslandMask] = 0
 
-        # get kiwiCorrectionK to scale pixels near water or high elevation
-        (self.kiwiCorrectionK, self.stoatExtentMask, self.stoatPercentArea) = (
-            scaleKiwiStoatMask(self.params.resolutions[0], 
-            self.params.resolutions[2], self.kiwiNcols, self.kiwiNrows,
-            self.DEM, originalExtent, self.params.kiwiMaxAltitude, 
-            self.params.stoatMaxAltitude, self.rodentExtentForStoats))
+        # get keaCorrectionK to scale pixels near water or high elevation
+        self.keaCorrectionK = scaleKeaMask(self.params.resolutions[0], 
+            self.params.resolutions[2], self.keaNcols, self.keaNrows,
+            self.DEM, originalExtent, self.params.keaMaxAltitude)
+        self.keaExtentMask = self.keaCorrectionK > 0.0
 
-
-        self.kiwiExtentMask = self.kiwiCorrectionK > 0.0
+        (self.stoatExtentMask, self.stoatPercentArea) = (
+            scaleStoatMask(self.params.resolutions[0], 
+            self.params.resolutions[1], self.stoatNcols, self.stoatNrows,
+            self.DEM, originalExtent, self.params.stoatMaxAltitude, 
+            self.rodentExtentForStoats))
         self.stoatExtentMask = self.stoatExtentMask > 0
 
-        self.rodentPercentArea = np.where(self.rodentExtentMask, 1.0, 0)
-        self.kiwiKDummy = np.where(self.kiwiExtentMask, 1.0, 0)
 
-        ## KIWI K MAP FOR SENSITIVITY TEST
-        # self.kiwiKMap = getKiwiKMap(self.kiwiNcols, self.kiwiNrows,  
-        #     self.kiwiCorrectionK, self.kiwiExtentMask, self.params.kiwiSurv, 
-        #     self.params.kiwiSurvDecay, self.params.kiwiRecDecay,
-        #     self.params.kiwiProd)
-        self.kiwiKMap = getKiwiKMap(self.kiwiNcols, self.kiwiNrows,  
-            self.kiwiCorrectionK, self.kiwiExtentMask, self.params.kiwiSurv, 
-            self.params.kiwiSurvDDcoef, self.params.kiwiRecDDcoef,
-            self.params.kiwiProd, self.params.kiwiTheta)
+        self.rodentPercentArea = np.where(self.rodentExtentMask, 1.0, 0)
+        self.keaKDummy = np.where(self.keaExtentMask, 1.0, 0)
+
+        ## KEA K MAP FOR SENSITIVITY TEST
+        # self.keaKMap = getKeaKMap(self.keaNcols, self.keaNrows,  
+        #     self.keaCorrectionK, self.keaExtentMask, self.params.keaSurv, 
+        #     self.params.keaSurvDecay, self.params.keaRecDecay,
+        #     self.params.keaProd)
+        self.keaKMap = getKeaKMap(self.keaNcols, self.keaNrows,  
+            self.keaCorrectionK, self.keaExtentMask, self.params.keaSurv, 
+            self.params.keaSurvDDcoef, self.params.keaRecDDcoef,
+            self.params.keaProd, self.params.keaTheta)
 
         kMapDS = gdal.Open(self.params.kClasses)
         ### MASK FOR CELLS THAT CAN MAST????
@@ -123,21 +126,21 @@ class KiwiData(object):
 
         
         driver = gdal.GetDriverByName('HFA')
-        ds = driver.Create('KiwiCorrectTemp.img', self.kiwiNcols, self.kiwiNrows, 
+        ds = driver.Create('KeaCorrectTemp.img', self.keaNcols, self.keaNrows, 
                 1, gdal.GDT_Float32)
         ds.SetProjection(NZTM_WKT)
-        ds.SetGeoTransform(self.kiwiGeoTrans)
+        ds.SetGeoTransform(self.keaGeoTrans)
         band = ds.GetRasterBand(1)
-        band.WriteArray(self.kiwiCorrectionK)
+        band.WriteArray(self.keaCorrectionK)
         del ds
 
         driver = gdal.GetDriverByName('HFA')
-        ds = driver.Create('kiwiExtentMaskTemp.img', self.stoatNcols, self.stoatNrows, 
+        ds = driver.Create('keaExtentMaskTemp.img', self.stoatNcols, self.stoatNrows, 
                 1, gdal.GDT_Byte)
         ds.SetProjection(NZTM_WKT)
         ds.SetGeoTransform(self.stoatGeoTrans)
         band = ds.GetRasterBand(1)
-        band.WriteArray(self.kiwiExtentMask)
+        band.WriteArray(self.keaExtentMask)
         del ds
      
         driver = gdal.GetDriverByName('GTiff')
@@ -178,9 +181,9 @@ class KiwiData(object):
 #        print('pixelsInControlAndBeechMask', self.pixelsInControlAndBeechMask)
 
 
-        (self.kiwiSpatialDictByMgmt, self.kiwiAreaDictByMgmt, 
-            self.stoatAreaDictByMgmt) = self.readAndResampleControlForKiwis()
+        (self.keaSpatialDictByMgmt, self.keaAreaDictByMgmt) = self.readAndResampleControlForKeas()
 
+        (self.stoatSpatialDictByMgmt, self.stoatAreaDictByMgmt) = self.readAndResampleControlForStoats()
 
 #        print('in dict', 'ALL' in self.rodentSpatialDictByMgmt.keys())
 #        print('rodentSpatialDictByMgmt', self.rodentSpatialDictByMgmt.keys())
@@ -209,6 +212,11 @@ class KiwiData(object):
         xmax = np.ceil(x1 / self.params.resolutions[1]) * self.params.resolutions[1]
         ymin = np.floor(y0 / self.params.resolutions[1]) * self.params.resolutions[1]
         ymax = np.ceil(y1 / self.params.resolutions[1]) * self.params.resolutions[1]
+        # # changed to kea since they have the larger resolution???? but then no data for edges
+        # xmin = np.floor(x0 / self.params.resolutions[2]) * self.params.resolutions[2]
+        # xmax = np.ceil(x1 / self.params.resolutions[2]) * self.params.resolutions[2]
+        # ymin = np.floor(y0 / self.params.resolutions[2]) * self.params.resolutions[2]
+        # ymax = np.ceil(y1 / self.params.resolutions[2]) * self.params.resolutions[2]
 
         ncols = int((xmax - xmin) / resolution)
         nrows = int((ymax - ymin) / resolution)
@@ -255,15 +263,14 @@ class KiwiData(object):
 
         return data
 
-    def resampleRasterKiwi(self, infile, resolution, GDTMethod, GRAMethod):
+    def resampleRaster(geoTrans, nCol, nRow, infile, resolution, GDTMethod, GRAMethod):
         """
         Resample the input file to the given resolution and bounds
-        Note: Assumes kiwi res etc
         """
         driver = gdal.GetDriverByName('HFA')
-        gdalDataset = driver.Create('resraster.img', self.kiwiNcols, self.kiwiNrows, 1,
+        gdalDataset = driver.Create('resraster.img', nCol, nRow, 1,
                 GDTMethod, COMPRESSED_HFA)
-        gdalDataset.SetGeoTransform(self.kiwiGeoTrans)
+        gdalDataset.SetGeoTransform(geoTrans)
 
         gdalDataset.SetProjection(NZTM_WKT)
 
@@ -358,19 +365,18 @@ class KiwiData(object):
 #        print('rodentAreaDict', rodentAreaDict)
         return(controlList, rodentAreaDict, pixelsInControlAndBeechMask, controlAndBeechMask)
 
-    def readAndResampleControlForKiwis(self):
+    def readAndResampleControlForKeas(self):
         """
         Similar to readAndResampleControlForRodents() above, but 
-        resamples to Kiwi resolution and returns a dictionary
+        resamples to Kea resolution and returns a dictionary
         keyed on the original shape file name so that analysis
         can be performed on each management area.
         """
-        kiwiSpatialDict = {}  # keyed on file name
-        kiwiAreaDict = {}
-        stoatAreaDict = {}
+        keaSpatialDict = {}  # keyed on file name
+        keaAreaDict = {}
         # work out the extent to use
-        x0, y1 = gdal.ApplyGeoTransform(self.kiwiGeoTrans, 0, 0)
-        x1, y0 = gdal.ApplyGeoTransform(self.kiwiGeoTrans, self.kiwiNcols, self.kiwiNrows)
+        x0, y1 = gdal.ApplyGeoTransform(self.keaGeoTrans, 0, 0)
+        x1, y0 = gdal.ApplyGeoTransform(self.keaGeoTrans, self.keaNcols, self.keaNrows)
         extent = [x0, x1, y0, y1]
 
         firstRow = True
@@ -387,7 +393,7 @@ class KiwiData(object):
                     if self.params.controlPathPrefix is not None:
                         shpFile = os.path.join(self.params.controlPathPrefix, shpFile)
 
-                    if shpFile not in kiwiSpatialDict:
+                    if shpFile not in keaSpatialDict:
                         # we haven't come accross this one before
                         if not os.path.exists(shpFile):
                             raise IOError("Cannot find file %s" % shpFile)
@@ -397,24 +403,77 @@ class KiwiData(object):
                                     self.params.resolutions[2], extent=extent)
                         except FormatError:
                             # must be a raster input
-                            data = self.resampleRasterKiwi(shpFile, self.params.resolutions[2],
+                            data = self.resampleRaster(self.keaGeoTrans, self.keaNcols,
+                                        self.keaNrows, shpFile, self.params.resolutions[2],
                                         GDTMethod = gdal.GDT_UInt16,
                                         GRAMethod = gdal.GRA_NearestNeighbour)
                         mask = (data == 1)
-                        ### POPULATE kiwi and stoatAreaDict with km-sq in each mgmt zone
-                        kiwiAreaDict[shpFile] = np.sum(data * self.kiwiCorrectionK)
-                        stoatAreaDict[shpFile] = np.sum(data * self.stoatPercentArea)
+                        ### POPULATE kea and stoatAreaDict with km-sq in each mgmt zone
+                        keaAreaDict[shpFile] = np.sum(data * self.keaCorrectionK)
                         # store it
-                        kiwiSpatialDict[shpFile] = mask.copy()
+                        keaSpatialDict[shpFile] = mask.copy()
 
         # put in a special key = 'ALL' that contains the extent mask
         # to make it easier when doing the stats
-        kiwiSpatialDict['ALL'] = self.kiwiExtentMask
-        kiwiAreaDict['ALL'] = np.sum(self.kiwiExtentMask * self.kiwiCorrectionK)
+        keaSpatialDict['ALL'] = self.keaExtentMask
+        keaAreaDict['ALL'] = np.sum(self.keaExtentMask * self.keaCorrectionK)
+
+        return(keaSpatialDict, keaAreaDict)
+
+    def readAndResampleControlForStoats(self):
+        """
+        Similar to readAndResampleControlForRodents() above, but 
+        resamples to Stoat resolution and returns a dictionary
+        keyed on the original shape file name so that analysis
+        can be performed on each management area.
+        """
+        stoatSpatialDict = {}  # keyed on file name
+        stoatAreaDict = {}
+        # work out the extent to use
+        x0, y1 = gdal.ApplyGeoTransform(self.stoatGeoTrans, 0, 0)
+        x1, y0 = gdal.ApplyGeoTransform(self.stoatGeoTrans, self.stoatNcols, self.stoatNrows)
+        extent = [x0, x1, y0, y1]
+
+        firstRow = True
+        with open(self.params.controlFile, newline='') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                if firstRow:
+                    firstRow = False
+                    continue
+
+                if len(row) == 4:
+                    shpFile, startYear, ctrlMth, revisit = row
+        
+                    if self.params.controlPathPrefix is not None:
+                        shpFile = os.path.join(self.params.controlPathPrefix, shpFile)
+
+                    if shpFile not in stoatSpatialDict:
+                        # we haven't come accross this one before
+                        if not os.path.exists(shpFile):
+                            raise IOError("Cannot find file %s" % shpFile)
+
+                        try:
+                            geoTrans, ncols, nrows, data = self.rasterizeShape(shpFile, 
+                                    self.params.resolutions[1], extent=extent)
+                        except FormatError:
+                            # must be a raster input
+                            data = self.resampleRaster(self.stoatGeoTrans, self.stoatNcols,
+                                        self.stoatNrows, shpFile, self.params.resolutions[1],
+                                        GDTMethod = gdal.GDT_UInt16,
+                                        GRAMethod = gdal.GRA_NearestNeighbour)
+                        mask = (data == 1)
+                        ### POPULATE stoatAreaDict with km-sq in each mgmt zone
+                        stoatAreaDict[shpFile] = np.sum(data * self.stoatPercentArea)
+                        # store it
+                        stoatSpatialDict[shpFile] = mask.copy()
+
+        # put in a special key = 'ALL' that contains the extent mask
+        # to make it easier when doing the stats
+        stoatSpatialDict['ALL'] = self.stoatExtentMask
         stoatAreaDict['ALL'] = np.sum(self.stoatExtentMask * self.stoatPercentArea)
 
-        return(kiwiSpatialDict, kiwiAreaDict, stoatAreaDict)
-
+        return(stoatSpatialDict, stoatAreaDict)
 
 
     def pickleSelf(self, fname):
@@ -430,68 +489,89 @@ class KiwiData(object):
         return data
 
 @jit
-def scaleKiwiStoatMask(rodentResol, kiwiResol, kiwiNcols, kiwiNrows,
-        DEM, originalExtent, kiwiMaxElev, stoatMaxElev, rodentExtentForStoats):
+def scaleKeaMask(rodentResol, keaResol, keaNcols, keaNrows,
+        DEM, originalExtent, keaMaxElev):
     """
-    Calc proportion of pixels at rodent resolution that are suitable for kiwi
+    Calc proportion of pixels at rodent resolution that are suitable for kea
     """
-    # number of rodent cells in one row within a kiwi cell
-    oldPixPerNewPix = int(kiwiResol / rodentResol)
-    # total number of rodent cells in one kiwi cell
+    # number of rodent cells in one row within a kea cell
+    oldPixPerNewPix = int(keaResol / rodentResol)
+    # total number of rodent cells in one kea cell
     ncells = (oldPixPerNewPix)**2.0
     # new array to populate
-    kiwiCorrectionK = np.zeros((kiwiNrows, kiwiNcols))
-    stoatPercentArea = np.zeros((kiwiNrows, kiwiNcols))            # use to calc density in mgmt
-    stoatExtentMask = np.zeros((kiwiNrows, kiwiNcols), np.uint8)
-    # loop thru kiwi raster to populate
-    for kiwiY in range(kiwiNrows):
-        for kiwiX in range(kiwiNcols):
-            kiwiTotal = 0.0
-            stoatTotal = 0.0
-            oldx = kiwiX * oldPixPerNewPix
-            oldy = kiwiY * oldPixPerNewPix
+    keaCorrectionK = np.zeros((keaNrows, keaNcols))
+    # loop thru kea raster to populate
+    for keaY in range(keaNrows):
+        for keaX in range(keaNcols):
+            keaTotal = 0.0
+            oldx = keaX * oldPixPerNewPix
+            oldy = keaY * oldPixPerNewPix
             for x in range(oldPixPerNewPix):
                 for y in range(oldPixPerNewPix):
                     addY = oldy + y
                     addX = oldx + x
-                    ## get scale for kiwi
-                    if DEM[addY, addX] <= kiwiMaxElev:
-                        kiwiTotal += originalExtent[addY, addX]
+                    ## get scale for kea
+                    if DEM[addY, addX] <= keaMaxElev:
+                        keaTotal += originalExtent[addY, addX]
+            keaCorrectionK[keaY, keaX] = keaTotal / ncells
+    return(keaCorrectionK)
+
+def scaleStoatMask(rodentResol, stoatResol, stoatNcols, stoatNrows,
+        DEM, originalExtent, stoatMaxElev, rodentExtentForStoats):
+    """
+    Calc proportion of pixels at rodent resolution that are suitable for stoats
+    """
+    # number of rodent cells in one row within a kea cell
+    oldPixPerNewPix = int(stoatResol / rodentResol)
+    # total number of rodent cells in one kea cell
+    ncells = (oldPixPerNewPix)**2.0
+    # new array to populate
+    stoatPercentArea = np.zeros((stoatNrows, stoatNcols))            # use to calc density in mgmt
+    stoatExtentMask = np.zeros((stoatNrows, stoatNcols), np.uint8)
+    # loop thru kea raster to populate
+    for stoatY in range(stoatNrows):
+        for stoatX in range(stoatNcols):
+            stoatTotal = 0.0
+            oldx = stoatX * oldPixPerNewPix
+            oldy = stoatY * oldPixPerNewPix
+            for x in range(oldPixPerNewPix):
+                for y in range(oldPixPerNewPix):
+                    addY = oldy + y
+                    addX = oldx + x
+                    ## get scale for stoats
                     if DEM[addY, addX] <= stoatMaxElev:
                         stoatTotal += originalExtent[addY, addX]
                     ## get count of rodent cells for stoats
-#                    if stoatExtentMask[kiwiY, kiwiX] == 1:
+#                    if stoatExtentMask[keaY, keaX] == 1:
 #                        continue
                     # if rodent present in stoat pixel then indicate
                     if rodentExtentForStoats[addY, addX]:
-                        stoatExtentMask[kiwiY, kiwiX] = 1
-            stoatPercentArea[kiwiY, kiwiX] = stoatTotal / ncells
-            kiwiCorrectionK[kiwiY, kiwiX] = kiwiTotal / ncells
-    return(kiwiCorrectionK, stoatExtentMask, stoatPercentArea)
-
+                        stoatExtentMask[stoatY, stoatX] = 1
+            stoatPercentArea[stoatY, stoatX] = stoatTotal / ncells
+    return(stoatExtentMask, stoatPercentArea)
 
 
 @jit(nopython=True)
-# def getKiwiKMap(kiwiNcols, kiwiNrows, kiwiCorrectionK,
-#         kiwiExtentMask, kiwiSurv, kiwiSurvDecay, kiwiRecDecay, kiwiProd):
-def getKiwiKMap(kiwiNcols, kiwiNrows, kiwiCorrectionK,
-        kiwiExtentMask, kiwiSurv, kiwiSurvDDcoef, kiwiRecDDcoef, kiwiProd, kiwiTheta):
+# def getKeaKMap(keaNcols, keaNrows, keaCorrectionK,
+#         keaExtentMask, keaSurv, keaSurvDecay, keaRecDecay, keaProd):
+def getKeaKMap(keaNcols, keaNrows, keaCorrectionK,
+        keaExtentMask, keaSurv, keaSurvDDcoef, keaRecDDcoef, keaProd, keaTheta):
     """
-    ## MAKE KIWI EQUILIBRIUM POP DENSITY BY PIXEL FOR SENSITIVITY TEST
+    ## MAKE KEA EQUILIBRIUM POP DENSITY BY PIXEL FOR SENSITIVITY TEST
     """
-    kiwi_KMap = np.zeros((kiwiNrows, kiwiNcols))
+    kea_KMap = np.zeros((keaNrows, keaNcols))
     n0 = 10.0
-    # loop thru kiwi raster to populate
-    for row in range(kiwiNrows):
-        for col in range(kiwiNcols):
-            if ~kiwiExtentMask[row, col]:
+    # loop thru kea raster to populate
+    for row in range(keaNrows):
+        for col in range(keaNcols):
+            if ~keaExtentMask[row, col]:
                 continue
             N = n0
-            prp = kiwiCorrectionK[row, col]
+            prp = keaCorrectionK[row, col]
             for i in range(15):
-                surv_i= kiwiSurv * np.exp(-((N/(kiwiSurvDDcoef*prp))**kiwiTheta))
+                surv_i= keaSurv[3] * np.exp(-((N/(keaSurvDDcoef*prp))**keaTheta))
                 NStar = N * surv_i
-                recRate = kiwiProd *np.exp(-(N/(kiwiRecDDcoef*prp))**kiwiTheta)
+                recRate = keaProd *np.exp(-(N/(keaRecDDcoef*prp))**keaTheta)
                 N = (1 + recRate) * NStar
-            kiwi_KMap[row, col] = N
-    return(kiwi_KMap)
+            kea_KMap[row, col] = N
+    return(kea_KMap)

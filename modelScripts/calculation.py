@@ -7,6 +7,8 @@ from scipy.special import logit
 from .preProcessing import NZTM_WKT
 from . import calcresults
 
+rng = np.random.default_rng()
+
 # for resampleRasterDown
 RESAMPLE_SUM = 0
 RESAMPLE_AVERAGE = 1
@@ -26,12 +28,12 @@ def inv_logit(x):
 
 def runModel(rawdata, params=None, loopIter=0):
     """
-    Run the Kiwi model for a given iteration number.
-    rawdata should be an instance of preProcessing.KiwiData.
-    params should be a params.KiwiParams. If not given, the one
+    Run the Kea model for a given iteration number.
+    rawdata should be an instance of preProcessing.KeaData.
+    params should be a params.KeaParams. If not given, the one
     in rawdata is used.
     loopIter is the iteration number that this model run is for.
-    Returns an instance of calcresults.KiwiResults.
+    Returns an instance of calcresults.KeaResults.
     """
     if params is None:
         params = rawdata.params
@@ -43,11 +45,11 @@ def runModel(rawdata, params=None, loopIter=0):
 #    print('loopIter in runModel', loopIter)
 
     # create results object.
-    results = calcresults.KiwiResults()
+    results = calcresults.KeaResults()
     # stash the params in case useful for plotting.
     results.params = params 
 
-    nControlAreas = len(rawdata.kiwiSpatialDictByMgmt)
+    nControlAreas = len(rawdata.keaSpatialDictByMgmt)
     nYears = len(params.years)
     
     ### MAKE BURNIN AND KEEP MASK ARRAY
@@ -55,10 +57,10 @@ def runModel(rawdata, params=None, loopIter=0):
     keepMask = np.arange(totalYears) >= params.burnin
 
     # NOTE: data just for this iteration
-    results.kiwiDensity_2D = np.zeros((nControlAreas, totalYears))
+    results.keaDensity_2D = np.zeros((nControlAreas, totalYears))
     results.stoatDensity_2D = np.zeros((nControlAreas, totalYears))
     results.rodentDensity_2D = np.zeros((nControlAreas, totalYears))
-    results.kiwiDensity_2D_mth = np.zeros((nControlAreas, totalYears*12))
+    results.keaDensity_2D_mth = np.zeros((nControlAreas, totalYears*12))
     results.stoatDensity_2D_mth = np.zeros((nControlAreas, totalYears*12))
     results.rodentDensity_2D_mth = np.zeros((nControlAreas, totalYears*12))
 
@@ -66,8 +68,8 @@ def runModel(rawdata, params=None, loopIter=0):
     ## COUNT NUMBER OF CONTROL OPERATIONS
     results.controlCount = 0
 
-    stoatShp = np.shape(rawdata.kiwiExtentMask)
-
+    stoatShp = np.shape(rawdata.stoatExtentMask)
+    keaShp = np.shape(rawdata.keaExtentMask)
     # are we storing result.popAllYears_3D for this iteration?
     # if so, create the array.
     if loopIter == 0:
@@ -80,7 +82,7 @@ def runModel(rawdata, params=None, loopIter=0):
                                         dtype = float),
                       'stoatDensity': np.zeros((nYears, stoatShp[0], stoatShp[1]), 
                                         dtype = float),
-                      'kiwiDensity': np.zeros((nYears, stoatShp[0], stoatShp[1]), 
+                      'keaDensity': np.zeros((nYears, keaShp[0], keaShp[1]), 
                                         dtype = float)}
 
     # For each year in params.years
@@ -91,7 +93,7 @@ def runModel(rawdata, params=None, loopIter=0):
     # 5. Stoat Peak (using Rodent Population at control, and num dead toxic rodents)
     # 6. Stoat Dispersal
     # 7. Analysis of shape of Stoat Population Tail 
-    # 8. Kiwi population decrease
+    # 8. Kea population decrease
 
     # Create our internal rasters
     rodentRasterShape = rawdata.DEM.shape
@@ -125,7 +127,7 @@ def runModel(rawdata, params=None, loopIter=0):
     stoatEmigrationWindowSizePxls = round_up_to_odd(
                 params.emigrationWindowSize[1] / params.resolutions[1])
 
-    kiwiEmigrationWindowSizePxls = round_up_to_odd(
+    keaEmigrationWindowSizePxls = round_up_to_odd(
                 params.emigrationWindowSize[2] / params.resolutions[2])
 
     distArray = makeDistArray(mastWindowSizePxls, 
@@ -199,25 +201,29 @@ def runModel(rawdata, params=None, loopIter=0):
     ## REMOVE ALL NON-STOAT HABITAT
     stoat_raster[~rawdata.stoatExtentMask] = 0    
 
-    ## Get initial kiwi population
-    kiwiPresence = np.random.binomial(1, params.pKiwiPres, 
-            rawdata.kiwiCorrectionK.shape)
+    ## Get initial kea population
+    keaPresence = np.random.binomial(1, params.pKeaPres, 
+            rawdata.keaCorrectionK.shape)
     # Eqn 38 
-    kiwi_raster = (np.random.poisson(params.kiwiInitialMultiplier * params.kiwiK, 
-                            rawdata.kiwiCorrectionK.shape) * kiwiPresence )
+    kea_raster = (rng.poisson(params.keaInitialMultiplier * params.keaK, 
+                            rawdata.keaCorrectionK.shape) * keaPresence )
  
-    adjustKiwiIsland = (kiwi_raster > 3) & stoatIslandMask
-    kiwi_raster[adjustKiwiIsland] = 2
+    stoat_keaIslandMask = resampleRasterDown(stoatIslandMask, rawdata.keaExtentMask.shape, 
+                       statMethod = RESAMPLE_SUM, pixelRescale = 1)
+    adjustKeaIsland = (kea_raster > 3) & stoat_keaIslandMask
+    kea_raster[adjustKeaIsland] = 2
+    kea_raster[~rawdata.keaExtentMask] = 0
+    #split kea_raster into diff age classes
+    keaByAgeRasts = rng.multinomial(kea_raster, params.keaInitAgeStr)
+    kea_raster = np.concatenate((keaByAgeRasts.transpose(2,0,1),kea_raster.reshape(1,
+                        kea_raster.shape[0],kea_raster.shape[1])),axis=0)
+    del keaByAgeRasts
 
-
-    kiwi_raster[~rawdata.kiwiExtentMask] = 0
-
-
-    ## CORRECT KIWI RECRUIT AND SURVIVAL PARAMETERS FOR HABITAT AREA
-    kiwiRecDecay_1D = ((params.kiwiRecDDcoef* 
-            rawdata.kiwiCorrectionK)[rawdata.kiwiExtentMask])
-    kiwiSurvDecay_1D = ((params.kiwiSurvDDcoef * 
-            rawdata.kiwiCorrectionK)[rawdata.kiwiExtentMask])
+    ## CORRECT KEA RECRUIT AND SURVIVAL PARAMETERS FOR HABITAT AREA
+    keaRecDecay_1D = ((params.keaRecDDcoef* 
+            rawdata.keaCorrectionK)[rawdata.keaExtentMask])
+    keaSurvDecay_1D = ((params.keaSurvDDcoef * 
+            rawdata.keaCorrectionK)[rawdata.keaExtentMask])
 
 
     # record when last control happens for each mask
@@ -277,6 +283,14 @@ def runModel(rawdata, params=None, loopIter=0):
                                 / np.count_nonzero(controlMask))
 
       
+        ##age the kea
+        if year_all>0:
+            kea_raster[4,:,:] = kea_raster[4,:,:] + kea_raster[3,:,:]
+            kea_raster[3,:,:] = kea_raster[2,:,:] 
+            kea_raster[2,:,:] = kea_raster[1,:,:] 
+            kea_raster[1,:,:] = kea_raster[0,:,:]
+            kea_raster[0,:,:] = 0
+        
         for mth in range(12):
             
             tMth = (year_all * 12) + mth
@@ -425,31 +439,31 @@ def runModel(rawdata, params=None, loopIter=0):
     
     
     
-            # kiwi population growth after stoat and rodent dispersal
-            ## IF KIWI RESOL != STOAT RESOL, HAVE TO REPLACE "rodent_raster_stoat" in
-            ## THE FOLLOWING FX AND GET 'rodent_raster_kiwi' WITHIN THE FX. THIS IS
-            ## FOR THE COMPETITION EFFECT BETWEEN RODENTS AND KIWI.
-            kiwi_raster = doKiwiGrowth(kiwi_raster, stoat_raster, params, 
-                    rawdata.kiwiExtentMask, rodent_raster_stoat,
-                    nHectInRodent, kiwiRecDecay_1D, kiwiSurvDecay_1D, mth)
+            # kea population growth after stoat and rodent dispersal
+            ## IF KEA RESOL != STOAT RESOL, HAVE TO REPLACE "rodent_raster_stoat" in
+            ## THE FOLLOWING FX AND GET 'rodent_raster_kea' WITHIN THE FX. THIS IS
+            ## FOR THE COMPETITION EFFECT BETWEEN RODENTS AND KEA.
+            kea_raster = doKeaGrowth(kea_raster, stoat_raster, params, 
+                    rawdata.keaExtentMask, rodent_raster_stoat,
+                    nHectInRodent, keaRecDecay_1D, keaSurvDecay_1D, mth)
     
     
     
     
-            ## Kiwi dispersal
-            if params.kiwiSeasDisp[mth]:            
-                kiwi_raster = doKiwiDispersal(rawdata, kiwi_raster, params, 
-                            rawdata.kiwiExtentMask, kiwiEmigrationWindowSizePxls)
+            ## Kea dispersal
+            if params.keaSeasDisp[mth]:            
+                kea_raster = doKeaDispersal(rawdata, kea_raster, params, 
+                            rawdata.keaExtentMask, keaEmigrationWindowSizePxls)
     
     
             #populate storage arrays with just densities each mth
             populateResultDensity(rodent_raster, rawdata.rodentExtentMask, 
                             rawdata.rodentControlList, rawdata.rodentAreaDictByMgmt, 
                             results.rodentDensity_2D_mth, stoat_raster, 
-                            rawdata.stoatExtentMask, rawdata.stoatAreaDictByMgmt, 
-                            results.stoatDensity_2D_mth, kiwi_raster, rawdata.kiwiExtentMask, 
-                            rawdata.kiwiSpatialDictByMgmt, rawdata.kiwiAreaDictByMgmt, 
-                            results.kiwiDensity_2D_mth, tMth)
+                            rawdata.stoatExtentMask, rawdata.stoatSpatialDictByMgmt, 
+                            rawdata.stoatAreaDictByMgmt,results.stoatDensity_2D_mth, 
+                            kea_raster, rawdata.keaExtentMask,rawdata.keaSpatialDictByMgmt, 
+                            rawdata.keaAreaDictByMgmt, results.keaDensity_2D_mth, tMth)
 
             ## Populate storage arrays with updated densities and maps - full output 
             #only once per year in Jan (mth 4)
@@ -457,10 +471,10 @@ def runModel(rawdata, params=None, loopIter=0):
                 populateResultArrays(loopIter, mastingMask, schedControlMask, rodent_raster, 
                     rawdata.rodentExtentMask, rawdata.rodentControlList, 
                     rawdata.rodentAreaDictByMgmt, results.rodentDensity_2D,
-                    stoat_raster, rawdata.stoatExtentMask, rawdata.stoatAreaDictByMgmt, 
-                    results.stoatDensity_2D, kiwi_raster, rawdata.kiwiExtentMask, 
-                    rawdata.kiwiSpatialDictByMgmt, rawdata.kiwiAreaDictByMgmt, 
-                    results.kiwiDensity_2D, results.popAllYears_3D, year, year_all, keepYear)
+                    stoat_raster, rawdata.stoatExtentMask, rawdata.stoatSpatialDictByMgmt, 
+                    rawdata.stoatAreaDictByMgmt, results.stoatDensity_2D, kea_raster, 
+                    rawdata.keaExtentMask, rawdata.keaSpatialDictByMgmt, rawdata.keaAreaDictByMgmt, 
+                    results.keaDensity_2D, results.popAllYears_3D, year, year_all, keepYear)
             ### IF BEYOND BURN IN PERIOD, STORE THE RESULTS
             
         if keepYear:
@@ -645,7 +659,7 @@ def calcImmigration(emigrant_raster, winsize,
             deltaImmigrate, mask, resolution, raster, gammaPara,
             areaCorrection, tauPara, kMap):
     """
-    Note: same for rodents and stoats, but for kiwi correct for area in cell
+    Note: same for rodents and stoats, but for kea correct for area in cell
     """
     halfwinsize = int(winsize / 2)
 
@@ -695,7 +709,7 @@ def calcImmigration(emigrant_raster, winsize,
 #####                        relProbEm = 0.0     # force emigrants to leave.
 #####                    elif dist >= 50.0:
                     if tauPara == 0.0:
-                        ## EQN 45: KIWI DISPERSAL
+                        ## EQN 45: KEA DISPERSAL
                         relProbEm = (np.exp(-(raster[cy,cx] * gammaPara) /
                             areaCorrection[cy, cx]) *
                             np.exp(-dist / 1000.0 * deltaImmigrate))
@@ -785,33 +799,22 @@ def doRodentGrowth(rawdata, params, rodent_raster, rodent_kMth, mth):
 
 
 
-def calcKiwiPopulation(stoat_raster, kiwi_raster, params):
+def doKeaGrowth(kea_raster, stoat_raster, params, mask, 
+        rodent_raster_kea, nHectInRodent, keaRecDecay_1D, 
+        keaSurvDecay_1D, mth):
     """
-    ## get first year kiwi population by pixel
+    ## calc kea population growth by pixel
     """
-    if kiwi_raster is None:
-        # first year kiwi population by pixel
-        kiwi_raster = np.random.poisson(params.kiwiInitialMultiplier * kiwi_kMap, 
-                            stoat_raster.shape)
-    return kiwi_raster
-
-
-def doKiwiGrowth(kiwi_raster, stoat_raster, params, mask, 
-        rodent_raster_kiwi, nHectInRodent, kiwiRecDecay_1D, 
-        kiwiSurvDecay_1D, mth):
-    """
-    ## calc kiwi population growth by pixel
-    """
-###    s = np.exp(-params.kiwiPsi * stoat_raster)
-    # get rodent population and toxic rodents at kiwi resolution
+###    s = np.exp(-params.keaPsi * stoat_raster)
+    # get rodent population and toxic rodents at kea resolution
     # it is rodents per 4 ha because we take the average
 
     ###################################################################
     ###################################################################
-    ## DO THE FOLLOWING ONLY IF STOAT AND KIWI RESOL ARE NOT EQUAL
-###    rodent_raster_kiwi = resampleRasterDown(rodent_raster, 
+    ## DO THE FOLLOWING ONLY IF STOAT AND KEA RESOL ARE NOT EQUAL
+###    rodent_raster_kea = resampleRasterDown(rodent_raster, 
 ###                mask.shape, statMethod = RESAMPLE_AVERAGE)
-###    rodentsPerHect = rodent_raster_kiwi / nHectInRodent
+###    rodentsPerHect = rodent_raster_kea / nHectInRodent
 
     ###################################################################
     ###################################################################
@@ -822,53 +825,84 @@ def doKiwiGrowth(kiwi_raster, stoat_raster, params, mask,
 ###    CS = s * c
     ###################################################################
     ###################################################################
+    
+    stoat_raster_kea = resampleRasterDown(stoat_raster, mask.shape, 
+                       statMethod = RESAMPLE_SUM, pixelRescale = 1)
 
     ## MAKE 1-D ARRAYS FOR POPULATION UPDATE
-    kiwi_t = kiwi_raster[mask]
-    stoat_t = stoat_raster[mask]
-    ## KIWI POPN DYNAMICS
-    seasRec = params.kiwiSeasRec[mth]
-    pSurv = params.kiwiSurv * np.exp(-((kiwi_t/(kiwiSurvDecay_1D))**params.kiwiTheta))
-    recRate = (seasRec * params.kiwiProd *np.exp(-((kiwi_t/(kiwiRecDecay_1D))**params.kiwiTheta))
-               * np.exp(-params.kiwiPsi * stoat_t))
-    kiwi_t = kiwi_t* pSurv * (1 + recRate) 
+    kea0_t = kea_raster[0,mask]
+    kea1_t = kea_raster[1,mask]
+    kea2_t = kea_raster[2,mask]
+    kea3_t = kea_raster[3,mask]
+    kea4_t = kea_raster[4,mask]
+    keaN_t = kea_raster[5,mask]
+    stoat_t = stoat_raster_kea[mask]
+    ## KEA POPN DYNAMICS    
+    
+    pSurv = params.keaSurv[0] * np.exp(-((keaN_t/(keaSurvDecay_1D))**params.keaTheta))
+    kea0_t = rng.binomial(kea0_t, pSurv)
+    pSurv = params.keaSurv[1] * np.exp(-((keaN_t/(keaSurvDecay_1D))**params.keaTheta))
+    kea1_t = rng.binomial(kea1_t, pSurv)
+    pSurv = params.keaSurv[2] * np.exp(-((keaN_t/(keaSurvDecay_1D))**params.keaTheta))
+    kea2_t = rng.binomial(kea2_t, pSurv)
+    pSurv = params.keaSurv[3] * np.exp(-((keaN_t/(keaSurvDecay_1D))**params.keaTheta))
+    kea3_t = rng.binomial(kea3_t, pSurv)
+    pSurv = params.keaSurv[4] * np.exp(-((keaN_t/(keaSurvDecay_1D))**params.keaTheta))
+    kea4_t = rng.binomial(kea4_t, pSurv)
+    seasRec = params.keaSeasRec[mth]
+    recRate = (seasRec * params.keaProd *np.exp(-((keaN_t/(keaRecDecay_1D))**params.keaTheta))
+               * np.exp(-params.keaPsi * stoat_t))
+    kea0_t = kea0_t + rng.poisson(kea4_t * recRate) #fledglings get added to zero age class 
+    keaN_t = kea0_t + kea1_t + kea2_t + kea3_t + kea4_t  #sum to get total popn
  
+    #shouldn't need to do this if drawing from binomial and poisson??
     ## ADD STOCHASTICITY GAUSSIAN PROCESS
-    # Eqn. 38
-    kiwi_t = np.exp(np.random.normal(np.log(kiwi_t + 1.0), 
-                params.kiwiPopSD)) - 1.0
-    ## FIX UP INAPPROPRIATE VALUES
-    kiwi_raster[mask] = np.round(kiwi_t, 0).astype(int)
-    kiwi_raster = np.where(kiwi_raster < 0, 0, kiwi_raster)
-    kiwi_raster[~mask] = 0
-    ## RETURN KIWI RASTER
-    return(kiwi_raster)
+    # # Eqn. 38
+    # kea_t = np.exp(np.random.normal(np.log(kea_t + 1.0), 
+    #             params.keaPopSD)) - 1.0
+    # ## FIX UP INAPPROPRIATE VALUES
+    # kea_raster[mask] = np.round(kea_t, 0).astype(int)
+    # kea_raster = np.where(kea_raster < 0, 0, kea_raster)
+    # kea_raster[~mask] = 0
+    
+    kea_raster[0,mask]=kea0_t
+    kea_raster[1,mask]=kea1_t
+    kea_raster[2,mask]=kea2_t
+    kea_raster[3,mask]=kea3_t
+    kea_raster[4,mask]=kea4_t
+    kea_raster[5,mask]=keaN_t
+    kea_raster[:,~mask]=0
+    
+    # ## RETURN KEA RASTER
+    return(kea_raster)
 
 
-def doKiwiDispersal(rawdata, kiwi_raster, params, mask, kiwiEmigrationWindowSizePxls):
+def doKeaDispersal(rawdata, kea_raster, params, mask, keaEmigrationWindowSizePxls):
     # First Emigrants out of each cell
     # Eqn 43
     ## EMIGRATION
-    probKiwiEmigrate = np.zeros_like(kiwi_raster)
-    probKiwiEmigrate[mask] = (1.0 - np.exp(-params.gammaProbEmigrate[2] * 
-                kiwi_raster[mask] / rawdata.kiwiCorrectionK[mask]))
+    keaDispRaster = kea_raster[0,:,:]
+    probKeaEmigrate = np.zeros_like(keaDispRaster)
+    probKeaEmigrate[mask] = (1.0 - np.exp(-params.gammaProbEmigrate[2] * 
+                keaDispRaster[mask] / rawdata.keaCorrectionK[mask]))
     # Eqn 42
-    kiwi_emigrant_raster = np.random.binomial(kiwi_raster, probKiwiEmigrate)
+    kea_emigrant_raster = rng.binomial(keaDispRaster, probKeaEmigrate)
 
 
     # Eqn 44-46
     ## IMMIGRATION
-    kiwi_immigrant_raster = calcImmigration(kiwi_emigrant_raster, 
-        kiwiEmigrationWindowSizePxls, params.deltaImmigrate[2], mask, 
-        params.resolutions[2], kiwi_raster, params.gammaProbEmigrate[2], 
-        rawdata.kiwiCorrectionK, params.tauImmigrate[2], rawdata.kiwiKDummy)
+    kea_immigrant_raster = calcImmigration(kea_emigrant_raster, 
+        keaEmigrationWindowSizePxls, params.deltaImmigrate[2], mask, 
+        params.resolutions[2], keaDispRaster, params.gammaProbEmigrate[2], 
+        rawdata.keaCorrectionK, params.tauImmigrate[2], rawdata.keaKDummy)
 
 
     ## POPULATE RASTERS
     # Eqn. 47
-    kiwi_raster += kiwi_immigrant_raster
-    kiwi_raster -= kiwi_emigrant_raster
-    return kiwi_raster
+    keaDispRaster += kea_immigrant_raster
+    keaDispRaster -= kea_emigrant_raster
+    kea_raster[0,:,:]=keaDispRaster
+    return kea_raster
 
 
 def doMasting(rawdata, params, distArray, halfwinsize, beechMask):
@@ -1058,27 +1092,28 @@ def getRodentMaskForFile(rodentControlList, shpFile):
 
 def populateResultArrays(loopIter, mastingMask, schedControlMask, rodent_raster, 
         rodentExtentMask, rodentControlList, rodentAreaDictByMgmt, rodentDensity_2D,
-        stoat_raster, stoatExtentMask, stoatAreaDictByMgmt, stoatDensity_2D,
-        kiwi_raster, kiwiExtentMask, kiwiSpatialDictByMgmt, kiwiAreaDictByMgmt, 
-        kiwiDensity_2D, popAllYears_3D, year, year_all, keepYear):
+        stoat_raster, stoatExtentMask, stoatSpatialDictByMgmt,stoatAreaDictByMgmt, 
+        stoatDensity_2D, kea_raster, keaExtentMask, keaSpatialDictByMgmt, keaAreaDictByMgmt, 
+        keaDensity_2D, popAllYears_3D, year, year_all, keepYear):
     """
     ## Populate storage arrays
     """
     ## loop thru management areas (includes a key for total area)
     # NB: using sorted() keys to ensure the relation between i and key
     # is always consistent (might already be - not sure)
-    for i, key in enumerate(sorted(kiwiSpatialDictByMgmt.keys())):
+    for i, key in enumerate(sorted(keaSpatialDictByMgmt.keys())):
         # for each control area, and for the entire area, calculate the mean proportion of
-            # of kiwi_KMap that is in kiwi_raster, excluding kmap values == 0.
+            # of kea_KMap that is in kea_raster, excluding kmap values == 0.
 
-        ### (1) DO KIWIS
-        mgmtMask = kiwiSpatialDictByMgmt[key]               #mask kiwi cells in mgmt zone
-        ### KIWI DENSITY
-        sppMgmtMask = mgmtMask & kiwiExtentMask            # kiwi habitat in mgmt zone
-        sppDensity = np.sum(kiwi_raster[sppMgmtMask]) / kiwiAreaDictByMgmt[key]
-        kiwiDensity_2D[i, year_all] = sppDensity        
+        ### (1) DO KEAS
+        mgmtMask = keaSpatialDictByMgmt[key]               #mask kea cells in mgmt zone
+        ### KEA DENSITY
+        sppMgmtMask = mgmtMask & keaExtentMask            # kea habitat in mgmt zone
+        sppDensity = np.sum(kea_raster[5,sppMgmtMask]) / keaAreaDictByMgmt[key]
+        keaDensity_2D[i, year_all] = sppDensity        
 
-        ### (2) DO STOAT DENSITY  - use kiwi mgmtMask
+        ### (2) DO STOAT DENSITY 
+        mgmtMask = stoatSpatialDictByMgmt[key]               #mask stoat cells in mgmt zone
         sppMgmtMask = mgmtMask & stoatExtentMask            # stoat habitat in mgmt zone
         sppDensity = np.sum(stoat_raster[sppMgmtMask]) / stoatAreaDictByMgmt[key]
         stoatDensity_2D[i, year_all] = sppDensity        
@@ -1097,30 +1132,31 @@ def populateResultArrays(loopIter, mastingMask, schedControlMask, rodent_raster,
         popAllYears_3D['ControlT'][year] = schedControlMask
         popAllYears_3D['rodentDensity'][year] = rodent_raster
         popAllYears_3D['stoatDensity'][year] = stoat_raster
-        popAllYears_3D['kiwiDensity'][year] = kiwi_raster
+        popAllYears_3D['keaDensity'][year] = kea_raster[5,:,:]
 
 def populateResultDensity(rodent_raster, rodentExtentMask, rodentControlList, 
         rodentAreaDictByMgmt, rodentDensity_2D_mth, stoat_raster, stoatExtentMask, 
-        stoatAreaDictByMgmt, stoatDensity_2D_mth, kiwi_raster, kiwiExtentMask, 
-        kiwiSpatialDictByMgmt, kiwiAreaDictByMgmt, kiwiDensity_2D_mth, tMth):
+        stoatSpatialDictByMgmt, stoatAreaDictByMgmt, stoatDensity_2D_mth, kea_raster, 
+        keaExtentMask, keaSpatialDictByMgmt, keaAreaDictByMgmt, keaDensity_2D_mth, tMth):
     """
     ## Populate storage arrays
     """
     ## loop thru management areas (includes a key for total area)
     # NB: using sorted() keys to ensure the relation between i and key
     # is always consistent (might already be - not sure)
-    for i, key in enumerate(sorted(kiwiSpatialDictByMgmt.keys())):
+    for i, key in enumerate(sorted(keaSpatialDictByMgmt.keys())):
         # for each control area, and for the entire area, calculate the mean proportion of
-            # of kiwi_KMap that is in kiwi_raster, excluding kmap values == 0.
+            # of kea_KMap that is in kea_raster, excluding kmap values == 0.
 
-        ### (1) DO KIWIS
-        mgmtMask = kiwiSpatialDictByMgmt[key]               #mask kiwi cells in mgmt zone
-        ### KIWI DENSITY
-        sppMgmtMask = mgmtMask & kiwiExtentMask            # kiwi habitat in mgmt zone
-        sppDensity = np.sum(kiwi_raster[sppMgmtMask]) / kiwiAreaDictByMgmt[key]
-        kiwiDensity_2D_mth[i, tMth] = sppDensity        
+        ### (1) DO KEAS
+        mgmtMask = keaSpatialDictByMgmt[key]               #mask kea cells in mgmt zone
+        ### KEA DENSITY
+        sppMgmtMask = mgmtMask & keaExtentMask            # kea habitat in mgmt zone
+        sppDensity = np.sum(kea_raster[5,sppMgmtMask]) / keaAreaDictByMgmt[key]
+        keaDensity_2D_mth[i, tMth] = sppDensity        
 
-        ### (2) DO STOAT DENSITY  - use kiwi mgmtMask
+        ### (2) DO STOAT DENSITY  
+        mgmtMask = stoatSpatialDictByMgmt[key]               #mask stoat cells in mgmt zone
         sppMgmtMask = mgmtMask & stoatExtentMask            # stoat habitat in mgmt zone
         sppDensity = np.sum(stoat_raster[sppMgmtMask]) / stoatAreaDictByMgmt[key]
         stoatDensity_2D_mth[i, tMth] = sppDensity        

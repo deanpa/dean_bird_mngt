@@ -12,8 +12,8 @@ from scipy.stats.mstats import mquantiles
 import pylab
 from wand.image import Image
 from wand.drawing import Drawing
-from kiwimodelMthlyTS import calcresults
-from kiwimodelMthlyTS import preProcessing
+from modelScripts import calcresults
+from modelScripts import preProcessing
 
 
 #########################################
@@ -25,13 +25,13 @@ from kiwimodelMthlyTS import preProcessing
 x =1
 
 # resize to this percent for each rodent image
-# stoat and kiwi resizes are calculated from this
+# stoat and kea resizes are calculated from this
 RODENT_RESIZE_PERCENT = 30 
 
 # these may need tweaking
 RODENT_DENSITY_RANGE = (0.0, 80.0)
 STOAT_DENSITY_RANGE = (0.0, 8.0)
-KIWI_DENSITY_RANGE = (0.0, 18.0)
+KEA_DENSITY_RANGE = (0.0, 18.0)
 
 # used for creating colour images of the densities
 COLOUR_TABLE = 'colourtable.npy'
@@ -46,20 +46,20 @@ FRAMERATE = 0.5
 
 COLOUR_RAMP_FRACTION = 0.1 # of the image width
 
-## NUMBER OF YEARS OVER WHICH CALC KIWI ANN GROWTH RATE
+## NUMBER OF YEARS OVER WHICH CALC KEA ANN GROWTH RATE
 annGrowthYears = 5
 
 
 
 def processResults():
     ### Output data path to write graphs, imagees and movies
-    outputDataPath = os.path.join(os.getenv('KIWIPROJDIR', default='.'), 
-            'KiwiProjResults', 'modC_Results')
+    outputDataPath = os.path.join(os.getenv('KEAPROJDIR', default='.'), 
+            'modelResults', 'modC_Results')
     ## movie file path name
     movieFName = os.path.join(outputDataPath, 'results.wmv')
 
     resultsDataPath = os.path.join(outputDataPath, 'results.pkl')
-    results = calcresults.KiwiResults.unpickleFromFile(resultsDataPath)
+    results = calcresults.KeaResults.unpickleFromFile(resultsDataPath)
 
 
 
@@ -72,13 +72,13 @@ def processResults():
     # get the names of the control areas. Maybe they should be
     # in the results so we don't have to??
     preProcessDataPath = os.path.join(outputDataPath, 'preProcData.pkl')
-    data = preProcessing.KiwiData.unpickleFromFile(preProcessDataPath)
+    data = preProcessing.KeaData.unpickleFromFile(preProcessDataPath)
 
     # first, do the plots
-    doTimeSeriesPlots(results, sorted(data.kiwiSpatialDictByMgmt.keys()), outputDataPath)
-    doMthlyTimeSeriesPlots(results, sorted(data.kiwiSpatialDictByMgmt.keys()), outputDataPath)
+    doTimeSeriesPlots(results, sorted(data.keaSpatialDictByMgmt.keys()), outputDataPath)
+    doMthlyTimeSeriesPlots(results, sorted(data.keaSpatialDictByMgmt.keys()), outputDataPath)
 ###    # first, do the plots
-###    doKiwiPlots(results, sorted(data.kiwiControlDictByMgmt.keys()), outputDataPath)
+###    doKeaPlots(results, sorted(data.keaControlDictByMgmt.keys()), outputDataPath)
 
     ## MAKE TABLE OF CONTROL COUNTS; MEANS AND 95% CI
     controlCountTable(results, outputDataPath)
@@ -124,7 +124,7 @@ def makeMovie(results, movieFName, outputDataPath):
     controlPNG = os.path.join(tempDir, 'controlMask.png')
     rodentPNG = os.path.join(tempDir, 'rodentDensity.png')
     stoatPNG = os.path.join(tempDir, 'stoatDensity.png')
-    kiwiPNG = os.path.join(tempDir, 'kiwiDensity.png')
+    keaPNG = os.path.join(tempDir, 'keaDensity.png')
 
     for yearn in range(len(params.years)):
         yearName = params.years[yearn]
@@ -152,21 +152,21 @@ def makeMovie(results, movieFName, outputDataPath):
         makeColourMapPNG(tempDir, stoatDensity, stoatPNG, 'Stoats', 
             stoatResizePercent, STOAT_DENSITY_RANGE)
 
-        kiwiDensity = popMovie['kiwiDensity'][yearn]
-#        print('kiwiDensity', kiwiDensity.min(), kiwiDensity.max())
+        keaDensity = popMovie['keaDensity'][yearn]
+#        print('keaDensity', keaDensity.min(), keaDensity.max())
 
         # fudge
-        kiwiResizePercent = ((rodentDensity.shape[0] / kiwiDensity.shape[0]) 
+        keaResizePercent = ((rodentDensity.shape[0] / keaDensity.shape[0]) 
                     * RODENT_RESIZE_PERCENT)
-        makeColourMapPNG(tempDir, kiwiDensity, kiwiPNG, 'Kiwi', 
-                kiwiResizePercent, KIWI_DENSITY_RANGE)
+        makeColourMapPNG(tempDir, keaDensity, keaPNG, 'Kea', 
+                keaResizePercent, KEA_DENSITY_RANGE)
 
         # make the frame with all the inputs
         frameDataPath = os.path.join(outputDataPath, thisFramePNG)
         # subprocess.check_call(['montage', mastingPNG, controlPNG, 
-        #         rodentPNG, stoatPNG, kiwiPNG,'-geometry', 
+        #         rodentPNG, stoatPNG, keaPNG,'-geometry', 
         #         '+2+2', frameDataPath])
-        filesList =  [mastingPNG, controlPNG, rodentPNG, stoatPNG, kiwiPNG]
+        filesList =  [mastingPNG, controlPNG, rodentPNG, stoatPNG, keaPNG]
         newfig = Image()
         for fname in filesList:        
             with Image(filename=fname) as img:
@@ -183,9 +183,9 @@ def makeMovie(results, movieFName, outputDataPath):
     # tidy up
     shutil.rmtree(tempDir)
 
-def doKiwiPlots(results, controlKeys, outputDataPath):
+def doKeaPlots(results, controlKeys, outputDataPath):
 
-    nAreas, nYears = results[0].kiwiPropKMap_2D.shape
+    nAreas, nYears = results[0].keaPropKMap_2D.shape
     nIterations = len(results)
     print('nIterations', nIterations)
     # go through the management zones and plot
@@ -197,7 +197,7 @@ def doKiwiPlots(results, controlKeys, outputDataPath):
         for year in range(nYears):
             dataThisYear = []
             for iter in range(nIterations):
-                val = results[iter].kiwiPropKMap_2D[i, year]
+                val = results[iter].keaPropKMap_2D[i, year]
                 dataThisYear.append(val)
 
             mean = np.mean(dataThisYear)
@@ -215,7 +215,7 @@ def doTimeSeriesPlots(results, controlKeys, outputDataPath):
     rodentResol = results[0].params.resolutions[0]
     # number of hectares in a rodent pixel
     nHectInRodent = (rodentResol / 100.0)**2
-    nAreas, nYears = results[0].kiwiDensity_2D.shape
+    nAreas, nYears = results[0].keaDensity_2D.shape
     mngtYears = nYears - burnin
     annGrowYearsStop = burnin + annGrowthYears - 1
     annGrowYears = np.min([annGrowthYears, mngtYears])
@@ -229,46 +229,46 @@ def doTimeSeriesPlots(results, controlKeys, outputDataPath):
     # go through the management zones and plot
     for i, key in enumerate(controlKeys):
         # this ended up easier than stacking 
-        kiwiMeansAllYears = []
-        kiwiQuantsAllYears = []
+        keaMeansAllYears = []
+        keaQuantsAllYears = []
         stoatMeansAllYears = []
         stoatQuantsAllYears = []
         rodentMeansAllYears = []
         rodentQuantsAllYears = []
         for year in range(nYears):
-            kiwiDataThisYear = []
+            keaDataThisYear = []
             stoatDataThisYear = []
             rodentDataThisYear = []
             for iter in range(nIterations):
                 ## POPULATE 1-D LISTS
-                val = results[iter].kiwiDensity_2D[i, year]
-                kiwiDataThisYear.append(val)
+                val = results[iter].keaDensity_2D[i, year]
+                keaDataThisYear.append(val)
                 val = results[iter].stoatDensity_2D[i, year]
                 stoatDataThisYear.append(val)
                 val = results[iter].rodentDensity_2D[i, year] / nHectInRodent
                 rodentDataThisYear.append(val)
-            kiwiMeansAllYears.append(np.mean(kiwiDataThisYear))
-            kiwiQuantsAllYears.append(mquantiles(kiwiDataThisYear, prob=[0.025, 0.975]))
+            keaMeansAllYears.append(np.mean(keaDataThisYear))
+            keaQuantsAllYears.append(mquantiles(keaDataThisYear, prob=[0.025, 0.975]))
             stoatMeansAllYears.append(np.mean(stoatDataThisYear))
             stoatQuantsAllYears.append(mquantiles(stoatDataThisYear, prob=[0.025, 0.975]))
             rodentMeansAllYears.append(np.mean(rodentDataThisYear))
             rodentQuantsAllYears.append(mquantiles(rodentDataThisYear, prob=[0.025, 0.975]))
             ## FOR CALCULATION OF POPULATION CHANGE FOR TABLE
             if year == burnin:
-                kiwiChange = np.array(kiwiDataThisYear).copy()
+                keaChange = np.array(keaDataThisYear).copy()
 
             if year == annGrowYearsStop:
                 ## ANNUAL PROPORTION GROWTH            
-                annualPercGrow = np.log(kiwiDataThisYear / kiwiChange) / annGrowYears
+                annualPercGrow = np.log(keaDataThisYear / keaChange) / annGrowYears
 
             if year == (nYears - 1):
-                deltaPop = kiwiDataThisYear - kiwiChange
+                deltaPop = keaDataThisYear - keaChange
                 probIncrease = np.sum(deltaPop > 0.0) / nIterations
-                kiwiChange = deltaPop / kiwiChange
+                keaChange = deltaPop / keaChange
     
         popChangeArray[i][0] = os.path.basename(key)
-        popChangeArray[i][1] = np.mean(kiwiChange)
-        quants = mquantiles(kiwiChange, prob=[0.025, 0.975])
+        popChangeArray[i][1] = np.mean(keaChange)
+        quants = mquantiles(keaChange, prob=[0.025, 0.975])
         popChangeArray[i][2] = quants[0]
         popChangeArray[i][3] = quants[1]
 
@@ -280,11 +280,11 @@ def doTimeSeriesPlots(results, controlKeys, outputDataPath):
         popChangeArray[i][6] = quants[1]
 
         popChangeArray[i][7] = probIncrease
-        doAreaPlot(i, key, kiwiMeansAllYears, kiwiQuantsAllYears, 
+        doAreaPlot(i, key, keaMeansAllYears, keaQuantsAllYears, 
                 stoatMeansAllYears, stoatQuantsAllYears, 
                 rodentMeansAllYears, rodentQuantsAllYears, outputDataPath, burnin)
 #    print('popChange', popChangeArray)
-    tableFilePathName = os.path.join(outputDataPath, 'percentKiwiChange.csv')
+    tableFilePathName = os.path.join(outputDataPath, 'percentKeaChange.csv')
     np.savetxt(tableFilePathName, popChangeArray, 
         fmt=['%s', '%.4f', '%.4f', '%.4f', '%.4f', '%.4f', '%.4f', '%.4f'],
         comments = '', delimiter=',', 
@@ -294,8 +294,8 @@ def doMthlyTimeSeriesPlots(results, controlKeys, outputDataPath):
     rodentResol = results[0].params.resolutions[0]
     # number of hectares in a rodent pixel
     nHectInRodent = (rodentResol / 100.0)**2
-    nYrs = results[0].kiwiDensity_2D.shape[1]
-    nAreas, nMths = results[0].kiwiDensity_2D_mth.shape
+    nYrs = results[0].keaDensity_2D.shape[1]
+    nAreas, nMths = results[0].keaDensity_2D_mth.shape
     nIterations = len(results)
     decYrs=np.linspace(start=0, stop=(nMths/12),endpoint=False,num=nMths)
     area =[]
@@ -306,39 +306,39 @@ def doMthlyTimeSeriesPlots(results, controlKeys, outputDataPath):
     MeanStoats = np.empty((0),dtype=float)
     StoatsLow_CI =np.empty((0),dtype=float)
     StoatsHigh_CI = np.empty((0),dtype=float)
-    MeanKiwi = np.empty((0),dtype=float)
-    KiwiLow_CI = np.empty((0),dtype=float)
-    KiwiHigh_CI = np.empty((0),dtype=float)
+    MeanKea = np.empty((0),dtype=float)
+    KeaLow_CI = np.empty((0),dtype=float)
+    KeaHigh_CI = np.empty((0),dtype=float)
     
     # go through the management zones and plot
     for i, key in enumerate(controlKeys):
         # this ended up easier than stacking 
-        kiwiMeansAllMths = []
-        kiwiQuantsAllMths = []
+        keaMeansAllMths = []
+        keaQuantsAllMths = []
         stoatMeansAllMths = []
         stoatQuantsAllMths = []
         rodentMeansAllMths = []
         rodentQuantsAllMths = []
         for mth in range(nMths):
-            kiwiDataThisMth = []
+            keaDataThisMth = []
             stoatDataThisMth = []
             rodentDataThisMth = []
             for iter in range(nIterations):
                 ## POPULATE 1-D LISTS
-                val = results[iter].kiwiDensity_2D_mth[i, mth]
-                kiwiDataThisMth.append(val)
+                val = results[iter].keaDensity_2D_mth[i, mth]
+                keaDataThisMth.append(val)
                 val = results[iter].stoatDensity_2D_mth[i, mth]
                 stoatDataThisMth.append(val)
                 val = results[iter].rodentDensity_2D_mth[i, mth] / nHectInRodent
                 rodentDataThisMth.append(val)
-            kiwiMeansAllMths.append(np.mean(kiwiDataThisMth))
-            kiwiQuantsAllMths.append(mquantiles(kiwiDataThisMth, prob=[0.025, 0.975]))
+            keaMeansAllMths.append(np.mean(keaDataThisMth))
+            keaQuantsAllMths.append(mquantiles(keaDataThisMth, prob=[0.025, 0.975]))
             stoatMeansAllMths.append(np.mean(stoatDataThisMth))
             stoatQuantsAllMths.append(mquantiles(stoatDataThisMth, prob=[0.025, 0.975]))
             rodentMeansAllMths.append(np.mean(rodentDataThisMth))
             rodentQuantsAllMths.append(mquantiles(rodentDataThisMth, prob=[0.025, 0.975]))
     
-        doMthlyAreaPlot(i, key, kiwiMeansAllMths, kiwiQuantsAllMths, 
+        doMthlyAreaPlot(i, key, keaMeansAllMths, keaQuantsAllMths, 
                 stoatMeansAllMths, stoatQuantsAllMths, 
                 rodentMeansAllMths, rodentQuantsAllMths, outputDataPath)
         
@@ -350,20 +350,20 @@ def doMthlyTimeSeriesPlots(results, controlKeys, outputDataPath):
         MeanStoats=np.append(MeanStoats,stoatMeansAllMths,axis=0)
         StoatsLow_CI=np.append(StoatsLow_CI,np.array(stoatQuantsAllMths)[...,0],axis=0)
         StoatsHigh_CI=np.append(StoatsHigh_CI,np.array(stoatQuantsAllMths)[...,1],axis=0)
-        MeanKiwi=np.append(MeanKiwi,kiwiMeansAllMths,axis=0)
-        KiwiLow_CI=np.append(KiwiLow_CI,np.array(kiwiQuantsAllMths)[...,0],axis=0)
-        KiwiHigh_CI=np.append(KiwiHigh_CI,np.array(kiwiQuantsAllMths)[...,1],axis=0)
+        MeanKea=np.append(MeanKea,keaMeansAllMths,axis=0)
+        KeaLow_CI=np.append(KeaLow_CI,np.array(keaQuantsAllMths)[...,0],axis=0)
+        KeaHigh_CI=np.append(KeaHigh_CI,np.array(keaQuantsAllMths)[...,1],axis=0)
 
     tableFilePathName = os.path.join(outputDataPath, 'monthlyDensities.csv')
     with open (tableFilePathName, 'w', newline='') as f:
         headers = ['Area', 'Year','Rodents_Mean','Rodents_LowCI', 'Rodents_HighCI',
-                   'Stoats_Mean','Stoats_LowCI', 'Stoats_HighCI','Kiwi_Mean',
-                   'Kiwi_LowCI', 'Kiwi_HighCI',]
+                   'Stoats_Mean','Stoats_LowCI', 'Stoats_HighCI','Kea_Mean',
+                   'Kea_LowCI', 'Kea_HighCI',]
         writer = csv.writer(f, delimiter=',')
         writer.writerow(headers)
         writer.writerows(zip(area, decimYear, MeanRodents, RodentsLow_CI, 
                              RodentsHigh_CI, MeanStoats, StoatsLow_CI,
-                             StoatsHigh_CI, MeanKiwi, KiwiLow_CI, KiwiHigh_CI))
+                             StoatsHigh_CI, MeanKea, KeaLow_CI, KeaHigh_CI))
 
 
 def controlCountTable(results, outputDataPath):
@@ -521,22 +521,22 @@ def makeColourMapPNG(tempDir, density, fname, title, resizePercent, densityRange
     os.remove(rampPNG)
 
 
-def doAreaPlot(i, key, kiwiMeansAllYears, kiwiQuantsAllYears, 
+def doAreaPlot(i, key, keaMeansAllYears, keaQuantsAllYears, 
                 stoatMeansAllYears, stoatQuantsAllYears, 
                 rodentMeansAllYears, rodentQuantsAllYears, outputDataPath, burnin):
-    kiwiQuantsAllYears = np.array(kiwiQuantsAllYears)
+    keaQuantsAllYears = np.array(keaQuantsAllYears)
     stoatQuantsAllYears = np.array(stoatQuantsAllYears)
     rodentQuantsAllYears = np.array(rodentQuantsAllYears)
 
     pylab.figure(figsize = (11,9))
     pylab.subplot(3,1,3)
-    pylab.plot(kiwiMeansAllYears, linewidth=4, color = 'k')
-    pylab.plot(kiwiQuantsAllYears[..., 0], linewidth=1, color = 'k')
-    pylab.plot(kiwiQuantsAllYears[..., 1], linewidth=1, color = 'k')
-    YMAX = np.max(kiwiQuantsAllYears[..., 1])
+    pylab.plot(keaMeansAllYears, linewidth=4, color = 'k')
+    pylab.plot(keaQuantsAllYears[..., 0], linewidth=1, color = 'k')
+    pylab.plot(keaQuantsAllYears[..., 1], linewidth=1, color = 'k')
+    YMAX = np.max(keaQuantsAllYears[..., 1])
     pylab.vlines(x = (burnin), ymin = 0, ymax = YMAX, linestyles = 'dashed', colors='k')
     pylab.xlabel('Years', fontsize = 12)
-    pylab.ylabel('Kiwi density \n $(ind. * km^{-2})$', fontsize = 12,
+    pylab.ylabel('Kea density \n $(ind. * km^{-2})$', fontsize = 12,
         rotation = 'horizontal', ha = 'right')
 
     pylab.subplot(3,1,2)
@@ -568,22 +568,22 @@ def doAreaPlot(i, key, kiwiMeansAllYears, kiwiQuantsAllYears,
     pylab.savefig(filePathName)
     pylab.cla()
 
-def doMthlyAreaPlot(i, key, kiwiMeansAllMths, kiwiQuantsAllMths, 
+def doMthlyAreaPlot(i, key, keaMeansAllMths, keaQuantsAllMths, 
                 stoatMeansAllMths, stoatQuantsAllMths, 
                 rodentMeansAllMths, rodentQuantsAllMths, outputDataPath):
-    kiwiQuantsAllMths = np.array(kiwiQuantsAllMths)
+    keaQuantsAllMths = np.array(keaQuantsAllMths)
     stoatQuantsAllMths = np.array(stoatQuantsAllMths)
     rodentQuantsAllMths = np.array(rodentQuantsAllMths)
 
     pylab.figure(figsize = (11,9))
     pylab.subplot(3,1,3)
-    pylab.plot(kiwiMeansAllMths, linewidth=4, color = 'k')
-    pylab.plot(kiwiQuantsAllMths[..., 0], linewidth=1, color = 'k')
-    pylab.plot(kiwiQuantsAllMths[..., 1], linewidth=1, color = 'k')
-    #YMAX = np.max(kiwiQuantsAllMths[..., 1])
+    pylab.plot(keaMeansAllMths, linewidth=4, color = 'k')
+    pylab.plot(keaQuantsAllMths[..., 0], linewidth=1, color = 'k')
+    pylab.plot(keaQuantsAllMths[..., 1], linewidth=1, color = 'k')
+    #YMAX = np.max(keaQuantsAllMths[..., 1])
     #pylab.vlines(x = (burnin), ymin = 0, ymax = YMAX, linestyles = 'dashed', colors='k')
     pylab.xlabel('Months', fontsize = 12)
-    pylab.ylabel('Kiwi density \n $(ind. * km^{-2})$', fontsize = 12,
+    pylab.ylabel('Kea density \n $(ind. * km^{-2})$', fontsize = 12,
         rotation = 'horizontal', ha = 'right')
 
     pylab.subplot(3,1,2)
@@ -623,7 +623,7 @@ def doPlot(i, key, meansAllYears, quantsAllYears, outputDataPath):
     pylab.plot(quantsAllYears[..., 0], linewidth=1)
     pylab.plot(quantsAllYears[..., 1], linewidth=1)
     pylab.xlabel('Years')
-    pylab.ylabel('Kiwi proportion of kiwi_KMap')
+    pylab.ylabel('Kea proportion of kea_KMap')
     title = os.path.basename(key)
     pylab.title(title)
 

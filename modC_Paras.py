@@ -2,33 +2,44 @@
 
 import os
 import numpy as np
-from kiwimodelMthlyTS import params
-from kiwimodelMthlyTS  import preProcessing
-#from kiwimodel import diagnosticSim
+from modelScripts import params
+from modelScripts  import preProcessing
+#from keamodel import diagnosticSim
 
-pars = params.KiwiParams()
+pars = params.KeaParams()
 
 # set paths to scripts and data
-pars.inputDataPath = os.path.join(os.getenv('KIWIPROJDIR', default='.'), 'kiwi_data')
-pars.outputDataPath = os.path.join(os.getenv('KIWIPROJDIR', default='.'), 
-                'KiwiProjResults', 'modC_Results')
+pars.inputDataPath = os.path.join(os.getenv('KEAPROJDIR', default='.'), 'modelInputData')
+pars.outputDataPath = os.path.join(os.getenv('KEAPROJDIR', default='.'), 
+                'modelResults', 'modC_Results')
 if not os.path.isdir(pars.outputDataPath):
     os.mkdir(pars.outputDataPath)
 
-### SET DATA AND PATHS TO DIRECTORIES
-pars.setExtentShapeFile(os.path.join(pars.inputDataPath, 'FiordlandConArea.shp'))
-pars.setKClasses(os.path.join(pars.inputDataPath, 'seeds_RmIs_EqualBeech.img'))       #'seeds_RmIslands.img'))    
+# ### SET DATA AND PATHS TO DIRECTORIES
+# pars.setExtentShapeFile(os.path.join(pars.inputDataPath, 'FiordlandConArea.shp'))
+# pars.setKClasses(os.path.join(pars.inputDataPath, 'seeds_RmIs_EqualBeech.img'))       #'seeds_RmIslands.img'))    
+# ### Area trapped in recent times.
+# pars.setIslands(os.path.join(pars.inputDataPath, 'EmsTraps.tif'))
+# pars.setDEM(os.path.join(pars.inputDataPath, 'dem.tif'))
+# pars.setResolutions((200.0, 1000.0, 2000.0))
+# pars.setControlFile(os.path.join(pars.inputDataPath, 'control8.csv')) # control3 is effectively no control (st yr set to 100)
+# pars.setControlPathPrefix(pars.inputDataPath)
+# pars.setSeasAdjResFile(os.path.join(pars.inputDataPath, 'mastLUpTable.csv'))
+### SET DATA AND PATHS TO DIRECTORIES - dummy/simplified landscape
+pars.setExtentShapeFile(os.path.join(pars.inputDataPath, 'extentDummy.shp'))
+pars.setKClasses(os.path.join(pars.inputDataPath, 'kClassesDummy.grd'))       #'seeds_RmIslands.img'))    
 ### Area trapped in recent times.
-pars.setIslands(os.path.join(pars.inputDataPath, 'EmsTraps.tif'))
-pars.setDEM(os.path.join(pars.inputDataPath, 'dem.tif'))
-pars.setResolutions((200.0, 1000.0, 1000.0))
-pars.setControlFile(os.path.join(pars.inputDataPath, 'control8.csv')) # control3 is effectively no control (st yr set to 100)
+pars.setIslands(os.path.join(pars.inputDataPath, 'trapsDummy.tif'))
+pars.setDEM(os.path.join(pars.inputDataPath, 'DEMdummy.tif'))
+pars.setResolutions((200.0, 1000.0, 2000.0))
+pars.setControlFile(os.path.join(pars.inputDataPath, 'controlDummy.csv')) # control3 is effectively no control (st yr set to 100)
 pars.setControlPathPrefix(pars.inputDataPath)
 pars.setSeasAdjResFile(os.path.join(pars.inputDataPath, 'mastLUpTable.csv'))
 
+
 ### SET YEARS AND BURN IN YEARS
-pars.setBurnin(10)
-pars.setYears(np.arange(20))
+pars.setBurnin(1)
+pars.setYears(np.arange(15))
 ### SET ITERATIONS
 pars.setIterations(10)
 print('iterations:', pars.iter)
@@ -98,28 +109,27 @@ pars.setStoatTheta(1)
 pars.setStoatSeasRec([0,0,0,1.,1.,1.,0,0,0,0,0,0])
 pars.setStoatSeasDisp([0,0,0,1,1,1,0,0,0,0,0,0]) #disperse Dec-Feb
 
-### Kiwi parameters
-#pars.setKiwiK(20)
-pars.setPKiwiPresence(0.68)
-pars.setKiwiInitialMultiplier(0.3)
-pars.setKiwiPsi(0.7)  
+### Kea parameters
+#pars.setKeaK(20)
+pars.setPKeaPresence(0.68)
+pars.setKeaInitialMultiplier(0.3)
+pars.setKeaPsi(0.7)  
 pars.setCompetitionEffect(0.000)    #0.004    
-#pars.setKiwiGrowthRate(.10)
-pars.setKiwiPopSD(.12)
+#pars.setKeaGrowthRate(.10)
+pars.setKeaPopSD(.12)
 
+## NEW KEA PARAMETERS
+pars.setKeaSurv([0.972,0.992,0.995,0.995,0.997])
+pars.setKeaSurvDDcoef(110)
+pars.setInitialKeaN(5.0)   
+pars.setKeaProd(0.1067)  #0.6
+pars.setKeaRecDDcoef(10.0)
+pars.setKeaTheta(2)
+pars.setKeaSeasRec([0,0,0.5,0.8,1.,0.8,0.5,0.3,0.1,0,0,0]) #egg laying July-Jan with peak in Sept therefore peak recruitment (+4mths) in Jan
+pars.setKeaSeasDisp([0,0,0,0,1,1,1,0,0,0,0,0]) #disperse Jan-May
+pars.setKeaInitAgeStr([0.3,0.1,0.1,0.1,0.4])
 
-
-## NEW KIWI PARAMETERS
-pars.setKiwiSurv(0.9913)
-pars.setKiwiSurvDDcoef(110)
-pars.setInitialKiwiN(5.0)   
-pars.setKiwiProd(0.1067)  #0.6
-pars.setKiwiRecDDcoef(10.0)
-pars.setKiwiTheta(2)
-pars.setKiwiSeasRec([0,1.,1.,1.,1.,1.,1.,0,0,0,0,0])
-pars.setKiwiSeasDisp([0,0,0,1,1,1,1,0,0,0,0,0]) #disperse Dec-Mar
-
-data = preProcessing.KiwiData(pars)
+data = preProcessing.KeaData(pars)
 data.pickleSelf(os.path.join(pars.outputDataPath, 'preProcData.pkl'))
 
 

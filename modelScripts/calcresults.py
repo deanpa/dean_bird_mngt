@@ -1,7 +1,7 @@
 
 import pickle
 
-class KiwiResults(object):
+class KeaResults(object):
     """
     Dummy class to take the parameters for the rios
     parallel processing. Needed in a separate module

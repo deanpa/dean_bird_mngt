@@ -4,7 +4,7 @@ import pylab as P
 
 class OnePixelSim(object):
     """
-    Simulate a single pixel at resol of kiwis for diagnosis/evaluation of parameters
+    Simulate a single pixel at resol of keas for diagnosis/evaluation of parameters
     """
     def __init__(self, params):
         self.params = params
@@ -26,7 +26,7 @@ class OnePixelSim(object):
 
     def setInitialPars(self):
         """
-        set initial pop for rodents, stoats and kiwis
+        set initial pop for rodents, stoats and keas
         """
         ## RODENTS
         self.nHectInRodent = (self.params.resolutions[0] / 100.0)**2
@@ -39,9 +39,9 @@ class OnePixelSim(object):
         # Eqn 24    Random stoat population 
         self.stoat = np.random.poisson(self.stoat_K)
 #        self.stoat = np.random.poisson(self.stoat_K * self.params.stoatInitialMultiplier)
-        ## KIWIS
-        ## Get initial kiwi population
-        self.kiwi = np.random.poisson(self.params.kiwiInitialMultiplier * self.params.kiwiK)
+        ## KEAS
+        ## Get initial kea population
+        self.kea = np.random.poisson(self.params.keaInitialMultiplier * self.params.keaK)
         ## YEARS, CONTROL, AND MAST ARRAYS
         self.popArray = np.zeros((3, self.nYears))
         if self.controlType == 'Reactive':
@@ -59,7 +59,7 @@ class OnePixelSim(object):
 
         print('self.nRodentPixels', self.nRodentPixInStoat, 'ha in rod', self.nHectInRodent)
         print('Initial rodent', self.rodent, 'rodent per ha', self.rodent / 4.0, 'stoat K', self.stoat_K, 
-            'stoat', self.stoat, 'kiwi', self.kiwi)
+            'stoat', self.stoat, 'kea', self.kea)
 
     def getStoatK(self):
         """
@@ -110,8 +110,8 @@ class OnePixelSim(object):
             self.doStoatGrowth(mast_T1, mast_T2, i)
 #            print('i', i, 'mast_T1', mast_T1, 'mast_T2', mast_T2, 'rodent_N', self.rodent, 
 #                    'stoat_K', self.stoat_K, 'stoat N', self.stoat)
-            ## KIWI GROWTH
-            self.doKiwiGrowth(i)
+            ## KEA GROWTH
+            self.doKeaGrowth(i)
 
             ## UPDATE MASTING HISTORY
             mast_T2 = mast_T1
@@ -200,31 +200,31 @@ class OnePixelSim(object):
         self.popArray[1, i] = self.stoat
 
 
-    def doKiwiGrowth(self, i):
+    def doKeaGrowth(self, i):
         """
-        ## KIWI POPULATION GROWS
+        ## KEA POPULATION GROWS
         """
-        ## IF KIWI = 0; ALLOW FOR IMMIGRATION
-        if self.kiwi == 0:
-            self.kiwi = np.random.binomial(2, .3)
+        ## IF KEA = 0; ALLOW FOR IMMIGRATION
+        if self.kea == 0:
+            self.kea = np.random.binomial(2, .3)
 
         # Eqn 32
-###        r_kt = (self.params.kiwiGrowthRange[0] + np.exp(-self.params.kiwiPsi * self.stoat) * 
-###                    (self.params.kiwiGrowthRange[1] - self.params.kiwiGrowthRange[0]))
-        s = np.exp(-self.params.kiwiPsi * self.stoat)
+###        r_kt = (self.params.keaGrowthRange[0] + np.exp(-self.params.keaPsi * self.stoat) * 
+###                    (self.params.keaGrowthRange[1] - self.params.keaGrowthRange[0]))
+        s = np.exp(-self.params.keaPsi * self.stoat)
 
         # Eqn 34
-        mu_kt = (self.kiwi * np.exp(0.1 * (1.0 - (self.kiwi / self.params.kiwiK))) * s)
-#        mu_kt = (self.kiwi * np.exp(r_kt * (1.0 - (self.kiwi / self.params.kiwiK))))
-#        mu_kt = (self.kiwi * np.exp(r_kt) * 
-#                np.exp(-self.kiwiDampen * self.kiwi / self.params.kiwiK))
+        mu_kt = (self.kea * np.exp(0.1 * (1.0 - (self.kea / self.params.keaK))) * s)
+#        mu_kt = (self.kea * np.exp(r_kt * (1.0 - (self.kea / self.params.keaK))))
+#        mu_kt = (self.kea * np.exp(r_kt) * 
+#                np.exp(-self.keaDampen * self.kea / self.params.keaK))
         
-#        print('Before Kiwi growth', self.kiwi, 'stoat', self.stoat, 'r', r_kt, 'mu', mu_kt)
+#        print('Before Kea growth', self.kea, 'stoat', self.stoat, 'r', r_kt, 'mu', mu_kt)
 
         # Eqn 31
-        self.kiwi = np.random.poisson(mu_kt)
-#        print('i', i, 's', s, 'mu_kt', mu_kt, 'After Kiwi growth', self.kiwi)
-        self.popArray[2, i] = self.kiwi
+        self.kea = np.random.poisson(mu_kt)
+#        print('i', i, 's', s, 'mu_kt', mu_kt, 'After Kea growth', self.kea)
+        self.popArray[2, i] = self.kea
 
     def plotResults(self):
         """
@@ -247,7 +247,7 @@ class OnePixelSim(object):
                 label = 'Stoats density $(individuals * km^{-2})$')        
         lns2 = tuple(lns2)        
         lns3 = ax1.plot(years, self.popArray[2], color = 'b', linewidth = 3.0, 
-                label = 'Kiwis density $(individuals * km^{-2})$')
+                label = 'Keas density $(individuals * km^{-2})$')
         lns3 = tuple(lns3)        
         lns4 = ax1.plot(years, self.mastArray , 'gD',  
             markerfacecolor = 'g', ms = 10, mew = 1.5)
@@ -258,7 +258,7 @@ class OnePixelSim(object):
         ax1.legend([lns1, lns2, lns3, lns4, lns5],
             ['Rats density $(individuals * ha^{-1})$',
             'Stoats density $(individuals * km^{-2})$',
-            'Kiwis density $(individuals * km^{-2})$',
+            'Keas density $(individuals * km^{-2})$',
             'Masting event',
             '1080 control applied'],
             loc = 'upper left')        

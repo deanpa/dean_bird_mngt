@@ -44,7 +44,7 @@ rat.writeColumn(outputs.newlcdb, "Masts", [0, 0, 0, 0, 0, 1, 1])
 
 
 #   command line call:
-#   ./addlowbeechclass.py $POFPROJDIR/kiwi_data/lcdbINDX.img $POFPROJDIR/kiwi_data/dem.tif $POFPROJDIR/kiwi_data/islandSecRes.tif $POFPROJDIR/kiwi_data/rodentK.img
+#   ./makeSeedDensity.py $POFPROJDIR/kiwi_data/lcdbINDX.img $POFPROJDIR/kiwi_data/dem.tif $POFPROJDIR/kiwi_data/islandSecRes.tif $POFPROJDIR/kiwi_data/rodentK.img
 
 
 # ./addlowbeechclass.py $POFPROJDIR/kiwi_data/lcdbINDX.img $POFPROJDIR/kiwi_data/dem.tif $POFPROJDIR/kiwi_data/islandSecRes.tif $POFPROJDIR/kiwi_data/preBurninK.img $POFPROJDIR/kiwi_data/postBurninK.img

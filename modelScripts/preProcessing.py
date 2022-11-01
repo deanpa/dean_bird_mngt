@@ -324,8 +324,7 @@ class KeaData(object):
                     ctrlMth = int(ctrlMth)
                     revisit = int(revisit)
 
-                    if self.params.controlPathPrefix is not None:
-                        shpFile = os.path.join(self.params.controlPathPrefix, shpFile)
+                    shpFile = os.path.join(self.params.inputdatapath, shpFile)
 
                     # check we already have this one resampled
                     # if so - just grab it.
@@ -390,8 +389,7 @@ class KeaData(object):
                 if len(row) == 4:
                     shpFile, startYear, ctrlMth, revisit = row
         
-                    if self.params.controlPathPrefix is not None:
-                        shpFile = os.path.join(self.params.controlPathPrefix, shpFile)
+                    shpFile = os.path.join(self.params.inputdatapath, shpFile)
 
                     if shpFile not in keaSpatialDict:
                         # we haven't come accross this one before
@@ -445,8 +443,7 @@ class KeaData(object):
                 if len(row) == 4:
                     shpFile, startYear, ctrlMth, revisit = row
         
-                    if self.params.controlPathPrefix is not None:
-                        shpFile = os.path.join(self.params.controlPathPrefix, shpFile)
+                    shpFile = os.path.join(self.params.inputdatapath, shpFile)
 
                     if shpFile not in stoatSpatialDict:
                         # we haven't come accross this one before

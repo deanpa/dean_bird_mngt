@@ -12,44 +12,54 @@ class PreyParams(object):
         #########   SET THE SCENARIO    ######################
         self.species = species      # Species set in command line
         self.scenario = scenario    # 1,2,3,4 number set in command line
-        print('Params ########## Scenario: ', self.scenario, 'Species', self.species)
+        print('############################')
+        print('Species:    ', self.species)
+        print('Scenario:   ', self.scenario) 
         ######################################################
 
         ### SET YEARS AND BURN IN YEARS
         self.burnin = 1
-        self.years = np.arange(15)
+        self.years = np.arange(4)
         ### SET ITERATIONS
         self.iter = 10
-        print('Iterations:', self.iter)
-        print('Burnin:', self.burnin)
-        print('Years:', len(self.years))
+        print('Iterations: ', self.iter)
+        print('Burnin:     ', self.burnin)
+        print('Years:      ', len(self.years))
+        print('############################')
+
+        ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
+        self.firstRun = True        # True or False
+        ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
+        self.summariseFullExtent = False
 
         # SET PATHS TO DATA AND RESULTS
-        self.inputDataPath = os.path.join(os.getenv('KIWIPROJDIR', default='.'), 'SpeciesProjects',
-                species, 'Data')
+        self.inputDataPath = os.path.join(os.getenv('KIWIPROJDIR', default='.'), 
+                'SpeciesProjects', self.species, 'Data')
         scenDir = 'Scen' + str(self.scenario) + self.species
         self.outputDataPath = os.path.join(os.getenv('KIWIPROJDIR', default='.'), 
-                'SpeciesProjects', species, 'Results', scenDir)
+                'SpeciesProjects', self.species, 'Results', scenDir)
 
         # ### SET DATA AND PATHS TO DIRECTORIES
-        # self.setExtentShapeFile(os.path.join(self.inputDataPath, 'FiordlandConArea.shp'))
-        # self.setKClasses(os.path.join(self.inputDataPath, 'seeds_RmIs_EqualBeech.img'))       #'seeds_RmIslands.img'))    
-        # ### Area trapped in recent times.
-        # self.setIslands(os.path.join(self.inputDataPath, 'EmsTraps.tif'))
-        # self.setDEM(os.path.join(self.inputDataPath, 'dem.tif'))
-        # self.setResolutions((200.0, 1000.0, 2000.0))
-        # self.setControlFile(os.path.join(self.inputDataPath, 'control8.csv')) # control3 is effectively no control (st yr set to 100)
-        # self.setSeasAdjResFile(os.path.join(self.inputDataPath, 'mastLUpTable.csv'))
-        ### SET DATA AND PATHS TO DIRECTORIES - dummy/simplified landscape
-        self.extentShp = os.path.join(self.inputDataPath, 'extentDummy.shp')
+        self.extentShp = os.path.join(self.inputDataPath, 'fullExtent.shp')
         self.AOIShp = os.path.join(self.inputDataPath, 'Kea_Model_Region3.shp')
-        self.KClasses = os.path.join(self.inputDataPath, 'kClassesDummy.grd')       #'seeds_RmIslands.img'))    
+        self.KClasses = os.path.join(self.inputDataPath, 'seed_Kea.img')       #'seeds_RmIslands.img'))    
         ### Area trapped in recent times.
-        self.islands = os.path.join(self.inputDataPath, 'trapsDummy.tif')
-        self.DEM = os.path.join(self.inputDataPath, 'DEMdummy.tif')
+        self.islands = os.path.join(self.inputDataPath, 'stoatTrappingRaster.img')
+        self.DEM = os.path.join(self.inputDataPath, 'dem200_kea.img')
+        self.preyHabitatShp = os.path.join(self.inputDataPath, 'Kea_Habitat.shp')
         self.resolutions = (200.0, 1000.0, 2000.0)
-        self.controlFile = os.path.join(self.inputDataPath, 'controlDummy.csv') # control3 is effectively no control (st yr set to 100)
+        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
         self.seasAdjResFile = os.path.join(self.inputDataPath, 'mastLUpTable.csv')
+#        ### SET DATA AND PATHS TO DIRECTORIES - dummy/simplified landscape
+#        self.extentShp = os.path.join(self.inputDataPath, 'fullExtent.shp')
+#        self.AOIShp = os.path.join(self.inputDataPath, 'Kea_Model_Region3.shp')
+#        self.KClasses = os.path.join(self.inputDataPath, 'kClassesDummy.grd')       #'seeds_RmIslands.img'))    
+#        ### Area trapped in recent times.
+#        self.islands = os.path.join(self.inputDataPath, 'trapsDummy.tif')
+#        self.DEM = os.path.join(self.inputDataPath, 'dem_region3.tif')
+#        self.resolutions = (200.0, 1000.0, 2000.0)
+#        self.controlFile = os.path.join(self.inputDataPath, 'controlDummy.csv') # control3 is effectively no control (st yr set to 100)
+#        self.seasAdjResFile = os.path.join(self.inputDataPath, 'mastLUpTable.csv')
 
         # Control parameters
         # proportion of zone in mast required for reactive control
@@ -128,7 +138,7 @@ class PreyParams(object):
         self.preyProd = 0.1067
         self.preyRecDDcoef = 10.00
         self.preyTheta = 2
-        self.preySeasRec = [0,0,0.5,0.8,1.,0.8,0.5,0.3,0.1,0,0,0]) #egg laying July-Jan with peak in Sept therefore peak recruitment (+4mths) in Jan
+        self.preySeasRec = np.array([0,0,0.5,0.8,1.,0.8,0.5,0.3,0.1,0,0,0]) #egg laying July-Jan with peak in Sept therefore peak recruitment (+4mths) in Jan
         self.preySeasDisp = np.array([0,0,0,1,1,1,1,0,0,0,0,0], dtype=bool) #disperse Dec-Mar
         self.preyInitAgeStr = np.array([0.3,0.1,0.1,0.1,0.4], dtype=float)
         self.preyMaxAltitude = 2000.0  # metres

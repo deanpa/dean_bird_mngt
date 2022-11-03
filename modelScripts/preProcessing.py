@@ -20,7 +20,7 @@ NZTM_WKT = sr.ExportToWkt()
 class FormatError(Exception):
     "Was unable to read the format"
 
-class KeaData(object):
+class PreyData(object):
     """
     Holds the data used for the model run. This is calculated from 
     the parameters. Use the pickleSelf() method to save this to a pickle.
@@ -34,7 +34,7 @@ class KeaData(object):
             self.rasterizeShape(self.params.extentShp, self.params.resolutions[0]))
         self.rodentExtentMask = originalExtent > 0
 
-        # do the other extentMasks (stoats and keas)
+        # do the other extentMasks (stoats and preys)
         self.stoatGeoTrans, self.stoatNcols, self.stoatNrows, stoatMask = (
             self.rasterizeShape(self.params.extentShp, self.params.resolutions[1]))
 
@@ -45,11 +45,29 @@ class KeaData(object):
         self.kClasses = self.resampleRasterRodent(self.params.kClasses, self.params.resolutions[0],
                     GDTMethod = gdal.GDT_UInt16, GRAMethod = gdal.GRA_NearestNeighbour)
 
-        self.keaGeoTrans, self.keaNcols, self.keaNrows, keaMask = (
-            self.rasterizeShape(self.params.extentShp, self.params.resolutions[2]))
 
 
-        print('keanrows', self.keaNcols, self.keaNrows, type(self.keaNrows))
+
+
+    ## TODO: MAY VARY THIS IF READ IN EXTENT OR HABITAT MAP.
+        # READ IN AT RODENT RESOL AND PREY RESOL
+        # COUNT PROP OF RODENT RESOL PIXELS ARE IN EACH PREY-RESOL PIXEL FOR K CORRECTION
+        # IF PROPORTION IS > 0, THEN MASK = TRUE FOR PREY
+        # CONSIDER GETTING EXT TYPE WITH os.path.splitext(PATHFILENAME)[1]
+
+
+
+
+#        self.preyGeoTrans, self.preyNcols, self.preyNrows, preyMask = (
+#            self.rasterizeShape(self.params.extentShp, self.params.resolutions[2]))
+        self.preyGeoTrans, self.preyNcols, self.preyNrows, preyMask = (
+            self.rasterizeShape(self.params.preyHabitatShp, self.params.resolutions[2]))
+
+
+
+
+
+        print('preynrows', self.preyNcols, self.preyNrows, type(self.preyNrows))
 
 
         # add the self.rodentMaxAltitude to the self.rodentExtentMask
@@ -74,11 +92,26 @@ class KeaData(object):
 ####        # remove rodents from Resolution and Secretary islands
 ####        self.rodentExtentMask[self.rodentIslandMask] = 0
 
-        # get keaCorrectionK to scale pixels near water or high elevation
-        self.keaCorrectionK = scaleKeaMask(self.params.resolutions[0], 
-            self.params.resolutions[2], self.keaNcols, self.keaNrows,
-            self.DEM, originalExtent, self.params.keaMaxAltitude)
-        self.keaExtentMask = self.keaCorrectionK > 0.0
+
+
+
+
+
+## TODO: VARY THIS IF HAVE SHAPE OR RASTER FOR HABITAT MAP
+
+
+        # get preyCorrectionK to scale pixels near water or high elevation
+        self.preyCorrectionK = scalePreyMask(self.params.resolutions[0], 
+            self.params.resolutions[2], self.preyNcols, self.preyNrows,
+            self.DEM, originalExtent, self.params.preyMaxAltitude)
+        self.preyExtentMask = self.preyCorrectionK > 0.0
+
+
+
+
+
+
+
 
         (self.stoatExtentMask, self.stoatPercentArea) = (
             scaleStoatMask(self.params.resolutions[0], 
@@ -89,17 +122,17 @@ class KeaData(object):
 
 
         self.rodentPercentArea = np.where(self.rodentExtentMask, 1.0, 0)
-        self.keaKDummy = np.where(self.keaExtentMask, 1.0, 0)
+        self.preyKDummy = np.where(self.preyExtentMask, 1.0, 0)
 
-        ## KEA K MAP FOR SENSITIVITY TEST
-        # self.keaKMap = getKeaKMap(self.keaNcols, self.keaNrows,  
-        #     self.keaCorrectionK, self.keaExtentMask, self.params.keaSurv, 
-        #     self.params.keaSurvDecay, self.params.keaRecDecay,
-        #     self.params.keaProd)
-        self.keaKMap = getKeaKMap(self.keaNcols, self.keaNrows,  
-            self.keaCorrectionK, self.keaExtentMask, self.params.keaSurv, 
-            self.params.keaSurvDDcoef, self.params.keaRecDDcoef,
-            self.params.keaProd, self.params.keaTheta)
+        ## PREY K MAP FOR SENSITIVITY TEST
+        # self.preyKMap = getPreyKMap(self.preyNcols, self.preyNrows,  
+        #     self.preyCorrectionK, self.preyExtentMask, self.params.preySurv, 
+        #     self.params.preySurvDecay, self.params.preyRecDecay,
+        #     self.params.preyProd)
+        self.preyKMap = getPreyKMap(self.preyNcols, self.preyNrows,  
+            self.preyCorrectionK, self.preyExtentMask, self.params.preySurv, 
+            self.params.preySurvDDcoef, self.params.preyRecDDcoef,
+            self.params.preyProd, self.params.preyTheta)
 
         kMapDS = gdal.Open(self.params.kClasses)
         ### MASK FOR CELLS THAT CAN MAST????
@@ -126,21 +159,21 @@ class KeaData(object):
 
         
         driver = gdal.GetDriverByName('HFA')
-        ds = driver.Create('KeaCorrectTemp.img', self.keaNcols, self.keaNrows, 
+        ds = driver.Create('PreyCorrectTemp.img', self.preyNcols, self.preyNrows, 
                 1, gdal.GDT_Float32)
         ds.SetProjection(NZTM_WKT)
-        ds.SetGeoTransform(self.keaGeoTrans)
+        ds.SetGeoTransform(self.preyGeoTrans)
         band = ds.GetRasterBand(1)
-        band.WriteArray(self.keaCorrectionK)
+        band.WriteArray(self.preyCorrectionK)
         del ds
 
         driver = gdal.GetDriverByName('HFA')
-        ds = driver.Create('keaExtentMaskTemp.img', self.stoatNcols, self.stoatNrows, 
+        ds = driver.Create('preyExtentMaskTemp.img', self.stoatNcols, self.stoatNrows, 
                 1, gdal.GDT_Byte)
         ds.SetProjection(NZTM_WKT)
         ds.SetGeoTransform(self.stoatGeoTrans)
         band = ds.GetRasterBand(1)
-        band.WriteArray(self.keaExtentMask)
+        band.WriteArray(self.preyExtentMask)
         del ds
      
         driver = gdal.GetDriverByName('GTiff')
@@ -181,7 +214,7 @@ class KeaData(object):
 #        print('pixelsInControlAndBeechMask', self.pixelsInControlAndBeechMask)
 
 
-        (self.keaSpatialDictByMgmt, self.keaAreaDictByMgmt) = self.readAndResampleControlForKeas()
+        (self.preySpatialDictByMgmt, self.preyAreaDictByMgmt) = self.readAndResampleControlForpreys()
 
         (self.stoatSpatialDictByMgmt, self.stoatAreaDictByMgmt) = self.readAndResampleControlForStoats()
 
@@ -212,7 +245,7 @@ class KeaData(object):
         xmax = np.ceil(x1 / self.params.resolutions[1]) * self.params.resolutions[1]
         ymin = np.floor(y0 / self.params.resolutions[1]) * self.params.resolutions[1]
         ymax = np.ceil(y1 / self.params.resolutions[1]) * self.params.resolutions[1]
-        # # changed to kea since they have the larger resolution???? but then no data for edges
+        # # changed to prey since they have the larger resolution???? but then no data for edges
         # xmin = np.floor(x0 / self.params.resolutions[2]) * self.params.resolutions[2]
         # xmax = np.ceil(x1 / self.params.resolutions[2]) * self.params.resolutions[2]
         # ymin = np.floor(y0 / self.params.resolutions[2]) * self.params.resolutions[2]
@@ -318,8 +351,8 @@ class KeaData(object):
                     firstRow = False
                     continue
 
-                if len(row) == 4:
-                    shpFile, startYear, ctrlMth, revisit = row
+                if len(row) == 5:
+                    shpFile, startYear, ctrlMth, revisit, controlIndicator, = row
                     startYear = int(startYear)
                     ctrlMth = int(ctrlMth)
                     revisit = int(revisit)
@@ -364,18 +397,18 @@ class KeaData(object):
 #        print('rodentAreaDict', rodentAreaDict)
         return(controlList, rodentAreaDict, pixelsInControlAndBeechMask, controlAndBeechMask)
 
-    def readAndResampleControlForKeas(self):
+    def readAndResampleControlForPreys(self):
         """
         Similar to readAndResampleControlForRodents() above, but 
-        resamples to Kea resolution and returns a dictionary
+        resamples to Prey resolution and returns a dictionary
         keyed on the original shape file name so that analysis
         can be performed on each management area.
         """
-        keaSpatialDict = {}  # keyed on file name
-        keaAreaDict = {}
+        preySpatialDict = {}  # keyed on file name
+        preyAreaDict = {}
         # work out the extent to use
-        x0, y1 = gdal.ApplyGeoTransform(self.keaGeoTrans, 0, 0)
-        x1, y0 = gdal.ApplyGeoTransform(self.keaGeoTrans, self.keaNcols, self.keaNrows)
+        x0, y1 = gdal.ApplyGeoTransform(self.preyGeoTrans, 0, 0)
+        x1, y0 = gdal.ApplyGeoTransform(self.preyGeoTrans, self.preyNcols, self.preyNrows)
         extent = [x0, x1, y0, y1]
 
         firstRow = True
@@ -391,7 +424,7 @@ class KeaData(object):
         
                     shpFile = os.path.join(self.params.inputdatapath, shpFile)
 
-                    if shpFile not in keaSpatialDict:
+                    if shpFile not in preySpatialDict:
                         # we haven't come accross this one before
                         if not os.path.exists(shpFile):
                             raise IOError("Cannot find file %s" % shpFile)
@@ -401,22 +434,22 @@ class KeaData(object):
                                     self.params.resolutions[2], extent=extent)
                         except FormatError:
                             # must be a raster input
-                            data = self.resampleRaster(self.keaGeoTrans, self.keaNcols,
-                                        self.keaNrows, shpFile, self.params.resolutions[2],
+                            data = self.resampleRaster(self.preyGeoTrans, self.preyNcols,
+                                        self.preyNrows, shpFile, self.params.resolutions[2],
                                         GDTMethod = gdal.GDT_UInt16,
                                         GRAMethod = gdal.GRA_NearestNeighbour)
                         mask = (data == 1)
-                        ### POPULATE kea and stoatAreaDict with km-sq in each mgmt zone
-                        keaAreaDict[shpFile] = np.sum(data * self.keaCorrectionK)
+                        ### POPULATE prey and stoatAreaDict with km-sq in each mgmt zone
+                        preyAreaDict[shpFile] = np.sum(data * self.preyCorrectionK)
                         # store it
-                        keaSpatialDict[shpFile] = mask.copy()
+                        preySpatialDict[shpFile] = mask.copy()
 
         # put in a special key = 'ALL' that contains the extent mask
         # to make it easier when doing the stats
-        keaSpatialDict['ALL'] = self.keaExtentMask
-        keaAreaDict['ALL'] = np.sum(self.keaExtentMask * self.keaCorrectionK)
+        preySpatialDict['ALL'] = self.preyExtentMask
+        preyAreaDict['ALL'] = np.sum(self.preyExtentMask * self.preyCorrectionK)
 
-        return(keaSpatialDict, keaAreaDict)
+        return(preySpatialDict, preyAreaDict)
 
     def readAndResampleControlForStoats(self):
         """
@@ -486,46 +519,46 @@ class KeaData(object):
         return data
 
 @jit
-def scaleKeaMask(rodentResol, keaResol, keaNcols, keaNrows,
-        DEM, originalExtent, keaMaxElev):
+def scalePreyMask(rodentResol, preyResol, preyNcols, preyNrows,
+        DEM, originalExtent, preyMaxElev):
     """
-    Calc proportion of pixels at rodent resolution that are suitable for kea
+    Calc proportion of pixels at rodent resolution that are suitable for prey
     """
-    # number of rodent cells in one row within a kea cell
-    oldPixPerNewPix = int(keaResol / rodentResol)
-    # total number of rodent cells in one kea cell
+    # number of rodent cells in one row within a prey cell
+    oldPixPerNewPix = int(preyResol / rodentResol)
+    # total number of rodent cells in one prey cell
     ncells = (oldPixPerNewPix)**2.0
     # new array to populate
-    keaCorrectionK = np.zeros((keaNrows, keaNcols))
-    # loop thru kea raster to populate
-    for keaY in range(keaNrows):
-        for keaX in range(keaNcols):
-            keaTotal = 0.0
-            oldx = keaX * oldPixPerNewPix
-            oldy = keaY * oldPixPerNewPix
+    preyCorrectionK = np.zeros((preyNrows, preyNcols))
+    # loop thru prey raster to populate
+    for preyY in range(preyNrows):
+        for preyX in range(preyNcols):
+            preyTotal = 0.0
+            oldx = preyX * oldPixPerNewPix
+            oldy = preyY * oldPixPerNewPix
             for x in range(oldPixPerNewPix):
                 for y in range(oldPixPerNewPix):
                     addY = oldy + y
                     addX = oldx + x
-                    ## get scale for kea
-                    if DEM[addY, addX] <= keaMaxElev:
-                        keaTotal += originalExtent[addY, addX]
-            keaCorrectionK[keaY, keaX] = keaTotal / ncells
-    return(keaCorrectionK)
+                    ## get scale for prey
+                    if DEM[addY, addX] <= preyMaxElev:
+                        preyTotal += originalExtent[addY, addX]
+            preyCorrectionK[preyY, preyX] = preyTotal / ncells
+    return(preyCorrectionK)
 
 def scaleStoatMask(rodentResol, stoatResol, stoatNcols, stoatNrows,
         DEM, originalExtent, stoatMaxElev, rodentExtentForStoats):
     """
     Calc proportion of pixels at rodent resolution that are suitable for stoats
     """
-    # number of rodent cells in one row within a kea cell
+    # number of rodent cells in one row within a prey cell
     oldPixPerNewPix = int(stoatResol / rodentResol)
-    # total number of rodent cells in one kea cell
+    # total number of rodent cells in one prey cell
     ncells = (oldPixPerNewPix)**2.0
     # new array to populate
     stoatPercentArea = np.zeros((stoatNrows, stoatNcols))            # use to calc density in mgmt
     stoatExtentMask = np.zeros((stoatNrows, stoatNcols), np.uint8)
-    # loop thru kea raster to populate
+    # loop thru prey raster to populate
     for stoatY in range(stoatNrows):
         for stoatX in range(stoatNcols):
             stoatTotal = 0.0
@@ -539,7 +572,7 @@ def scaleStoatMask(rodentResol, stoatResol, stoatNcols, stoatNrows,
                     if DEM[addY, addX] <= stoatMaxElev:
                         stoatTotal += originalExtent[addY, addX]
                     ## get count of rodent cells for stoats
-#                    if stoatExtentMask[keaY, keaX] == 1:
+#                    if stoatExtentMask[preyY, preyX] == 1:
 #                        continue
                     # if rodent present in stoat pixel then indicate
                     if rodentExtentForStoats[addY, addX]:
@@ -549,26 +582,26 @@ def scaleStoatMask(rodentResol, stoatResol, stoatNcols, stoatNrows,
 
 
 @jit(nopython=True)
-# def getKeaKMap(keaNcols, keaNrows, keaCorrectionK,
-#         keaExtentMask, keaSurv, keaSurvDecay, keaRecDecay, keaProd):
-def getKeaKMap(keaNcols, keaNrows, keaCorrectionK,
-        keaExtentMask, keaSurv, keaSurvDDcoef, keaRecDDcoef, keaProd, keaTheta):
+# def getPreyKMap(preyNcols, preyNrows, preyCorrectionK,
+#         preyExtentMask, preySurv, preySurvDecay, preyRecDecay, preyProd):
+def getPreyKMap(preyNcols, preyNrows, preyCorrectionK,
+        preyExtentMask, preySurv, preySurvDDcoef, preyRecDDcoef, preyProd, preyTheta):
     """
-    ## MAKE KEA EQUILIBRIUM POP DENSITY BY PIXEL FOR SENSITIVITY TEST
+    ## MAKE PREY EQUILIBRIUM POP DENSITY BY PIXEL FOR SENSITIVITY TEST
     """
-    kea_KMap = np.zeros((keaNrows, keaNcols))
+    prey_KMap = np.zeros((preyNrows, preyNcols))
     n0 = 10.0
-    # loop thru kea raster to populate
-    for row in range(keaNrows):
-        for col in range(keaNcols):
-            if ~keaExtentMask[row, col]:
+    # loop thru prey raster to populate
+    for row in range(preyNrows):
+        for col in range(preyNcols):
+            if ~preyExtentMask[row, col]:
                 continue
             N = n0
-            prp = keaCorrectionK[row, col]
+            prp = preyCorrectionK[row, col]
             for i in range(15):
-                surv_i= keaSurv[3] * np.exp(-((N/(keaSurvDDcoef*prp))**keaTheta))
+                surv_i= preySurv[3] * np.exp(-((N/(preySurvDDcoef*prp))**preyTheta))
                 NStar = N * surv_i
-                recRate = keaProd *np.exp(-(N/(keaRecDDcoef*prp))**keaTheta)
+                recRate = preyProd *np.exp(-(N/(preyRecDDcoef*prp))**preyTheta)
                 N = (1 + recRate) * NStar
-            kea_KMap[row, col] = N
-    return(kea_KMap)
+            prey_KMap[row, col] = N
+    return(prey_KMap)

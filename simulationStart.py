@@ -20,3 +20,6 @@ params = simulationParams.PreyParams(cmdargs.species, int(cmdargs.scenario))
 
 simulationMain.main(params)
 
+
+## ON COMMAND LINE, RUN SCRIPT LIKE THIS FOR KEA AND SCENARIO 1:
+### ./simulationStart.py --species Kea --scenario 1

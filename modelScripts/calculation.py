@@ -208,16 +208,35 @@ def runModel(rawdata, params=None, loopIter=0):
     prey_raster = (rng.poisson(params.preyInitialMultiplier * params.preyK, 
                             rawdata.preyCorrectionK.shape) * preyPresence )
  
-    stoat_preyIslandMask = resampleRasterDown(stoatIslandMask, rawdata.preyExtentMask.shape, 
-                       statMethod = RESAMPLE_SUM, pixelRescale = 1)
-    adjustPreyIsland = (prey_raster > 3) & stoat_preyIslandMask
+
+### TODO: CORRECT THIS, NOT DOING WHAT INTEND????
+
+
+
+#    stoat_preyIslandMask = resampleRasterDown(stoatIslandMask, rawdata.preyExtentMask.shape, 
+#                       statMethod = RESAMPLE_SUM, pixelRescale = 1)
+
+    adjustPreyIsland = (prey_raster > 3) & stoatIslandMask  #stoat_preyIslandMask
     prey_raster[adjustPreyIsland] = 2
     prey_raster[~rawdata.preyExtentMask] = 0
+
+
+
+    ## ADD AGE STRUCTURE TO EACH PIXEL IN PREY RASTER
     #split prey_raster into diff age classes
+    ## EACH BAND IN 3D RASTER IS AN AGE GROUP (0-4)
     preyByAgeRasts = rng.multinomial(prey_raster, params.preyInitAgeStr)
+    ## ADD THE TOTAL NUMBER IN EACH PIXEL AS A 6TH BAND IN 3D RASTER
     prey_raster = np.concatenate((preyByAgeRasts.transpose(2,0,1),prey_raster.reshape(1,
                         prey_raster.shape[0],prey_raster.shape[1])),axis=0)
     del preyByAgeRasts
+
+
+
+
+
+
+
 
     ## CORRECT PREY RECRUIT AND SURVIVAL PARAMETERS FOR HABITAT AREA
     preyRecDecay_1D = ((params.preyRecDDcoef* 

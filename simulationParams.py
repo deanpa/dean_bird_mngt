@@ -12,9 +12,6 @@ class PreyParams(object):
         #########   SET THE SCENARIO    ######################
         self.species = species      # Species set in command line
         self.scenario = scenario    # 1,2,3,4 number set in command line
-        print('############################')
-        print('Species:    ', self.species)
-        print('Scenario:   ', self.scenario) 
         ######################################################
 
         ### SET YEARS AND BURN IN YEARS
@@ -22,15 +19,22 @@ class PreyParams(object):
         self.years = np.arange(4)
         ### SET ITERATIONS
         self.iter = 10
-        print('Iterations: ', self.iter)
-        print('Burnin:     ', self.burnin)
-        print('Years:      ', len(self.years))
-        print('############################')
-
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
         self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
         self.summariseFullExtent = False
+
+
+        print('############################')
+        print('Species:      ', self.species)
+        print('Scenario:     ', self.scenario) 
+        print('Iterations:   ', self.iter)
+        print('Burnin:       ', self.burnin)
+        print('Years:        ', len(self.years))
+        print('First run:    ', self.firstRun)
+        print('Sum Full ext: ', self.summariseFullExtent)
+        print('############################')
+
 
         # SET PATHS TO DATA AND RESULTS
         self.inputDataPath = os.path.join(os.getenv('KIWIPROJDIR', default='.'), 
@@ -42,12 +46,13 @@ class PreyParams(object):
         # ### SET DATA AND PATHS TO DIRECTORIES
         self.extentShp = os.path.join(self.inputDataPath, 'fullExtent.shp')
         self.AOIShp = os.path.join(self.inputDataPath, 'Kea_Model_Region3.shp')
-        self.KClasses = os.path.join(self.inputDataPath, 'seed_Kea.img')       #'seeds_RmIslands.img'))    
+        self.kClasses = os.path.join(self.inputDataPath, 'seed_Kea.img')    
+
         ### Area trapped in recent times.
         self.islands = os.path.join(self.inputDataPath, 'stoatTrappingRaster.img')
         self.DEM = os.path.join(self.inputDataPath, 'dem200_kea.img')
         self.preyHabitatShp = os.path.join(self.inputDataPath, 'Kea_Habitat.shp')
-        self.resolutions = (200.0, 1000.0, 2000.0)
+        self.resolutions = (200.0, 1000.0, 1000.0)
         self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
         self.seasAdjResFile = os.path.join(self.inputDataPath, 'mastLUpTable.csv')
 #        ### SET DATA AND PATHS TO DIRECTORIES - dummy/simplified landscape
@@ -124,7 +129,7 @@ class PreyParams(object):
         self.stoatMaxAltitude = 1100.0
         
         ## PREY SPECIES PARAMETERS
-#        self.keaK = 20.0
+        self.preyK = 20.0
         self.pPreyPres = 0.68
         self.initialpreyN = 5.0
         self.preyInitialMultiplier = 0.3
@@ -132,7 +137,7 @@ class PreyParams(object):
         self.competEffect = 0.0
         self.preyPopSD = .12
 
-        self.preySurv = [0.982,0.992,0.995,0.995,0.997]
+        self.preySurv = np.array([0.982,0.992,0.995,0.995,0.997])
 
         self.preySurvDDcoef = 110.0
         self.preyProd = 0.1067
@@ -142,6 +147,20 @@ class PreyParams(object):
         self.preySeasDisp = np.array([0,0,0,1,1,1,1,0,0,0,0,0], dtype=bool) #disperse Dec-Mar
         self.preyInitAgeStr = np.array([0.3,0.1,0.1,0.1,0.4], dtype=float)
         self.preyMaxAltitude = 2000.0  # metres
+
+
+        ## IMMIGRATION AND EMIGRATION PARAMETERS
+        self.gammaProbEmigrate = np.array([0.1, 0.2, 0.4])   # gamma for rodent, stoats, 
+                                                    # Eqn 18, 20 and others 
+        self.deltaImmigrate = np.array([0.8, 0.4, 0.05])    # delta (rodents, stoats, keas)
+                                                        # Eqn 20 and others
+        self.tauImmigrate = np.array([0.003, 0.25, 0.0])      # Eqn 18, 20 and others
+                                                 # rate parameter Imm (rodent, stoat, kea)
+        self.emigrationWindowSize = (self.resolutions[0] * 13, 
+                    self.resolutions[1] * 20, self.resolutions[2] * 20) # in metres
+
+
+
 
         ## NUMBER OF YEARS OVER WHICH CALC PREY ANN GROWTH RATE
         self.annGrowthYears = 10

@@ -113,22 +113,23 @@ def main(params):
     ## PREPROCESSING AND RESULTS PICKLE NAMES
     preProcFName = 'preProc_' + params.species + 'Scen' + str(params.scenario) + '.pkl' 
     preProcFName = os.path.join(params.outputDataPath, preProcFName)
+
     resultsFName = 'results_' + params.species + 'Scen' + str(params.scenario) + '.pkl'
     resultsFName = os.path.join(params.outputDataPath, resultsFName)
 
     ## MAKE PARAMS FILE NAME TO COPY TO RESULTS DIRECTORY FOR REFERENCE
-    paramsFName = 'params_' + self.species + 'Scen' + str(self.scenario) + '.py'
+    paramsFName = 'params_' + params.species + 'Scen' + str(params.scenario) + '.py'
     paramsFName = os.path.join(params.outputDataPath, paramsFName)
     shutil.copy('simulationParams.py', paramsFName)
 
     ## IF FIRST RUN, FROM PARAMS SCRIPT, RUN PREPROCESSING, ELSE UNPICKLE
     if params.firstRun:
-        data = preProcessing.preyData(params)
-        data.pickleSelf(os.path.join(pars.outputDataPath, preProcFName))
+        data = preProcessing.PreyData(params)
+        data.pickleSelf(preProcFName)
     else:
         data = preProcessing.PreyData.unpickleFromFile(preProcFName)
 
-####    runMultipleJobs(data, resultsFName)
+    runMultipleJobs(data, resultsFName)
 
 if __name__ == '__main__':
     main()    

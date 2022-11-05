@@ -28,7 +28,8 @@ class PreyData(object):
     def __init__(self, params):
         self.params = params
         
-        self.seasAdjRes = np.genfromtxt(self.params.seasAdjResFile, delimiter=",",names=True)
+        self.seasAdjRes = np.genfromtxt(self.params.seasAdjResFile, delimiter=",",
+            names=True)
 
         self.rodentGeoTrans, self.rodentNcols, self.rodentNrows, originalExtent = (
             self.rasterizeShape(self.params.extentShp, self.params.resolutions[0]))
@@ -42,33 +43,22 @@ class PreyData(object):
         self.DEM = self.resampleRasterRodent(self.params.DEM, self.params.resolutions[0],
                     GDTMethod = gdal.GDT_Float32, GRAMethod = gdal.GRA_Average)
 
-        self.kClasses = self.resampleRasterRodent(self.params.kClasses, self.params.resolutions[0],
-                    GDTMethod = gdal.GDT_UInt16, GRAMethod = gdal.GRA_NearestNeighbour)
+        self.kClasses = self.resampleRasterRodent(self.params.kClasses, 
+            self.params.resolutions[0], GDTMethod = gdal.GDT_UInt16, 
+                    GRAMethod = gdal.GRA_NearestNeighbour)
 
-
-
-
-
-    ## TODO: MAY VARY THIS IF READ IN EXTENT OR HABITAT MAP.
-        # READ IN AT RODENT RESOL AND PREY RESOL
-        # COUNT PROP OF RODENT RESOL PIXELS ARE IN EACH PREY-RESOL PIXEL FOR K CORRECTION
-        # IF PROPORTION IS > 0, THEN MASK = TRUE FOR PREY
-        # CONSIDER GETTING EXT TYPE WITH os.path.splitext(PATHFILENAME)[1]
-
-
-
-
-#        self.preyGeoTrans, self.preyNcols, self.preyNrows, preyMask = (
-#            self.rasterizeShape(self.params.extentShp, self.params.resolutions[2]))
+        ## RASTERISE PREY HABITAT AT PREY RESOLUTION
         self.preyGeoTrans, self.preyNcols, self.preyNrows, preyMask = (
             self.rasterizeShape(self.params.preyHabitatShp, self.params.resolutions[2]))
 
-
-
-
+        ## FINEST RESOLUTION AMONG ALL SPECIES
+        self.finestResol = np.min(self.params.resolutions)
+        ## RASTERISE PREY HABITAT AT FINEST RESOLUTION FOR K CORRECTION
+        (self.preyKCorrGeoTrans, self.preyKCorrNcols, self.preyKCorrNrows, 
+            preyKCorrMask) = self.rasterizeShape(self.params.preyHabitatShp, 
+            self.finestResol)
 
         print('preynrows', self.preyNcols, self.preyNrows, type(self.preyNrows))
-
 
         # add the self.rodentMaxAltitude to the self.rodentExtentMask
         self.rodentExtentMask[self.DEM > self.params.rodentMaxAltitude] = 0
@@ -80,33 +70,27 @@ class PreyData(object):
 
         self.islands[~self.rodentExtentMask] = 0
 
-####        self.rodentIslandMask = (self.islands == 1)
-
         # Use to get stoat areas per zone -- still at rodent resolution 
         self.rodentExtentForStoats = self.rodentExtentMask.copy()
 
         # remove non-habitat from rodentExtentMask -- at rodent resolution
         self.rodentExtentMask[self.kClasses == 0] = 0
 
-
-####        # remove rodents from Resolution and Secretary islands
-####        self.rodentExtentMask[self.rodentIslandMask] = 0
-
-
-
-
-
-
-## TODO: VARY THIS IF HAVE SHAPE OR RASTER FOR HABITAT MAP
-
-
         # get preyCorrectionK to scale pixels near water or high elevation
-        self.preyCorrectionK = scalePreyMask(self.params.resolutions[0], 
-            self.params.resolutions[2], self.preyNcols, self.preyNrows,
-            self.DEM, originalExtent, self.params.preyMaxAltitude)
+        self.preyCorrectionK = scalePreyMask(self.finestResol, self.params.resolutions[2], self.preyNcols, self.preyNrows,
+            self.DEM, preyKCorrMask, self.params.preyMaxAltitude)
+        ## MAKE PREY EXTENT MASK
         self.preyExtentMask = self.preyCorrectionK > 0.0
 
 
+
+## DELETE BELOW IF ABOVE WORKS
+
+#        # get preyCorrectionK to scale pixels near water or high elevation
+#        self.preyCorrectionK = scalePreyMask(self.params.resolutions[0], 
+#            self.params.resolutions[2], self.preyNcols, self.preyNrows,
+#            self.DEM, originalExtent, self.params.preyMaxAltitude)
+#########################
 
 
 
@@ -122,13 +106,8 @@ class PreyData(object):
 
 
         self.rodentPercentArea = np.where(self.rodentExtentMask, 1.0, 0)
-        self.preyKDummy = np.where(self.preyExtentMask, 1.0, 0)
 
         ## PREY K MAP FOR SENSITIVITY TEST
-        # self.preyKMap = getPreyKMap(self.preyNcols, self.preyNrows,  
-        #     self.preyCorrectionK, self.preyExtentMask, self.params.preySurv, 
-        #     self.params.preySurvDecay, self.params.preyRecDecay,
-        #     self.params.preyProd)
         self.preyKMap = getPreyKMap(self.preyNcols, self.preyNrows,  
             self.preyCorrectionK, self.preyExtentMask, self.params.preySurv, 
             self.params.preySurvDDcoef, self.params.preyRecDDcoef,
@@ -145,7 +124,6 @@ class PreyData(object):
         # for assessing tracking tunnel rates in calculation.py
         self.beechMask = self.mastingLU[self.kClasses] & self.rodentExtentForStoats
     
-
 
         """
         driver = gdal.GetDriverByName('HFA')
@@ -214,9 +192,11 @@ class PreyData(object):
 #        print('pixelsInControlAndBeechMask', self.pixelsInControlAndBeechMask)
 
 
-        (self.preySpatialDictByMgmt, self.preyAreaDictByMgmt) = self.readAndResampleControlForpreys()
+        (self.preySpatialDictByMgmt, self.preyAreaDictByMgmt) = (
+            self.readAndResampleControlForPrey())
 
-        (self.stoatSpatialDictByMgmt, self.stoatAreaDictByMgmt) = self.readAndResampleControlForStoats()
+        (self.stoatSpatialDictByMgmt, self.stoatAreaDictByMgmt) = (
+            self.readAndResampleControlForStoats())
 
 #        print('in dict', 'ALL' in self.rodentSpatialDictByMgmt.keys())
 #        print('rodentSpatialDictByMgmt', self.rodentSpatialDictByMgmt.keys())
@@ -357,7 +337,7 @@ class PreyData(object):
                     ctrlMth = int(ctrlMth)
                     revisit = int(revisit)
 
-                    shpFile = os.path.join(self.params.inputdatapath, shpFile)
+                    shpFile = os.path.join(self.params.inputDataPath, shpFile)
 
                     # check we already have this one resampled
                     # if so - just grab it.
@@ -397,7 +377,7 @@ class PreyData(object):
 #        print('rodentAreaDict', rodentAreaDict)
         return(controlList, rodentAreaDict, pixelsInControlAndBeechMask, controlAndBeechMask)
 
-    def readAndResampleControlForPreys(self):
+    def readAndResampleControlForPrey(self):
         """
         Similar to readAndResampleControlForRodents() above, but 
         resamples to Prey resolution and returns a dictionary
@@ -422,7 +402,7 @@ class PreyData(object):
                 if len(row) == 4:
                     shpFile, startYear, ctrlMth, revisit = row
         
-                    shpFile = os.path.join(self.params.inputdatapath, shpFile)
+                    shpFile = os.path.join(self.params.inputDataPath, shpFile)
 
                     if shpFile not in preySpatialDict:
                         # we haven't come accross this one before
@@ -476,7 +456,7 @@ class PreyData(object):
                 if len(row) == 4:
                     shpFile, startYear, ctrlMth, revisit = row
         
-                    shpFile = os.path.join(self.params.inputdatapath, shpFile)
+                    shpFile = os.path.join(self.params.inputDataPath, shpFile)
 
                     if shpFile not in stoatSpatialDict:
                         # we haven't come accross this one before
@@ -519,13 +499,13 @@ class PreyData(object):
         return data
 
 @jit
-def scalePreyMask(rodentResol, preyResol, preyNcols, preyNrows,
-        DEM, originalExtent, preyMaxElev):
+def scalePreyMask(finestResol, preyResol, preyNcols, preyNrows,
+        DEM, preyKCorrMask, preyMaxElev):
     """
-    Calc proportion of pixels at rodent resolution that are suitable for prey
+    Calc proportion of pixels at finest resolution that are suitable for prey
     """
     # number of rodent cells in one row within a prey cell
-    oldPixPerNewPix = int(preyResol / rodentResol)
+    oldPixPerNewPix = int(preyResol / finestResol)
     # total number of rodent cells in one prey cell
     ncells = (oldPixPerNewPix)**2.0
     # new array to populate
@@ -542,9 +522,10 @@ def scalePreyMask(rodentResol, preyResol, preyNcols, preyNrows,
                     addX = oldx + x
                     ## get scale for prey
                     if DEM[addY, addX] <= preyMaxElev:
-                        preyTotal += originalExtent[addY, addX]
+                        preyTotal += preyKCorrMask[addY, addX]
             preyCorrectionK[preyY, preyX] = preyTotal / ncells
     return(preyCorrectionK)
+
 
 def scaleStoatMask(rodentResol, stoatResol, stoatNcols, stoatNrows,
         DEM, originalExtent, stoatMaxElev, rodentExtentForStoats):
@@ -582,8 +563,6 @@ def scaleStoatMask(rodentResol, stoatResol, stoatNcols, stoatNrows,
 
 
 @jit(nopython=True)
-# def getPreyKMap(preyNcols, preyNrows, preyCorrectionK,
-#         preyExtentMask, preySurv, preySurvDecay, preyRecDecay, preyProd):
 def getPreyKMap(preyNcols, preyNrows, preyCorrectionK,
         preyExtentMask, preySurv, preySurvDDcoef, preyRecDDcoef, preyProd, preyTheta):
     """

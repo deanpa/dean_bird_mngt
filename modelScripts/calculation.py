@@ -173,13 +173,33 @@ def runModel(rawdata, params=None, loopIter=0):
             rawdata.stoatExtentMask.shape, statMethod = RESAMPLE_SUM, 
             pixelRescale = haPixelRescale)
 
+
+    print('haPixelRescale', haPixelRescale)
+
+
     # update for islands - stoatIslandPrp is a proportion
     stoatIslandPrp = resampleRasterDown(rawdata.islands, 
             rawdata.stoatExtentMask.shape, statMethod = RESAMPLE_SUM, 
             pixelRescale = islandPixRescale)
     stoatIslandMask = stoatIslandPrp > 0
+
+
+    
+    print('##### shapes', stoatIslandPrp.shape, stoatIslandMask.shape, rawdata.stoatExtentMask.shape)
+
+
+    print('islandPixRescale', islandPixRescale)
+
+
+
+
     ## ARRAY OF RODENT DENSITY (PER HA) IN TRAPPED AREAS; SCALED FOR RODENT HABITAT
-    stoatIslandKArray = params.islandK * (stoatIslandPrp[stoatIslandMask]) 
+    stoatIslandKArray = params.islandK * (stoatIslandPrp[stoatIslandMask])
+
+
+    print('stoatIslandKArray shape', stoatIslandKArray.shape)
+
+ 
     ## ASSIGN NOTIONAL RODENT DENSITY TO ISLANDS
     rodent_raster_stoat[stoatIslandMask] = stoatIslandKArray
     # ## MAKE RODENT RASTER FOR t-lag
@@ -215,6 +235,9 @@ def runModel(rawdata, params=None, loopIter=0):
 
 #    stoat_preyIslandMask = resampleRasterDown(stoatIslandMask, rawdata.preyExtentMask.shape, 
 #                       statMethod = RESAMPLE_SUM, pixelRescale = 1)
+
+    print('SHAPES', prey_raster.shape, stoatIslandMask.shape)
+
 
     adjustPreyIsland = (prey_raster > 3) & stoatIslandMask  #stoat_preyIslandMask
     prey_raster[adjustPreyIsland] = 2

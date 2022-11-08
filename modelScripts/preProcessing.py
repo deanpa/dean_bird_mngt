@@ -58,8 +58,6 @@ class PreyData(object):
             preyKCorrMask) = self.rasterizeShape(self.params.preyHabitatShp, 
             self.finestResol)
 
-        print('preynrows', self.preyNcols, self.preyNrows, type(self.preyNrows))
-
         # add the self.rodentMaxAltitude to the self.rodentExtentMask
         self.rodentExtentMask[self.DEM > self.params.rodentMaxAltitude] = 0
 

@@ -16,9 +16,9 @@ class PreyParams(object):
 
         ### SET YEARS AND BURN IN YEARS
         self.burnin = 1
-        self.years = np.arange(4)
+        self.years = np.arange(1)
         ### SET ITERATIONS
-        self.iter = 10
+        self.iter = 1
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
         self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
@@ -52,7 +52,6 @@ class PreyParams(object):
         self.islands = os.path.join(self.inputDataPath, 'stoatTrappingRaster.img')
         self.DEM = os.path.join(self.inputDataPath, 'dem200_kea.img')
         self.preyHabitatShp = os.path.join(self.inputDataPath, 'Kea_Habitat.shp')
-        self.resolutions = (200.0, 1000.0, 1000.0)
         self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
         self.seasAdjResFile = os.path.join(self.inputDataPath, 'mastLUpTable.csv')
 #        ### SET DATA AND PATHS TO DIRECTORIES - dummy/simplified landscape
@@ -65,6 +64,9 @@ class PreyParams(object):
 #        self.resolutions = (200.0, 1000.0, 2000.0)
 #        self.controlFile = os.path.join(self.inputDataPath, 'controlDummy.csv') # control3 is effectively no control (st yr set to 100)
 #        self.seasAdjResFile = os.path.join(self.inputDataPath, 'mastLUpTable.csv')
+
+        ## RESOLUTION (RATS, STOATS, PREY)
+        self.resolutions = (200.0, 1000.0, 1000.0)
 
         # Control parameters
         # proportion of zone in mast required for reactive control
@@ -81,6 +83,8 @@ class PreyParams(object):
         self.mastPrEvent = 1.0 / 5.1  # p(mast) = 1 out of 5.1 years
         self.mastProportionParams = findBeta(0.5, 0.4)  # ALPHA AND BETA PARAMETERS
         self.mastSpatialSD = 2.1 
+
+
 
         ## RODENT PARAMETERS
         self.islandK = 2.0

@@ -175,7 +175,8 @@ def runModel(rawdata, params=None, loopIter=0):
 
 
     print('haPixelRescale', haPixelRescale)
-
+    print('rodent_raster', rodent_raster.shape, 
+        'rodent_raster_stoat', rodent_raster_stoat.shape)
 
     # update for islands - stoatIslandPrp is a proportion
     stoatIslandPrp = resampleRasterDown(rawdata.islands, 
@@ -185,7 +186,10 @@ def runModel(rawdata, params=None, loopIter=0):
 
 
     
-    print('##### shapes', stoatIslandPrp.shape, stoatIslandMask.shape, rawdata.stoatExtentMask.shape)
+    print('##### shapes', stoatIslandPrp.shape, stoatIslandMask.shape, 
+        rawdata.stoatExtentMask.shape, 'islands', rawdata.islands.shape,
+        'max stoat prp', np.max(stoatIslandPrp), 'mean', 
+        np.mean(stoatIslandPrp))
 
 
     print('islandPixRescale', islandPixRescale)
@@ -197,7 +201,8 @@ def runModel(rawdata, params=None, loopIter=0):
     stoatIslandKArray = params.islandK * (stoatIslandPrp[stoatIslandMask])
 
 
-    print('stoatIslandKArray shape', stoatIslandKArray.shape)
+    print('stoatIslandKArray shape', stoatIslandKArray.shape, 'rodent_raster', 
+        rodent_raster.shape)
 
  
     ## ASSIGN NOTIONAL RODENT DENSITY TO ISLANDS
@@ -224,10 +229,15 @@ def runModel(rawdata, params=None, loopIter=0):
     ## Get initial prey population
     preyPresence = np.random.binomial(1, params.pPreyPres, 
             rawdata.preyCorrectionK.shape)
+
+    print('prey after bin', preyPresence.shape, 'preyCorrK', rawdata.preyCorrectionK.shape)
+
     # Eqn 38 
     prey_raster = (rng.poisson(params.preyInitialMultiplier * params.preyK, 
                             rawdata.preyCorrectionK.shape) * preyPresence )
  
+    print('prey_raster', prey_raster.shape, 'preyPresence', preyPresence.shape,
+        'preyCorrectionK', rawdata.preyCorrectionK.shape)
 
 ### TODO: CORRECT THIS, NOT DOING WHAT INTEND????
 
@@ -236,7 +246,8 @@ def runModel(rawdata, params=None, loopIter=0):
 #    stoat_preyIslandMask = resampleRasterDown(stoatIslandMask, rawdata.preyExtentMask.shape, 
 #                       statMethod = RESAMPLE_SUM, pixelRescale = 1)
 
-    print('SHAPES', prey_raster.shape, stoatIslandMask.shape)
+    print('SHAPES', prey_raster.shape, stoatIslandMask.shape, 'stoat_raster',
+        stoat_raster.shape)
 
 
     adjustPreyIsland = (prey_raster > 3) & stoatIslandMask  #stoat_preyIslandMask
@@ -841,6 +852,8 @@ def doRodentGrowth(rawdata, params, rodent_raster, rodent_kMth, mth):
 
 
 
+
+
 def doPreyGrowth(prey_raster, stoat_raster, params, mask, 
         rodent_raster_prey, nHectInRodent, preyRecDecay_1D, 
         preySurvDecay_1D, mth):
@@ -867,9 +880,12 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
 ###    CS = s * c
     ###################################################################
     ###################################################################
-    
-    stoat_raster_prey = resampleRasterDown(stoat_raster, mask.shape, 
-                       statMethod = RESAMPLE_SUM, pixelRescale = 1)
+
+    ###################################################################
+    ###################################################################
+    ## DO THE FOLLOWING ONLY IF STOAT AND PREY RESOL ARE NOT EQUAL
+#    stoat_raster_prey = resampleRasterDown(stoat_raster, mask.shape, 
+#                       statMethod = RESAMPLE_SUM, pixelRescale = 1)
 
     ## MAKE 1-D ARRAYS FOR POPULATION UPDATE
     prey0_t = prey_raster[0,mask]
@@ -878,7 +894,8 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
     prey3_t = prey_raster[3,mask]
     prey4_t = prey_raster[4,mask]
     preyN_t = prey_raster[5,mask]
-    stoat_t = stoat_raster_prey[mask]
+    stoat_t = stoat_raster[mask]
+#    stoat_t = stoat_raster_prey[mask]
     ## PREY POPN DYNAMICS    
     
     pSurv = params.preySurv[0] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))

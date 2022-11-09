@@ -47,16 +47,24 @@ class PreyData(object):
             self.params.resolutions[0], GDTMethod = gdal.GDT_UInt16, 
                     GRAMethod = gdal.GRA_NearestNeighbour)
 
-        ## RASTERISE PREY HABITAT AT PREY RESOLUTION
+        ## GET EXTENT TO READ IN PREY HABITAT MAP
+        ogrDatasetTmp = ogr.Open(self.params.extentShp)
+        ogrLayerTmp = ogrDatasetTmp.GetLayer()
+        x0, x1, y0, y1 = ogrLayerTmp.GetExtent()
+        fullExtTmp = [x0, x1, y0, y1]
+        del ogrDatasetTmp, ogrLayerTmp
+        ## RASTERISE PREY HABITAT AT PREY RESOLUTION AND FULL EXTENT
         self.preyGeoTrans, self.preyNcols, self.preyNrows, preyMask = (
-            self.rasterizeShape(self.params.preyHabitatShp, self.params.resolutions[2]))
+            self.rasterizeShape(self.params.preyHabitatShp, self.params.resolutions[2],
+                extent = fullExtTmp))
 
         ## FINEST RESOLUTION AMONG ALL SPECIES
         self.finestResol = np.min(self.params.resolutions)
+
         ## RASTERISE PREY HABITAT AT FINEST RESOLUTION FOR K CORRECTION
         (self.preyKCorrGeoTrans, self.preyKCorrNcols, self.preyKCorrNrows, 
             preyKCorrMask) = self.rasterizeShape(self.params.preyHabitatShp, 
-            self.finestResol)
+            self.finestResol, extent = fullExtTmp)
 
         # add the self.rodentMaxAltitude to the self.rodentExtentMask
         self.rodentExtentMask[self.DEM > self.params.rodentMaxAltitude] = 0
@@ -104,6 +112,8 @@ class PreyData(object):
 
 
         self.rodentPercentArea = np.where(self.rodentExtentMask, 1.0, 0)
+
+        self.preyKDummy = np.where(self.preyExtentMask > 0, 1.0, 0)
 
         ## PREY K MAP FOR SENSITIVITY TEST
         self.preyKMap = getPreyKMap(self.preyNcols, self.preyNrows,  

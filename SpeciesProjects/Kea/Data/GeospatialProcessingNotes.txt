@@ -36,10 +36,10 @@ gdal_rasterize -a Class_2018 -tr 200.0 200.0 -a_nodata 0.0 -tap -te 1359000 5160
 
 (5) Create buffer around point shapefile of stoat traps (QGIS; Kea0.qgz)
 	(a)  point file: Kea_SpatialModel_Region3_StoatTraps.shp
-	(b)  200m buffer polygon: stoatTrapBuffer_200m.shp
+	(b)  750m buffer polygon: stoatTrapBuffer_750m.shp
 
-(6)  Rasterize trap buffer shape (stoatTrapBuffer_200m.shp) into raster at 200 m:
-gdal_rasterize  -te 1359000 5160600 1649900 5447200 -tap -tr 200 -200 -ot Byte -init 0 -burn 1 SpeciesProjects/Kea/Data/stoatTrapBuffer_200m.shp SpeciesProjects/Kea/Data/stoatTrappingRaster.img
+(6)  Rasterize trap buffer shape (stoatTrapBuffer_750m.shp) into raster at 200 m:
+gdal_rasterize  -te 1359000 5160600 1649900 5447200 -tap -tr 200 -200 -ot Byte -init 0 -burn 1 SpeciesProjects/Kea/Data/stoatTrapBuffer_750m.shp SpeciesProjects/Kea/Data/stoatTrappingRaster.img
 
 
 

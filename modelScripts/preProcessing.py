@@ -129,6 +129,9 @@ class PreyData(object):
         self.paramRodentMastCCLU = rat.readColumn(kMapDS, "Rodent_MastCC")
         self.paramRodentCrashCCLU = rat.readColumn(kMapDS, "Rodent_CrashCC")
 
+
+#        print('self.mastingLU', self.mastingLU, 'rodentCCLU', self.paramRodentCCLU)
+
         # for assessing tracking tunnel rates in calculation.py
         self.beechMask = self.mastingLU[self.kClasses] & self.rodentExtentForStoats
     
@@ -344,6 +347,10 @@ class PreyData(object):
                     startYear = int(startYear)
                     ctrlMth = int(ctrlMth)
                     revisit = int(revisit)
+                    controlIndicator = eval(controlIndicator)
+###                    ## IF DO NOT CONTROL ZONE, THEN DON'T ADD TO LIST
+###                    if not controlIndicator:
+###                        continue
 
                     shpFile = os.path.join(self.params.inputDataPath, shpFile)
 
@@ -364,7 +371,6 @@ class PreyData(object):
                                         GDTMethod = gdal.GDT_UInt16,
                                         GRAMethod = gdal.GRA_NearestNeighbour)
                         mask = (data == 1)
-
                         # save it for next time
                         spatialDict[shpFile] = mask
 
@@ -377,11 +383,15 @@ class PreyData(object):
                     pixelsInControlAndBeechMask[shpFile] = np.sum(controlAndBeechMask[shpFile])
 
                     # save data
-                    controlList.append((mask, startYear, ctrlMth, revisit, shpFile))
+                    controlList.append((mask, startYear, ctrlMth, revisit, controlIndicator, shpFile))
 
-        rodentAreaDict['ALL'] = np.sum(self.rodentExtentMask)
-        pixelsInControlAndBeechMask['ALL'] = 0
-        controlList.append((self.rodentExtentMask.copy(), 100, -1, 300, 'ALL'))
+        ## IF SUMMARISE RESULTS OVER FULL EXTENT ADD TO 
+        if self.params.summariseFullExtent:
+            # put in a special key = 'ALL' that contains the extent mask
+            # to make it easier when doing the stats
+            rodentAreaDict['ALL'] = np.sum(self.rodentExtentMask)
+            pixelsInControlAndBeechMask['ALL'] = 0
+            controlList.append((self.rodentExtentMask.copy(), 100, -1, 300, 'ALL'))
 #        print('rodentAreaDict', rodentAreaDict)
         return(controlList, rodentAreaDict, pixelsInControlAndBeechMask, controlAndBeechMask)
 
@@ -407,8 +417,8 @@ class PreyData(object):
                     firstRow = False
                     continue
 
-                if len(row) == 4:
-                    shpFile, startYear, ctrlMth, revisit = row
+                if len(row) == 5:
+                    shpFile, startYear, ctrlMth, revisit, controlIndicator = row
         
                     shpFile = os.path.join(self.params.inputDataPath, shpFile)
 
@@ -432,11 +442,12 @@ class PreyData(object):
                         # store it
                         preySpatialDict[shpFile] = mask.copy()
 
-        # put in a special key = 'ALL' that contains the extent mask
-        # to make it easier when doing the stats
-        preySpatialDict['ALL'] = self.preyExtentMask
-        preyAreaDict['ALL'] = np.sum(self.preyExtentMask * self.preyCorrectionK)
-
+        ## IF SUMMARISE RESULTS OVER FULL EXTENT ADD TO 
+        if self.params.summariseFullExtent:
+            # put in a special key = 'ALL' that contains the extent mask
+            # to make it easier when doing the stats
+            preySpatialDict['ALL'] = self.preyExtentMask
+            preyAreaDict['ALL'] = np.sum(self.preyExtentMask * self.preyCorrectionK)
         return(preySpatialDict, preyAreaDict)
 
     def readAndResampleControlForStoats(self):
@@ -461,8 +472,8 @@ class PreyData(object):
                     firstRow = False
                     continue
 
-                if len(row) == 4:
-                    shpFile, startYear, ctrlMth, revisit = row
+                if len(row) == 5:
+                    shpFile, startYear, ctrlMth, revisit, controlIndicator = row
         
                     shpFile = os.path.join(self.params.inputDataPath, shpFile)
 
@@ -485,12 +496,12 @@ class PreyData(object):
                         stoatAreaDict[shpFile] = np.sum(data * self.stoatPercentArea)
                         # store it
                         stoatSpatialDict[shpFile] = mask.copy()
-
-        # put in a special key = 'ALL' that contains the extent mask
-        # to make it easier when doing the stats
-        stoatSpatialDict['ALL'] = self.stoatExtentMask
-        stoatAreaDict['ALL'] = np.sum(self.stoatExtentMask * self.stoatPercentArea)
-
+        ## IF SUMMARISE RESULTS OVER FULL EXTENT ADD TO 
+        if self.params.summariseFullExtent:
+            # put in a special key = 'ALL' that contains the extent mask
+            # to make it easier when doing the stats
+            stoatSpatialDict['ALL'] = self.stoatExtentMask
+            stoatAreaDict['ALL'] = np.sum(self.stoatExtentMask * self.stoatPercentArea)
         return(stoatSpatialDict, stoatAreaDict)
 
 

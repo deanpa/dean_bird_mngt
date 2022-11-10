@@ -282,6 +282,14 @@ def runModel(rawdata, params=None, loopIter=0):
     # record when last control happens for each mask
     lastControlArray = np.zeros(len(rawdata.rodentControlList), dtype=int)
 
+    
+
+    print('lastControlArray', lastControlArray)
+
+
+
+
+
     # set initial no mast in year t-1
     mastT_1 = False
     oldMastingMask = np.zeros_like(beechMask, dtype=np.bool) 
@@ -303,7 +311,7 @@ def runModel(rawdata, params=None, loopIter=0):
         ##create an monthly control schedule for this year
         mthlyCtrlSched = np.full((nControlAreas), -1)
         if keepYear:
-            for count, (dummask, startYear, ctrlMth, revisit, shp) in enumerate(rawdata.rodentControlList):
+            for count, (dummask, startYear, ctrlMth, revisit, controlIndicator, shp) in enumerate(rawdata.rodentControlList):
                 lastControl = lastControlArray[count]
                 nYearsSinceControl = year - lastControl
                 if (year == startYear) or (year > startYear and nYearsSinceControl >= revisit):
@@ -329,7 +337,8 @@ def runModel(rawdata, params=None, loopIter=0):
             
             #if masting year and doing control reactive to masting then assess prop mgmt areas masting
             if (params.reactivePropMgmtMasting > 0):
-                for count, (controlMask, startYear, ctrlMth, revisit, shp) in enumerate(rawdata.rodentControlList):
+                for count, (controlMask, startYear, ctrlMth, revisit, shp) in enumerate(
+                    rawdata.rodentControlList):
                     if shp == 'ALL':
                         continue
                     propControlMaskMasting[count,0] = (np.count_nonzero(mastingMask & controlMask)
@@ -1207,7 +1216,7 @@ def populateResultDensity(rodent_raster, rodentExtentMask, rodentControlList,
         # for each control area, and for the entire area, calculate the mean proportion of
             # of prey_KMap that is in prey_raster, excluding kmap values == 0.
 
-        ### (1) DO PREYS
+        ### (1) DO PREY
         mgmtMask = preySpatialDictByMgmt[key]               #mask prey cells in mgmt zone
         ### PREY DENSITY
         sppMgmtMask = mgmtMask & preyExtentMask            # prey habitat in mgmt zone
@@ -1221,6 +1230,11 @@ def populateResultDensity(rodent_raster, rodentExtentMask, rodentControlList,
         stoatDensity_2D_mth[i, tMth] = sppDensity        
 
         ### (3) DO RODENT DENSITY
+
+        print('i', i, 'KEY', key)
+
+
+
         mgmtMask = getRodentMaskForFile(rodentControlList, key)             # mask rodent cells in mgmt
         sppMgmtMask = mgmtMask & rodentExtentMask           # rodent habitat in mgmt zone
         sppDensity = np.sum(rodent_raster[sppMgmtMask]) / rodentAreaDictByMgmt[key]

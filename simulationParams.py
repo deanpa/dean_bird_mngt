@@ -20,7 +20,7 @@ class PreyParams(object):
         ### SET ITERATIONS
         self.iter = 1
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
-        self.firstRun = True        # True or False
+        self.firstRun = False        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
         self.summariseFullExtent = False
 
@@ -71,7 +71,7 @@ class PreyParams(object):
         # Control parameters
         # proportion of zone in mast required for reactive control
         # model for control that is reactive to masting
-        self.reactivePropMgmtMasting = 0.5 # set > 0 to enable
+        self.reactivePropMgmtMasting = 0    #0.5 # set > 0 to enable
         self.reactiveAssessMth = 7  #what month to do a mast prop or tracking tunnel assessment, mth7=Apr
         self.reactiveCtrlMth = 11  #what month to implement reactive control, mth11=August 
         #nb: ctrl mth must be greater than assessment mth which is bit tricky when non-std year

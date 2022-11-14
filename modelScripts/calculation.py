@@ -239,7 +239,7 @@ def runModel(rawdata, params=None, loopIter=0):
     print('prey_raster', prey_raster.shape, 'preyPresence', preyPresence.shape,
         'preyCorrectionK', rawdata.preyCorrectionK.shape)
 
-### TODO: CORRECT THIS, NOT DOING WHAT INTEND????
+### TODO: CORRECT THIS. KEEP RESOL FOR STOATS AND PREY EQUAL FOR NOW
 
 
 
@@ -311,7 +311,8 @@ def runModel(rawdata, params=None, loopIter=0):
         ##create an monthly control schedule for this year
         mthlyCtrlSched = np.full((nControlAreas), -1)
         if keepYear:
-            for count, (dummask, startYear, ctrlMth, revisit, controlIndicator, shp) in enumerate(rawdata.rodentControlList):
+            for count, (dummask, startYear, ctrlMth, revisit, 
+                controlIndicator, shp) in enumerate(rawdata.rodentControlList):
                 lastControl = lastControlArray[count]
                 nYearsSinceControl = year - lastControl
                 if (year == startYear) or (year > startYear and nYearsSinceControl >= revisit):
@@ -337,9 +338,10 @@ def runModel(rawdata, params=None, loopIter=0):
             
             #if masting year and doing control reactive to masting then assess prop mgmt areas masting
             if (params.reactivePropMgmtMasting > 0):
-                for count, (controlMask, startYear, ctrlMth, revisit, shp) in enumerate(
+                for count, (controlMask, startYear, ctrlMth, revisit, controlIndicator, shp) in enumerate(
                     rawdata.rodentControlList):
-                    if shp == 'ALL':
+                    if not controlIndicator:
+#                    if shp == 'ALL':
                         continue
                     propControlMaskMasting[count,0] = (np.count_nonzero(mastingMask & controlMask)
                                 / np.count_nonzero(controlMask))
@@ -1152,7 +1154,7 @@ def getRodentMaskForFile(rodentControlList, shpFile):
     mask for the file specified in shpPath
     """
     mask = None
-    for testmask, startYear, ctrlMth, revisit, testShpFile in rodentControlList:
+    for testmask, startYear, ctrlMth, revisit, controlIndicator, testShpFile in rodentControlList:
         if testShpFile == shpFile:
             mask = testmask
             break
@@ -1230,11 +1232,6 @@ def populateResultDensity(rodent_raster, rodentExtentMask, rodentControlList,
         stoatDensity_2D_mth[i, tMth] = sppDensity        
 
         ### (3) DO RODENT DENSITY
-
-        print('i', i, 'KEY', key)
-
-
-
         mgmtMask = getRodentMaskForFile(rodentControlList, key)             # mask rodent cells in mgmt
         sppMgmtMask = mgmtMask & rodentExtentMask           # rodent habitat in mgmt zone
         sppDensity = np.sum(rodent_raster[sppMgmtMask]) / rodentAreaDictByMgmt[key]

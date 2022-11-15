@@ -173,38 +173,15 @@ def runModel(rawdata, params=None, loopIter=0):
             rawdata.stoatExtentMask.shape, statMethod = RESAMPLE_SUM, 
             pixelRescale = haPixelRescale)
 
-
-    print('haPixelRescale', haPixelRescale)
-    print('rodent_raster', rodent_raster.shape, 
-        'rodent_raster_stoat', rodent_raster_stoat.shape)
-
     # update for islands - stoatIslandPrp is a proportion
     stoatIslandPrp = resampleRasterDown(rawdata.islands, 
             rawdata.stoatExtentMask.shape, statMethod = RESAMPLE_SUM, 
             pixelRescale = islandPixRescale)
     stoatIslandMask = stoatIslandPrp > 0
 
-
-    
-    print('##### shapes', stoatIslandPrp.shape, stoatIslandMask.shape, 
-        rawdata.stoatExtentMask.shape, 'islands', rawdata.islands.shape,
-        'max stoat prp', np.max(stoatIslandPrp), 'mean', 
-        np.mean(stoatIslandPrp))
-
-
-    print('islandPixRescale', islandPixRescale)
-
-
-
-
     ## ARRAY OF RODENT DENSITY (PER HA) IN TRAPPED AREAS; SCALED FOR RODENT HABITAT
     stoatIslandKArray = params.islandK * (stoatIslandPrp[stoatIslandMask])
 
-
-    print('stoatIslandKArray shape', stoatIslandKArray.shape, 'rodent_raster', 
-        rodent_raster.shape)
-
- 
     ## ASSIGN NOTIONAL RODENT DENSITY TO ISLANDS
     rodent_raster_stoat[stoatIslandMask] = stoatIslandKArray
     # ## MAKE RODENT RASTER FOR t-lag
@@ -230,25 +207,16 @@ def runModel(rawdata, params=None, loopIter=0):
     preyPresence = np.random.binomial(1, params.pPreyPres, 
             rawdata.preyCorrectionK.shape)
 
-    print('prey after bin', preyPresence.shape, 'preyCorrK', rawdata.preyCorrectionK.shape)
-
     # Eqn 38 
     prey_raster = (rng.poisson(params.preyInitialMultiplier * params.preyK, 
                             rawdata.preyCorrectionK.shape) * preyPresence )
  
-    print('prey_raster', prey_raster.shape, 'preyPresence', preyPresence.shape,
-        'preyCorrectionK', rawdata.preyCorrectionK.shape)
-
 ### TODO: CORRECT THIS. KEEP RESOL FOR STOATS AND PREY EQUAL FOR NOW
 
 
 
 #    stoat_preyIslandMask = resampleRasterDown(stoatIslandMask, rawdata.preyExtentMask.shape, 
 #                       statMethod = RESAMPLE_SUM, pixelRescale = 1)
-
-    print('SHAPES', prey_raster.shape, stoatIslandMask.shape, 'stoat_raster',
-        stoat_raster.shape)
-
 
     adjustPreyIsland = (prey_raster > 3) & stoatIslandMask  #stoat_preyIslandMask
     prey_raster[adjustPreyIsland] = 2
@@ -282,15 +250,7 @@ def runModel(rawdata, params=None, loopIter=0):
     # record when last control happens for each mask
     lastControlArray = np.zeros(len(rawdata.rodentControlList), dtype=int)
 
-    
-
-    print('lastControlArray', lastControlArray)
-
-
-
-
-
-    # set initial no mast in year t-1
+        # set initial no mast in year t-1
     mastT_1 = False
     oldMastingMask = np.zeros_like(beechMask, dtype=np.bool) 
     propControlMaskMasting = np.zeros((nControlAreas,2), dtype=float) 

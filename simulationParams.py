@@ -16,11 +16,11 @@ class PreyParams(object):
 
         ### SET YEARS AND BURN IN YEARS
         self.burnin = 1
-        self.years = np.arange(1)
+        self.years = np.arange(6)
         ### SET ITERATIONS
         self.iter = 1
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
-        self.firstRun = False        # True or False
+        self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
         self.summariseFullExtent = False
 
@@ -54,6 +54,14 @@ class PreyParams(object):
         self.preyHabitatShp = os.path.join(self.inputDataPath, 'Kea_Habitat.shp')
         self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
         self.seasAdjResFile = os.path.join(self.inputDataPath, 'mastLUpTable.csv')
+
+        ## SET PICKLE FILE NAMES FOR PRE-PROCESSING AND RESULTS
+        preProcFName = 'preProc_' + scenDir + '.pkl'
+        self.preProcFName = os.path.join(self.outputDataPath, preProcFName)
+        resultsFName = 'results_' + scenDir + '.pkl'
+        self.resultsFName = os.path.join(self.outputDataPath, resultsFName)
+
+
 #        ### SET DATA AND PATHS TO DIRECTORIES - dummy/simplified landscape
 #        self.extentShp = os.path.join(self.inputDataPath, 'fullExtent.shp')
 #        self.AOIShp = os.path.join(self.inputDataPath, 'Kea_Model_Region3.shp')

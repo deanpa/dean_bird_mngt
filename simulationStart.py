@@ -2,7 +2,7 @@
 
 import sys
 import optparse
-import simulationMain
+from modelScripts import simulationMain
 import simulationParams
 
 

@@ -2,7 +2,8 @@
 
 import os
 import numpy as np
-#from modelScripts  import preProcessing
+from pathlib import Path
+
 
 class PreyParams(object):
     def __init__(self, species=None, scenario=None):
@@ -33,15 +34,24 @@ class PreyParams(object):
         print('Years:        ', len(self.years))
         print('First run:    ', self.firstRun)
         print('Sum Full ext: ', self.summariseFullExtent)
-        print('############################')
 
-
-        # SET PATHS TO DATA AND RESULTS
-        self.inputDataPath = os.path.join(os.getenv('KIWIPROJDIR', default='.'), 
-                'SpeciesProjects', self.species, 'Data')
+        ## GET BASE DIRECTORY LOCALLY OR ON NESI
+        baseDir = os.getenv('KIWIPROJDIR', default='.')
+        # SET PATH TO DATA - SHOULD EXIST ALREADY 
+        self.inputDataPath = os.path.join(baseDir, 'SpeciesProjects', self.species, 'Data')
+        ## RESULTS DIRECTORY FOR THIS SCENARIO AND SPECIES
         scenDir = 'Scen' + str(self.scenario) + self.species
-        self.outputDataPath = os.path.join(os.getenv('KIWIPROJDIR', default='.'), 
-                'SpeciesProjects', self.species, 'Results', scenDir)
+        resultsPath = os.path.join('SpeciesProjects', self.species, 'Results', scenDir)
+        ## PUT TOGETHER THE BASE DIRECTORY AND PATH TO RESULTS DIRECTORY 
+        if baseDir == '.':
+            baseDir = Path.cwd()
+        self.outputDataPath = os.path.join(baseDir, resultsPath)
+        ## MAKE NEW RESULTS DIRECTORY IF DOESN'T EXIST
+        if not os.path.isdir(self.outputDataPath):
+            (baseDir / resultsPath).mkdir(parents = True)
+
+        print('Results directory:', self.outputDataPath)
+        print('############################')
 
         # ### SET DATA AND PATHS TO DIRECTORIES
         self.extentShp = os.path.join(self.inputDataPath, 'fullExtent.shp')

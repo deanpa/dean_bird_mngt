@@ -17,7 +17,7 @@ class PreyParams(object):
 
         ### SET YEARS AND BURN IN YEARS
         self.burnin = 1
-        self.years = np.arange(6)
+        self.years = np.arange(4)
         ### SET ITERATIONS
         self.iter = 1
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME

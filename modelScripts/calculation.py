@@ -235,11 +235,6 @@ def runModel(rawdata, params=None, loopIter=0):
 
 
 
-
-
-
-
-
     ## CORRECT PREY RECRUIT AND SURVIVAL PARAMETERS FOR HABITAT AREA
     preyRecDecay_1D = ((params.preyRecDDcoef* 
             rawdata.preyCorrectionK)[rawdata.preyExtentMask])
@@ -284,7 +279,7 @@ def runModel(rawdata, params=None, loopIter=0):
         #but year starts in Sept, spring cos that's when beech flowering starts
         #mastT = np.random.rand() < params.mastPrEvent
         #have all iterations mast in same year for some sims
-        mastYrarr=np.array([2,7,9,11,15,20,23,27])
+        mastYrarr=np.array([0,1,2,7,9,11,15,20,23,27])
         if (year_all in mastYrarr):
         #if (year_all==3):
             mastT=True

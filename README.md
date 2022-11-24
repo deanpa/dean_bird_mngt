@@ -29,7 +29,12 @@ This script is called if it is the first time the scenario is run (see self.firs
 This script runs loops through the years of the simulation and has the processing functions.
 
 ## 3 FILES ASSOCIATED WITH PROCESSING RESULTS
+1) ./resultsStart.py
+2) ./modelScripts/resultsMain.py
+3) ./modelScripts/resultsFX.py
 
+
+## BRIEF DETAILS ON THE 3 FILES FOR PROCESSING RESULTS
 1) ./resultsStart.py
 The users start processing the results on the command line by running this script. It calls the params module specified by the species and scenario. An example for kea and scenario 1 is as follows:
 

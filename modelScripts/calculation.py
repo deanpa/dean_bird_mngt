@@ -254,10 +254,11 @@ def runModel(rawdata, params=None, loopIter=0):
     year = 0
     
     for year_all in range(totalYears):
-        print('Year', year_all)
-
         ### BOOLEAN INDICATOR OF A POST-BURNIN YEAR
         keepYear = keepMask[year_all]
+
+        print('year_all', year_all, 'keepYear', keepYear, 'year', year)
+
 
         #reactiveControlMask = None # nothing by default
 
@@ -270,16 +271,22 @@ def runModel(rawdata, params=None, loopIter=0):
                 controlIndicator, shp) in enumerate(rawdata.rodentControlList):
                 lastControl = lastControlArray[count]
                 nYearsSinceControl = year - lastControl
+
+                print('count', count, 'year', year, 'startYear', startYear, 'nYearsSinceControl',
+                    nYearsSinceControl, 'revisit', revisit, 'controlIndicator', controlIndicator)
+
                 if (year == startYear) or (year > startYear and nYearsSinceControl >= revisit):
                     ## add control area to schedule
                     mthlyCtrlSched[count] = ctrlMth
 
-                       
+                print('year_all', year_all, 'keepYear', keepYear, 'ctrlMth', ctrlMth)
+        print('mthlyCtrlSched', mthlyCtrlSched)
+
         # Masting affects rodents the same year now
         #but year starts in Sept, spring cos that's when beech flowering starts
         #mastT = np.random.rand() < params.mastPrEvent
         #have all iterations mast in same year for some sims
-        mastYrarr=np.array([0,1,2,7,9,11,15,20,23,27])
+        mastYrarr=np.array([1,2,7,9,11,15,20,23,27])
         if (year_all in mastYrarr):
         #if (year_all==3):
             mastT=True
@@ -293,8 +300,8 @@ def runModel(rawdata, params=None, loopIter=0):
             
             #if masting year and doing control reactive to masting then assess prop mgmt areas masting
             if (params.reactivePropMgmtMasting > 0):
-                for count, (controlMask, startYear, ctrlMth, revisit, controlIndicator, shp) in enumerate(
-                    rawdata.rodentControlList):
+                for count, (controlMask, startYear, ctrlMth, revisit, 
+                    controlIndicator, shp) in enumerate(rawdata.rodentControlList):
                     if not controlIndicator:
 #                    if shp == 'ALL':
                         continue
@@ -303,7 +310,7 @@ def runModel(rawdata, params=None, loopIter=0):
 
       
         ##age the prey
-        if year_all>0:
+        if year_all > 0:
             prey_raster[4,:,:] = prey_raster[4,:,:] + prey_raster[3,:,:]
             prey_raster[3,:,:] = prey_raster[2,:,:] 
             prey_raster[2,:,:] = prey_raster[1,:,:] 
@@ -495,10 +502,14 @@ def runModel(rawdata, params=None, loopIter=0):
                     rawdata.preyExtentMask, rawdata.preySpatialDictByMgmt, rawdata.preyAreaDictByMgmt, 
                     results.preyDensity_2D, results.popAllYears_3D, year, year_all, keepYear)
             ### IF BEYOND BURN IN PERIOD, STORE THE RESULTS
+
+        print('####### GOT TO WHERE UPDATE YEAR, keepYear', keepYear, 'year', year)
             
         if keepYear:
             ## update the year
             year += 1
+
+        print('######## AFTER UPDATE YEAR; year', year)
 
         # update the masting status of T_1 for next year
         mastT_1 = mastT
@@ -1130,7 +1141,7 @@ def populateResultArrays(loopIter, mastingMask, schedControlMask, rodent_raster,
         # for each control area, and for the entire area, calculate the mean proportion of
             # of prey_KMap that is in prey_raster, excluding kmap values == 0.
 
-        ### (1) DO PREYS
+        ### (1) DO PREY
         mgmtMask = preySpatialDictByMgmt[key]               #mask prey cells in mgmt zone
         ### PREY DENSITY
         sppMgmtMask = mgmtMask & preyExtentMask            # prey habitat in mgmt zone

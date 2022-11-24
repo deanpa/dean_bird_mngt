@@ -1,7 +1,7 @@
 AreaName,Year,Month,Revisit,ControlIndicator
-ArthursPass.shp,1,6,300,True
-Rotoiti.shp,1,7,300,True
-TeMaruia.shp,1,8,300,True
+ArthursPass.shp,0,6,300,True
+Rotoiti.shp,0,7,300,True
+TeMaruia.shp,0,8,300,True
 Westland.shp,1,9,300,True
 WilburforceMathias.shp,1,10,300,True
-Kea_Model_Region3.shp,1,11,300,False
+Kea_Model_Region3.shp,200,24,300,False

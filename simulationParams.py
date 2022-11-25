@@ -83,6 +83,11 @@ class PreyParams(object):
 #        self.controlFile = os.path.join(self.inputDataPath, 'controlDummy.csv') # control3 is effectively no control (st yr set to 100)
 #        self.seasAdjResFile = os.path.join(self.inputDataPath, 'mastLUpTable.csv')
 
+        self.monthDict = {'Sep' : 0, 'Oct' : 1, 'Nov' : 2, 'Dec' : 3, 'Jan' : 4, 'Feb' : 5,
+            'Mar' : 6, 'Apr' : 7, 'May' : 8, 'Jun' : 9, 'Jul' : 10, 'Aug' : 11}
+
+
+
         ## RESOLUTION (RATS, STOATS, PREY)
         self.resolutions = (200.0, 1000.0, 1000.0)
 
@@ -90,10 +95,10 @@ class PreyParams(object):
         # proportion of zone in mast required for reactive control
         # model for control that is reactive to masting
         self.reactivePropMgmtMasting = 0    #0.5 # set > 0 to enable
-        self.reactiveAssessMth = 7  #what month to do a mast prop or tracking tunnel assessment, mth7=Apr
-        self.reactiveCtrlMth = 11  #what month to implement reactive control, mth11=August 
-        #nb: ctrl mth must be greater than assessment mth which is bit tricky when non-std year
-        
+        self.reactiveAssessMth = self.monthDict['Apr']  #what month to do a mast prop or tracking tunnel assessment, mth7=Apr
+        self.reactiveCtrlDelay = 2  #delay implement reactive control, mth7+2=9=June 
+        self.prescrptCtrlMth = self.monthDict['Jun']    ## MONTH OF PRESCRIPTIVE CONTROL
+
         ### Masting parameters
         self.mastCellParams = (0.001, 1000.0)
         self.mastWindowSize = self.resolutions[0] * 150 # in metres

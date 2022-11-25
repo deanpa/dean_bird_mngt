@@ -88,6 +88,8 @@ class PreyData(object):
         ## MAKE PREY EXTENT MASK
         self.preyExtentMask = self.preyCorrectionK > 0.0
 
+        ## GET REACTIVE CONTROL MONTHS FROM PARAMETERS
+        self.getReactCtrlMth()
 
 
 ## DELETE BELOW IF ABOVE WORKS
@@ -213,6 +215,20 @@ class PreyData(object):
 #        print('rodentSpatialDictByMgmt', self.rodentSpatialDictByMgmt.keys())
 #        print('self.rodentControlDictByYear', self.rodentControlDictByYear.keys())
     
+
+    def getReactCtrlMth(self):
+        """
+        ## GET REACTIVE CONTROL MONTHS
+        """
+        sumReactMth = self.params.reactiveAssessMth + self.params.reactiveCtrlDelay
+        ## IF GREATER THAN MONTH 11 (12 MONTHS IN YEAR)
+        if sumReactMth > 11:
+            self.reactCtrlMth = sumReactMth - 12
+            self.jumpYearCtrl = True
+        else:
+            self.reactCtrlMth = sumReactMth
+            self.jumpYearCtrl = False
+
 
 
     def rasterizeShape(self, inshape, resolution, extent=None):

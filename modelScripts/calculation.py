@@ -211,12 +211,14 @@ def runModel(rawdata, params=None, loopIter=0):
     prey_raster = (rng.poisson(params.preyInitialMultiplier * params.preyK, 
                             rawdata.preyCorrectionK.shape) * preyPresence )
  
+
+
 ### TODO: CORRECT THIS. KEEP RESOL FOR STOATS AND PREY EQUAL FOR NOW
-
-
 
 #    stoat_preyIslandMask = resampleRasterDown(stoatIslandMask, rawdata.preyExtentMask.shape, 
 #                       statMethod = RESAMPLE_SUM, pixelRescale = 1)
+
+
 
     adjustPreyIsland = (prey_raster > 3) & stoatIslandMask  #stoat_preyIslandMask
     prey_raster[adjustPreyIsland] = 2
@@ -249,10 +251,11 @@ def runModel(rawdata, params=None, loopIter=0):
     mastT_1 = False
     oldMastingMask = np.zeros_like(beechMask, dtype=np.bool) 
     ## COLUMN 0 IS FOR CURRENT YEAR, COLUMN 1 IS FOR T-1
-    propControlMaskMasting = np.zeros((nControlAreas,2), dtype=float) 
+    propControlMaskMasting = np.zeros(nControlAreas, dtype=float) 
+#    propControlMaskMasting = np.zeros((nControlAreas,2), dtype=float) 
 
     ## MONTHLY CONTROL SCHEDULE FOR FOLLOWING YEAR (T+1) IF ASSESS/CONTROL JUMPS YEAR LINE
-    followYearCtrlSched = np.full((nControlAreas), -1)
+    nextYearCtrlSched = np.full((nControlAreas), -1)
 
     ### SET INITIAL KEEP YEAR TO 0
     year = 0
@@ -269,9 +272,9 @@ def runModel(rawdata, params=None, loopIter=0):
         mastingMask  = np.zeros_like(beechMask, dtype=np.bool)
 
         ##create an monthly control schedule for this year
-        mthlyCtrlSched = followYearCtrlSched
-        ## RESET CONTROL SCHEDULE FOR FOLLOWING YEAR (T+1) IF ASSESS/CONTROL JUMPS YEAR LINE
-        followYearCtrlSched = np.full((nControlAreas), -1)
+        mthlyCtrlSched = nextYearCtrlSched
+        ## RESET CONTROL SCHEDULE FOR NEXT YEAR (T+1) IF ASSESS/CONTROL JUMPS YEAR LINE
+        nextYearCtrlSched = np.full((nControlAreas), -1)
         ## GET PRESCRIPTIVE MONTHLY CONTROL SCHEDULE
         if keepYear:
             for count, (dummask, startYear, revisit, 
@@ -281,13 +284,15 @@ def runModel(rawdata, params=None, loopIter=0):
 
                 print('count', count, 'year', year, 'startYear', startYear, 'nYearsSinceControl',
                     nYearsSinceControl, 'revisit', revisit, 'controlIndicator', controlIndicator)
-
-                if (year == startYear) or (year > startYear and nYearsSinceControl >= revisit):
-                    ## add control area to schedule
-                    mthlyCtrlSched[count] = params.prescrptCtrlMth
+                ## CONSIDER PRESCRIPTIVE IF CONTROL NOT SCHED FROM t-1 FROM MAST OR RODENTS
+                if mthlyCtrlSched[count] >= 0:
+                    if (year == startYear) or (year > startYear and 
+                        nYearsSinceControl >= revisit):
+                        ## add control area to schedule
+                        mthlyCtrlSched[count] = rawdata.prescrptCtrlMth
 
                 print('year_all', year_all, 'keepYear', keepYear)
-        print('mthlyCtrlSched', mthlyCtrlSched)
+        print('mthlyCtrlSched', mthlyCtrlSched, 'nextYearCtrlSched', nextYearCtrlSched)
 
         # Masting affects rodents the same year now
         #but year starts in Sept, spring cos that's when beech flowering starts
@@ -295,7 +300,6 @@ def runModel(rawdata, params=None, loopIter=0):
         #have all iterations mast in same year for some sims
         mastYrarr=np.array([1,2,7,9,11,15,20,23,27])
         if (year_all in mastYrarr):
-        #if (year_all==3):
             mastT=True
         else:
             mastT=False   
@@ -312,8 +316,10 @@ def runModel(rawdata, params=None, loopIter=0):
                     if not controlIndicator:
 #                    if shp == 'ALL':
                         continue
-                    propControlMaskMasting[count,0] = (np.count_nonzero(mastingMask & controlMask)
+                    propControlMaskMasting[count] = (np.count_nonzero(mastingMask & controlMask)
                                 / np.count_nonzero(controlMask))
+#                    propControlMaskMasting[count,0] = (np.count_nonzero(mastingMask & controlMask)
+#                                / np.count_nonzero(controlMask))
 
       
         ##age the prey
@@ -345,47 +351,31 @@ def runModel(rawdata, params=None, loopIter=0):
             #all in the same month for now until figure out how to vary
             #only do assessment and control after burnin (i.e. in a 'keep year')
             if (mth==params.reactiveAssessMth) and keepYear:
-                if (params.reactivePropMgmtMasting > 0):
+                if (params.reactivePropMgmtMasting > 0) and mastT:
                     #this is a fudge so if assess in Mar-Aug use prop mast this year
                     #in earlier months use prop masting in previous year
-                    if mastT and (mth > params.monthDict['Feb']):                   
-                        for i in range(nControlAreas):
-                            if propControlMaskMasting[i,0] >= params.reactivePropMgmtMasting:
-                                ## CONDUCT CONTROL IN THIS YEAR
-                                if not rawdata.jumpYearCtrl:                      
-                                    mthlyCtrlSched[i] = rawdata.reactCtrlMth
-                                else:
-                                    followYearCtrlSched[i] = rawdata.reactCtrlMth
+###                    if mastT and (mth > params.monthDict['Feb']):                   
+                    for i in range(nControlAreas):
+                        if propControlMaskMasting[i] >= params.reactivePropMgmtMasting:
+                            ## SCHEDULE CONTROL IN THIS YEAR (T)
+                            if not rawdata.jumpYearCtrl:                      
+                                mthlyCtrlSched[i] = rawdata.reactiveCtrlMth
+                            ## SCHEDULED CONTROL JUMPS INTO THE NEXT YEAR (T+1)
+                            else:
+                                nextYearCtrlSched[i] = rawdata.reactiveCtrlMth
                                 
                     
-                    if mastT_1 and (mth <= params.monthDict['Feb']):                   
-                        for i in range(nControlAreas):
-                            if propControlMaskMasting[i,1] >= params.reactivePropMgmtMasting:                      
-                                mthlyCtrlSched[i] = params.reactiveCtrlMth                                
-                                ## UNLIKELY TO JUMP THE YEAR LINE FOR CONTROL
-                                ## SO DO NOT ACCOUNT FOR THAT HERE
-
-
-
-
-
-
-
-
+#                    if mastT_1 and (mth <= params.monthDict['Feb']):                   
+#                        for i in range(nControlAreas):
+#                            if propControlMaskMasting[i,1] >= params.reactivePropMgmtMasting:                      
+#                                mthlyCtrlSched[i] = params.reactiveCtrlMth                                
+#                                ## UNLIKELY TO JUMP THE YEAR LINE FOR CONTROL
+#                               ## SO DO NOT ACCOUNT FOR THAT HERE
 
 
         ## TODO: FIX UP THE CONTROL FOR PRESCRIPTIVE, MASTING AND TT
         ##       MAYBE CONTROL MONTH FOR PRESCRIPT, MAST AND TT
         ##       AND MONTH FOR TT ASSESSEMENT - NOT MASTING ASSESSMENT
-
-
-
-
-
-
-
-
-
 
 
    
@@ -398,19 +388,43 @@ def runModel(rawdata, params=None, loopIter=0):
                         ## DON'T ASSESS MZ IF NOT CONTROL ZONE, OR IF ALREADY DOING CONTROL
                         if not controlIndicator:
                             continue
-#                        if shp == 'ALL':
-#                            continue
-                       
+                        ## TEST IF ALREADY SCHED TO DO CONTROL WITH PRESCRIBE OR MAST
+                        ## ASSESS IF NOTHING SCHED OR IF MONTH IS NOT TT CONTROL
+                        ## TT CONTROL MONTH SHOULD BE PRIORITISED OVER PRESCRIBED.
+                        no_TT_Test = ((mthlyCtrlSched[count] >= 0) and 
+                            (mthlyCtrlSched[count] == rawdata.reactiveCtrlMth)
+                        ## NO NEED TO ASSESS RODENTS IF ALREADY DOING CONTROL 
+                        if no_TT_Test:
+                            continue
+                        ## ASSESS TT RATE
                         nPixelsZone = rawdata.pixelsInControlAndBeechMask[shp]
                         nRodentsinControlAndBeechMask = np.sum(rodent_raster[rawdata.controlAndBeechMask[shp]])
                         rodentsInControlAndBeechMaskDensity = (nRodentsinControlAndBeechMask / nPixelsZone)
-
                         TT_rate = trackingTunnelRate(rodentsInControlAndBeechMaskDensity, 
                                 params.g0_TT, params.sigma_TT, 
                                 params.nights_TT, params.nTunnels, params.resolutions[0])
-                            
+                        ## IF TT RATE EXCEEDS THRESHOLD                            
                         if TT_rate > params.threshold_TT:
-                            mthlyCtrlSched[count] = params.reactiveCtrlMth
+#                            mthlyCtrlSched[count] = rawdata.reactiveCtrlMth
+                            ## DOES CONTROL JUMP THE YEAR LINE????
+                            ## SCHEDULE CONTROL IN THIS YEAR (T)
+                            if not rawdata.jumpYearCtrl:                      
+                                mthlyCtrlSched[i] = rawdata.reactiveCtrlMth
+                            ## SCHEDULED CONTROL JUMPS INTO THE NEXT YEAR (T+1)
+                            else:
+                                nextYearCtrlSched[i] = rawdata.reactiveCtrlMth
+
+
+
+
+
+
+
+
+## TODO: PICK UP HERE ON TUESDAY
+
+
+
 
 
             # Rodent Control. Get the combined control masks for this year
@@ -420,7 +434,8 @@ def runModel(rawdata, params=None, loopIter=0):
             if (mth in mthlyCtrlSched):
                 schedControlMask = None
                 if keepYear:
-                    areaList = [i for i, mthlyCtrlSched in enumerate(mthlyCtrlSched) if mthlyCtrlSched == mth ]
+                    areaList = np.where(mthlyCtrlSched == mth)[0]
+#                    areaList = [i for i, mthlyCtrlSched in enumerate(mthlyCtrlSched) if mthlyCtrlSched == mth ]
                     for i in range(len(areaList)):
                         mArea=areaList[i]
                         cmask = rawdata.rodentControlList[mArea][0]
@@ -444,7 +459,7 @@ def runModel(rawdata, params=None, loopIter=0):
                 # if schedControlMask is not None:
                 #     # add in any reactive control
                 #     if reactiveControlMask is not None:
-                #         schedControlMask = schedControlMask | reactiveControlMask
+                #         schedControlmMask = schedControlMask | reactiveControlMask
                 # else:
                 #     # the control is just due to reactive control
                 #     schedControlMask = reactiveControlMask

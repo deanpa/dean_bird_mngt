@@ -21,7 +21,7 @@ class PreyParams(object):
         ### SET ITERATIONS
         self.iter = 1
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
-        self.firstRun = False        # True or False
+        self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
         self.summariseFullExtent = False
 
@@ -83,8 +83,8 @@ class PreyParams(object):
 #        self.controlFile = os.path.join(self.inputDataPath, 'controlDummy.csv') # control3 is effectively no control (st yr set to 100)
 #        self.seasAdjResFile = os.path.join(self.inputDataPath, 'mastLUpTable.csv')
 
-        self.monthDict = {'Sep' : 0, 'Oct' : 1, 'Nov' : 2, 'Dec' : 3, 'Jan' : 4, 'Feb' : 5,
-            'Mar' : 6, 'Apr' : 7, 'May' : 8, 'Jun' : 9, 'Jul' : 10, 'Aug' : 11}
+        self.monthDict = {'Sep' : 0, 'Oct' : 1, 'Nov' : 2, 'Dec' : 3, 'Jan' : 4, 
+            'Feb' : 5, 'Mar' : 6, 'Apr' : 7, 'May' : 8, 'Jun' : 9, 'Jul' : 10, 'Aug' : 11}
 
 
 
@@ -97,7 +97,12 @@ class PreyParams(object):
         self.reactivePropMgmtMasting = 0    #0.5 # set > 0 to enable
         self.reactiveAssessMth = self.monthDict['Apr']  #what month to do a mast prop or tracking tunnel assessment, mth7=Apr
         self.reactiveCtrlDelay = 2  #delay implement reactive control, mth7+2=9=June 
-        self.prescrptCtrlMth = self.monthDict['Jun']    ## MONTH OF PRESCRIPTIVE CONTROL
+        ## PRESCRIPTIVE CONTROL MONTH WILL BE SAME AS REACTIVE
+        ## THIS IS CALCULATED IN PREPROCESSING (ASSESS MONTH PLUS DELAY)
+        ## REACTIVE COULD JUMP THE YEAR LINE (SEPT) DUE TO DELAY, IN WHICH CASE,
+        ## REACTIVE CONTROL COULD BE IN YEAR T+1, AND PRESCRIPTIVE IN YEAR T.
+        ## THE REVISIT (IN CONTROL FILE) PARAMETER WOULD SET MIN TIME BETWEEN CONTROL.
+#        self.prescrptCtrlMth = self.monthDict['Jun']    ## MONTH OF PRESCRIPTIVE CONTROL
 
         ### Masting parameters
         self.mastCellParams = (0.001, 1000.0)

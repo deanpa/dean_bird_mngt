@@ -223,12 +223,12 @@ class PreyData(object):
         sumReactMth = self.params.reactiveAssessMth + self.params.reactiveCtrlDelay
         ## IF GREATER THAN MONTH 11 (12 MONTHS IN YEAR)
         if sumReactMth > 11:
-            self.reactCtrlMth = sumReactMth - 12
+            self.reactiveCtrlMth = sumReactMth - 12
             self.jumpYearCtrl = True
         else:
-            self.reactCtrlMth = sumReactMth
+            self.reactiveCtrlMth = sumReactMth
             self.jumpYearCtrl = False
-
+        self.prescrptCtrlMth = self.reactiveCtrlMth
 
 
     def rasterizeShape(self, inshape, resolution, extent=None):

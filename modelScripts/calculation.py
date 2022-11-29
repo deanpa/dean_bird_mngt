@@ -51,7 +51,10 @@ def runModel(rawdata, params=None, loopIter=0):
 
     nControlAreas = len(rawdata.preySpatialDictByMgmt)
     nYears = len(params.years)
-    
+
+    print('nYears', nYears, 'nControlAreas', nControlAreas)    
+
+
     ### MAKE BURNIN AND KEEP MASK ARRAY
     totalYears = nYears + params.burnin
     keepMask = np.arange(totalYears) >= params.burnin
@@ -74,7 +77,7 @@ def runModel(rawdata, params=None, loopIter=0):
     # if so, create the array.
     if loopIter == 0:
         rodentShp = np.shape(rawdata.rodentExtentMask)
-        results.popAllYears_3D = {'Mastt': np.zeros((nYears, rodentShp[0], rodentShp[1]), 
+        results.popAllYears_3D = {'MastT': np.zeros((nYears, rodentShp[0], rodentShp[1]), 
                                         dtype = np.bool),
                       'ControlT': np.zeros((nYears, rodentShp[0], rodentShp[1]), 
                                         dtype = np.bool),     
@@ -256,6 +259,7 @@ def runModel(rawdata, params=None, loopIter=0):
 
     ## MONTHLY CONTROL SCHEDULE FOR FOLLOWING YEAR (T+1) IF ASSESS/CONTROL JUMPS YEAR LINE
     nextYearCtrlSched = np.full((nControlAreas), -1)
+    print('nControlAreas', nControlAreas, 'nextYearCtrlSched', nextYearCtrlSched)
 
     ### SET INITIAL KEEP YEAR TO 0
     year = 0
@@ -271,10 +275,14 @@ def runModel(rawdata, params=None, loopIter=0):
 
         mastingMask  = np.zeros_like(beechMask, dtype=np.bool)
 
+        ## EMPTY OBJECT FOR STORING CONTROL MASK FOR ALL YEARS FOR RESULTS IN LOOP 0
+        controlThisYear = None
+
         ##create an monthly control schedule for this year
         mthlyCtrlSched = nextYearCtrlSched
         ## RESET CONTROL SCHEDULE FOR NEXT YEAR (T+1) IF ASSESS/CONTROL JUMPS YEAR LINE
         nextYearCtrlSched = np.full((nControlAreas), -1)
+        print('mthlyCtrlSched', mthlyCtrlSched, 'nextYearCtrlSched', nextYearCtrlSched)
         ## GET PRESCRIPTIVE MONTHLY CONTROL SCHEDULE
         if keepYear:
             for count, (dummask, startYear, revisit, 
@@ -285,7 +293,7 @@ def runModel(rawdata, params=None, loopIter=0):
                 print('count', count, 'year', year, 'startYear', startYear, 'nYearsSinceControl',
                     nYearsSinceControl, 'revisit', revisit, 'controlIndicator', controlIndicator)
                 ## CONSIDER PRESCRIPTIVE IF CONTROL NOT SCHED FROM t-1 FROM MAST OR RODENTS
-                if mthlyCtrlSched[count] >= 0:
+                if mthlyCtrlSched[count] < 0:
                     if (year == startYear) or (year > startYear and 
                         nYearsSinceControl >= revisit):
                         ## add control area to schedule
@@ -339,7 +347,8 @@ def runModel(rawdata, params=None, loopIter=0):
             rodent_kMth = rodent_kMap.copy()
             rodent_kMth[~mastingMask] = rodent_kMth[~mastingMask]*rawdata.seasAdjRes['nonmast'][mth]
             if mastT_1:
-                rodent_kMth[oldMastingMask] = rodent_kMapCrash[oldMastingMask]*rawdata.seasAdjRes['crash'][mth]
+                rodent_kMth[oldMastingMask] = (rodent_kMapCrash[oldMastingMask] * 
+                    rawdata.seasAdjRes['crash'][mth])
             if mastT:
                 rodent_kMth[mastingMask] = rodent_kMapMast[mastingMask]*rawdata.seasAdjRes['mast'][mth]
 
@@ -379,27 +388,26 @@ def runModel(rawdata, params=None, loopIter=0):
 
 
    
-                    # Assess reactive control to tracking tunnels 
+                # Assess reactive control to tracking tunnels 
 
                 ## IF NOT REACTING TO MAST BUT COULD REACT TO TT, CHECK TT RATES
                 if (params.threshold_TT < 1.0):
                     for count, (controlMask, startYear, revisit, controlIndicator, 
                         shp) in enumerate(rawdata.rodentControlList):
-                        ## DON'T ASSESS MZ IF NOT CONTROL ZONE, OR IF ALREADY DOING CONTROL
+                        ## DON'T ASSESS MZ IF NOT CONTROL ZONE
                         if not controlIndicator:
                             continue
                         ## TEST IF ALREADY SCHED TO DO CONTROL WITH PRESCRIBE OR MAST
                         ## ASSESS IF NOTHING SCHED OR IF MONTH IS NOT TT CONTROL
                         ## TT CONTROL MONTH SHOULD BE PRIORITISED OVER PRESCRIBED.
-                        no_TT_Test = ((mthlyCtrlSched[count] >= 0) and 
-                            (mthlyCtrlSched[count] == rawdata.reactiveCtrlMth)
+                        no_TT_Test = mthlyCtrlSched[count] == rawdata.reactiveCtrlMth
                         ## NO NEED TO ASSESS RODENTS IF ALREADY DOING CONTROL 
                         if no_TT_Test:
                             continue
                         ## ASSESS TT RATE
                         nPixelsZone = rawdata.pixelsInControlAndBeechMask[shp]
                         nRodentsinControlAndBeechMask = np.sum(rodent_raster[rawdata.controlAndBeechMask[shp]])
-                        rodentsInControlAndBeechMaskDensity = (nRodentsinControlAndBeechMask / nPixelsZone)
+                        rodentsInControlAndBeechMaskDensity = (nRodentsinControlAndBeechMask/nPixelsZone)
                         TT_rate = trackingTunnelRate(rodentsInControlAndBeechMaskDensity, 
                                 params.g0_TT, params.sigma_TT, 
                                 params.nights_TT, params.nTunnels, params.resolutions[0])
@@ -413,18 +421,6 @@ def runModel(rawdata, params=None, loopIter=0):
                             ## SCHEDULED CONTROL JUMPS INTO THE NEXT YEAR (T+1)
                             else:
                                 nextYearCtrlSched[i] = rawdata.reactiveCtrlMth
-
-
-
-
-
-
-
-
-## TODO: PICK UP HERE ON TUESDAY
-
-
-
 
 
             # Rodent Control. Get the combined control masks for this year
@@ -444,10 +440,16 @@ def runModel(rawdata, params=None, loopIter=0):
                             schedControlMask = cmask.copy()
                         else:
                             schedControlMask |= cmask
+                        ## ADD CONTROL ZONES TO CONTROLTHISYEAR FOR RESULTS.
+                        if loopIter == 0:
+                            if controlThisYear is None:
+                                controlThisYear = cmask.copy()
+                            else:
+                                controlThisYear |= cmask
     
                         lastControlArray[mArea] = year
                         results.controlCount += 1
-
+                        print('Control Area', areaList[-1])
                 control_mth = schedControlMask is not None and keepYear # and past burn in
         #        print('year', year, 'control_mth', control_mth)
                 # if reactiveControlMask is not None:
@@ -554,15 +556,27 @@ def runModel(rawdata, params=None, loopIter=0):
             ## Populate storage arrays with updated densities and maps - full output 
             #only once per year in Jan (mth 4)
             if (mth==4):
-                populateResultArrays(loopIter, mastingMask, schedControlMask, rodent_raster, 
+                populateResultArrays(loopIter, mastingMask, rodent_raster, 
                     rawdata.rodentExtentMask, rawdata.rodentControlList, 
                     rawdata.rodentAreaDictByMgmt, results.rodentDensity_2D,
                     stoat_raster, rawdata.stoatExtentMask, rawdata.stoatSpatialDictByMgmt, 
                     rawdata.stoatAreaDictByMgmt, results.stoatDensity_2D, prey_raster, 
                     rawdata.preyExtentMask, rawdata.preySpatialDictByMgmt, rawdata.preyAreaDictByMgmt, 
                     results.preyDensity_2D, results.popAllYears_3D, year, year_all, keepYear)
-            ### IF BEYOND BURN IN PERIOD, STORE THE RESULTS
 
+
+#                populateResultArrays(loopIter, mastingMask, schedControlMask, rodent_raster, 
+#                    rawdata.rodentExtentMask, rawdata.rodentControlList, 
+#                    rawdata.rodentAreaDictByMgmt, results.rodentDensity_2D,
+#                    stoat_raster, rawdata.stoatExtentMask, rawdata.stoatSpatialDictByMgmt, 
+#                    rawdata.stoatAreaDictByMgmt, results.stoatDensity_2D, prey_raster, 
+#                    rawdata.preyExtentMask, rawdata.preySpatialDictByMgmt, rawdata.preyAreaDictByMgmt, 
+#                    results.preyDensity_2D, results.popAllYears_3D, year, year_all, keepYear)
+
+            if (mth == 11) and (loopIter == 0) and keepYear:
+                populateResultControl(year, results.popAllYears_3D, controlThisYear)
+
+        ### IF BEYOND BURN IN PERIOD, STORE THE RESULTS
         if keepYear:
             ## update the year
             year += 1
@@ -572,8 +586,8 @@ def runModel(rawdata, params=None, loopIter=0):
         # update the masting status of T_1 for next year
         mastT_1 = mastT
         oldMastingMask = mastingMask.copy()
-        if mastT_1:
-            propControlMaskMasting[:,1] = propControlMaskMasting[:,0]
+###        if mastT_1:
+###            propControlMaskMasting[:,1] = propControlMaskMasting[:,0]
 
     return results
         
@@ -1184,7 +1198,7 @@ def getRodentMaskForFile(rodentControlList, shpFile):
             break
     return mask
 
-def populateResultArrays(loopIter, mastingMask, schedControlMask, rodent_raster, 
+def populateResultArrays(loopIter, mastingMask, rodent_raster, 
         rodentExtentMask, rodentControlList, rodentAreaDictByMgmt, rodentDensity_2D,
         stoat_raster, stoatExtentMask, stoatSpatialDictByMgmt,stoatAreaDictByMgmt, 
         stoatDensity_2D, prey_raster, preyExtentMask, preySpatialDictByMgmt, preyAreaDictByMgmt, 
@@ -1222,11 +1236,19 @@ def populateResultArrays(loopIter, mastingMask, schedControlMask, rodent_raster,
         # 2) populate 3-D array on given iteration
         # copying of arrays not needed since we are inserting into
         # a given layer of popAllYears_3D - copy done implicitly
-        popAllYears_3D['Mastt'][year] = mastingMask
-        popAllYears_3D['ControlT'][year] = schedControlMask
+        popAllYears_3D['MastT'][year] = mastingMask
+#        popAllYears_3D['ControlT'][year] = schedControlMask
         popAllYears_3D['rodentDensity'][year] = rodent_raster
         popAllYears_3D['stoatDensity'][year] = stoat_raster
         popAllYears_3D['preyDensity'][year] = prey_raster[5,:,:]
+
+def populateResultControl(year, popAllYears_3D, controlThisYear):
+    """
+    ## POPULATE THE ANNUAL CONTROL RASTER FOR RESULTS
+    """
+    popAllYears_3D['ControlT'][year] = controlThisYear
+
+
 
 def populateResultDensity(rodent_raster, rodentExtentMask, rodentControlList, 
         rodentAreaDictByMgmt, rodentDensity_2D_mth, stoat_raster, stoatExtentMask, 

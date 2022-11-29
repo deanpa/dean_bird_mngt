@@ -201,6 +201,8 @@ class PreyData(object):
         (self.rodentControlList, self.rodentAreaDictByMgmt, self.pixelsInControlAndBeechMask,
                 self.controlAndBeechMask) = self.readAndResampleControlForRodents()
 
+        print('self.rodentAreaDictByMgmt', self.rodentAreaDictByMgmt)
+
 
 #        print('pixelsInControlAndBeechMask', self.pixelsInControlAndBeechMask)
 
@@ -358,10 +360,9 @@ class PreyData(object):
                     firstRow = False
                     continue
 
-                if len(row) == 5:
-                    shpFile, startYear, ctrlMth, revisit, controlIndicator, = row
+                if len(row) == 4:
+                    shpFile, startYear, revisit, controlIndicator, = row
                     startYear = int(startYear)
-                    ctrlMth = int(ctrlMth)
                     revisit = int(revisit)
                     controlIndicator = eval(controlIndicator)
 ###                    ## IF DO NOT CONTROL ZONE, THEN DON'T ADD TO LIST
@@ -399,8 +400,8 @@ class PreyData(object):
                     pixelsInControlAndBeechMask[shpFile] = np.sum(controlAndBeechMask[shpFile])
 
                     # save data
-                    controlList.append((mask, startYear, ctrlMth, revisit, controlIndicator, shpFile))
-
+                    controlList.append((mask, startYear, revisit, controlIndicator, shpFile))
+                    print('controlList', startYear, revisit, controlIndicator, shpFile)
         ## IF SUMMARISE RESULTS OVER FULL EXTENT ADD TO 
         if self.params.summariseFullExtent:
             # put in a special key = 'ALL' that contains the extent mask
@@ -433,8 +434,8 @@ class PreyData(object):
                     firstRow = False
                     continue
 
-                if len(row) == 5:
-                    shpFile, startYear, ctrlMth, revisit, controlIndicator = row
+                if len(row) == 4:
+                    shpFile, startYear, revisit, controlIndicator = row
         
                     shpFile = os.path.join(self.params.inputDataPath, shpFile)
 
@@ -488,8 +489,8 @@ class PreyData(object):
                     firstRow = False
                     continue
 
-                if len(row) == 5:
-                    shpFile, startYear, ctrlMth, revisit, controlIndicator = row
+                if len(row) == 4:
+                    shpFile, startYear, revisit, controlIndicator = row
         
                     shpFile = os.path.join(self.params.inputDataPath, shpFile)
 

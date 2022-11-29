@@ -131,7 +131,7 @@ def makeMovie(results, movieFName, outputDataPath):
         # Note: Current directory
         thisFramePNG = 'frame_%02d.png' % yearn
 
-        mastingMask = popMovie['Mastt'][yearn]
+        mastingMask = popMovie['MastT'][yearn]
         makeMaskPNG(tempDir, mastingMask, mastingPNG, 
                 'Masting Year %d' % yearName, 
                 RODENT_RESIZE_PERCENT)

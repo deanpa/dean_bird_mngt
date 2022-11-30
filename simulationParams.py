@@ -16,8 +16,8 @@ class PreyParams(object):
         ######################################################
 
         ### SET YEARS AND BURN IN YEARS
-        self.burnin = 1
-        self.years = np.arange(3)
+        self.burnin = 4
+        self.years = np.arange(12)
         ### SET ITERATIONS
         self.iter = 1
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
@@ -99,7 +99,7 @@ class PreyParams(object):
         # Control parameters
         # proportion of zone in mast required for reactive control
         # model for control that is reactive to masting
-        self.reactivePropMgmtMasting = 0    #0.5 # set > 0 to enable
+        self.reactivePropMgmtMasting = 0.5    #0.5 # set > 0 to enable
         self.reactiveAssessMth = self.monthDict['Apr']  #what month to do a mast prop or tracking tunnel assessment, mth7=Apr
         self.reactiveCtrlDelay = 2  #delay implement reactive control, mth7+2=9=June 
         ## PRESCRIPTIVE CONTROL MONTH WILL BE SAME AS REACTIVE
@@ -142,7 +142,7 @@ class PreyParams(object):
         self.rodentMaxAltitude = 1000.0  # metres
 
         ######## TRACKING TUNNEL PARAMETERS
-        self.threshold_TT = 1.0             # Thres prop of TT with detections
+        self.threshold_TT = 0.25            #(1 = no reac) Thres prop of TT with detections
         self.g0_TT = 0.02                   # Tracking tunnel g0
         self.sigma_TT = 22.0                # Rat sigma
         self.nights_TT = 4                  # Tracking tunnel nights

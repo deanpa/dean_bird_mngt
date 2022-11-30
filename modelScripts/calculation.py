@@ -52,9 +52,6 @@ def runModel(rawdata, params=None, loopIter=0):
     nControlAreas = len(rawdata.preySpatialDictByMgmt)
     nYears = len(params.years)
 
-    print('nYears', nYears, 'nControlAreas', nControlAreas)    
-
-
     ### MAKE BURNIN AND KEEP MASK ARRAY
     totalYears = nYears + params.burnin
     keepMask = np.arange(totalYears) >= params.burnin
@@ -259,7 +256,6 @@ def runModel(rawdata, params=None, loopIter=0):
 
     ## MONTHLY CONTROL SCHEDULE FOR FOLLOWING YEAR (T+1) IF ASSESS/CONTROL JUMPS YEAR LINE
     nextYearCtrlSched = np.full((nControlAreas), -1)
-    print('nControlAreas', nControlAreas, 'nextYearCtrlSched', nextYearCtrlSched)
 
     ### SET INITIAL KEEP YEAR TO 0
     year = 0
@@ -282,7 +278,6 @@ def runModel(rawdata, params=None, loopIter=0):
         mthlyCtrlSched = nextYearCtrlSched
         ## RESET CONTROL SCHEDULE FOR NEXT YEAR (T+1) IF ASSESS/CONTROL JUMPS YEAR LINE
         nextYearCtrlSched = np.full((nControlAreas), -1)
-        print('mthlyCtrlSched', mthlyCtrlSched, 'nextYearCtrlSched', nextYearCtrlSched)
         ## GET PRESCRIPTIVE MONTHLY CONTROL SCHEDULE
         if keepYear:
             for count, (dummask, startYear, revisit, 
@@ -290,17 +285,15 @@ def runModel(rawdata, params=None, loopIter=0):
                 lastControl = lastControlArray[count]
                 nYearsSinceControl = year - lastControl
 
-                print('count', count, 'year', year, 'startYear', startYear, 'nYearsSinceControl',
-                    nYearsSinceControl, 'revisit', revisit, 'controlIndicator', controlIndicator)
                 ## CONSIDER PRESCRIPTIVE IF CONTROL NOT SCHED FROM t-1 FROM MAST OR RODENTS
                 if mthlyCtrlSched[count] < 0:
                     if (year == startYear) or (year > startYear and 
                         nYearsSinceControl >= revisit):
                         ## add control area to schedule
                         mthlyCtrlSched[count] = rawdata.prescrptCtrlMth
-
-                print('year_all', year_all, 'keepYear', keepYear)
-        print('mthlyCtrlSched', mthlyCtrlSched, 'nextYearCtrlSched', nextYearCtrlSched)
+                        print('Prescriptive', 'Area', count, 'year', year,
+                            'month', rawdata.prescrptCtrlMth, 
+                            'Yr Since', nYearsSinceControl)
 
         # Masting affects rodents the same year now
         #but year starts in Sept, spring cos that's when beech flowering starts
@@ -322,13 +315,12 @@ def runModel(rawdata, params=None, loopIter=0):
                 for count, (controlMask, startYear, revisit, 
                     controlIndicator, shp) in enumerate(rawdata.rodentControlList):
                     if not controlIndicator:
-#                    if shp == 'ALL':
                         continue
-                    propControlMaskMasting[count] = (np.count_nonzero(mastingMask & controlMask)
-                                / np.count_nonzero(controlMask))
+                    propControlMaskMasting[count] = (np.count_nonzero(mastingMask & 
+                        controlMask) / np.count_nonzero(controlMask))
 #                    propControlMaskMasting[count,0] = (np.count_nonzero(mastingMask & controlMask)
 #                                / np.count_nonzero(controlMask))
-
+                print('PropMaskMast', propControlMaskMasting)
       
         ##age the prey
         if year_all > 0:
@@ -365,6 +357,9 @@ def runModel(rawdata, params=None, loopIter=0):
                     #in earlier months use prop masting in previous year
 ###                    if mastT and (mth > params.monthDict['Feb']):                   
                     for i in range(nControlAreas):
+                        if not rawdata.controlAreaBool[i]:
+                            continue
+                        ## CHECK MASTING EXTENT
                         if propControlMaskMasting[i] >= params.reactivePropMgmtMasting:
                             ## SCHEDULE CONTROL IN THIS YEAR (T)
                             if not rawdata.jumpYearCtrl:                      
@@ -372,6 +367,10 @@ def runModel(rawdata, params=None, loopIter=0):
                             ## SCHEDULED CONTROL JUMPS INTO THE NEXT YEAR (T+1)
                             else:
                                 nextYearCtrlSched[i] = rawdata.reactiveCtrlMth
+    
+                            print('mast prp > thres', propControlMaskMasting[i] >= 
+                                params.reactivePropMgmtMasting, 'year', year, 
+                                'month', mth, 'Area', i, 'jumpYear', rawdata.jumpYearCtrl)
                                 
                     
 #                    if mastT_1 and (mth <= params.monthDict['Feb']):                   
@@ -381,14 +380,6 @@ def runModel(rawdata, params=None, loopIter=0):
 #                                ## UNLIKELY TO JUMP THE YEAR LINE FOR CONTROL
 #                               ## SO DO NOT ACCOUNT FOR THAT HERE
 
-
-        ## TODO: FIX UP THE CONTROL FOR PRESCRIPTIVE, MASTING AND TT
-        ##       MAYBE CONTROL MONTH FOR PRESCRIPT, MAST AND TT
-        ##       AND MONTH FOR TT ASSESSEMENT - NOT MASTING ASSESSMENT
-
-
-   
-                # Assess reactive control to tracking tunnels 
 
                 ## IF NOT REACTING TO MAST BUT COULD REACT TO TT, CHECK TT RATES
                 if (params.threshold_TT < 1.0):
@@ -417,11 +408,14 @@ def runModel(rawdata, params=None, loopIter=0):
                             ## DOES CONTROL JUMP THE YEAR LINE????
                             ## SCHEDULE CONTROL IN THIS YEAR (T)
                             if not rawdata.jumpYearCtrl:                      
-                                mthlyCtrlSched[i] = rawdata.reactiveCtrlMth
+                                mthlyCtrlSched[count] = rawdata.reactiveCtrlMth
                             ## SCHEDULED CONTROL JUMPS INTO THE NEXT YEAR (T+1)
                             else:
-                                nextYearCtrlSched[i] = rawdata.reactiveCtrlMth
-
+                                nextYearCtrlSched[count] = rawdata.reactiveCtrlMth
+                        print('TT rate > threshold', np.round(TT_rate, 2),
+                            'year', year, 'assess mth', mth, 'ctrl mth', 
+                            rawdata.reactiveCtrlMth, 'area', count, 
+                            'jumpYear', rawdata.jumpYearCtrl)
 
             # Rodent Control. Get the combined control masks for this year
             # It's a bit hard to work out the mask ahead of time with the
@@ -449,7 +443,6 @@ def runModel(rawdata, params=None, loopIter=0):
     
                         lastControlArray[mArea] = year
                         results.controlCount += 1
-                        print('Control Area', areaList[-1])
                 control_mth = schedControlMask is not None and keepYear # and past burn in
         #        print('year', year, 'control_mth', control_mth)
                 # if reactiveControlMask is not None:
@@ -580,8 +573,6 @@ def runModel(rawdata, params=None, loopIter=0):
         if keepYear:
             ## update the year
             year += 1
-
-        print('######## AFTER UPDATE YEAR; year', year)
 
         # update the masting status of T_1 for next year
         mastT_1 = mastT

@@ -201,22 +201,11 @@ class PreyData(object):
         (self.rodentControlList, self.rodentAreaDictByMgmt, self.pixelsInControlAndBeechMask,
                 self.controlAndBeechMask) = self.readAndResampleControlForRodents()
 
-        print('self.rodentAreaDictByMgmt', self.rodentAreaDictByMgmt)
-
-
-#        print('pixelsInControlAndBeechMask', self.pixelsInControlAndBeechMask)
-
-
         (self.preySpatialDictByMgmt, self.preyAreaDictByMgmt) = (
             self.readAndResampleControlForPrey())
 
         (self.stoatSpatialDictByMgmt, self.stoatAreaDictByMgmt) = (
             self.readAndResampleControlForStoats())
-
-#        print('in dict', 'ALL' in self.rodentSpatialDictByMgmt.keys())
-#        print('rodentSpatialDictByMgmt', self.rodentSpatialDictByMgmt.keys())
-#        print('self.rodentControlDictByYear', self.rodentControlDictByYear.keys())
-    
 
     def getReactCtrlMth(self):
         """
@@ -347,6 +336,8 @@ class PreyData(object):
         ### Dict for the number of pixels in beech in each mgmt zone
         pixelsInControlAndBeechMask = {}
         controlAndBeechMask = {}
+
+        self.controlAreaBool = []
         # work out the extent to use
         x0, y1 = gdal.ApplyGeoTransform(self.rodentGeoTrans, 0, 0)
         x1, y0 = gdal.ApplyGeoTransform(self.rodentGeoTrans, self.rodentNcols, self.rodentNrows)
@@ -365,10 +356,9 @@ class PreyData(object):
                     startYear = int(startYear)
                     revisit = int(revisit)
                     controlIndicator = eval(controlIndicator)
-###                    ## IF DO NOT CONTROL ZONE, THEN DON'T ADD TO LIST
-###                    if not controlIndicator:
-###                        continue
-
+                    ## BOOLEAN ARRAY INDICATING WHETHER CONTROL SHOULD OCCUR IN AREA
+                    self.controlAreaBool.append(controlIndicator)
+                    
                     shpFile = os.path.join(self.params.inputDataPath, shpFile)
 
                     # check we already have this one resampled
@@ -401,7 +391,6 @@ class PreyData(object):
 
                     # save data
                     controlList.append((mask, startYear, revisit, controlIndicator, shpFile))
-                    print('controlList', startYear, revisit, controlIndicator, shpFile)
         ## IF SUMMARISE RESULTS OVER FULL EXTENT ADD TO 
         if self.params.summariseFullExtent:
             # put in a special key = 'ALL' that contains the extent mask
@@ -458,8 +447,6 @@ class PreyData(object):
                         preyAreaDict[shpFile] = np.sum(data * self.preyCorrectionK)
                         # store it
                         preySpatialDict[shpFile] = mask.copy()
-
-                        print('preyAreaDict', preyAreaDict[shpFile], 'sum', np.sum(mask))
 
         ## IF SUMMARISE RESULTS OVER FULL EXTENT ADD TO 
         if self.params.summariseFullExtent:

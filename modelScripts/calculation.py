@@ -287,13 +287,15 @@ def runModel(rawdata, params=None, loopIter=0):
 
                 ## CONSIDER PRESCRIPTIVE IF CONTROL NOT SCHED FROM t-1 FROM MAST OR RODENTS
                 if mthlyCtrlSched[count] < 0:
-                    if (year == startYear) or (year > startYear and 
-                        nYearsSinceControl >= revisit):
+                    controlCondition =  (year == startYear) or (year > startYear and 
+                        nYearsSinceControl >= revisit)
+                    if controlCondition:
                         ## add control area to schedule
                         mthlyCtrlSched[count] = rawdata.prescrptCtrlMth
                         print('Prescriptive', 'Area', count, 'year', year,
                             'month', rawdata.prescrptCtrlMth, 
-                            'Yr Since', nYearsSinceControl)
+                            'Yr Since', nYearsSinceControl, 'revisit', revisit,
+                            'condit', controlCondition)
 
         # Masting affects rodents the same year now
         #but year starts in Sept, spring cos that's when beech flowering starts
@@ -459,6 +461,8 @@ def runModel(rawdata, params=None, loopIter=0):
                 #     # the control is just due to reactive control
                 #     schedControlMask = reactiveControlMask
     
+                
+
                 (rodent_raster, nToxicRodents) = doControl(rawdata, params, 
                     schedControlMask, rodent_raster)
     

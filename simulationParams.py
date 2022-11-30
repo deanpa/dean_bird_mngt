@@ -54,15 +54,33 @@ class PreyParams(object):
         print('############################')
 
         # ### SET DATA AND PATHS TO DIRECTORIES
-        self.extentShp = os.path.join(self.inputDataPath, 'fullExtent.shp')
-        self.AOIShp = os.path.join(self.inputDataPath, 'Kea_Model_Region3.shp')
+#        self.extentShp = os.path.join(self.inputDataPath, 'fullExtent.shp')
+#        self.AOIShp = os.path.join(self.inputDataPath, 'Kea_Model_Region3.shp')
+
+
+        ##########################################
+        ## TEST CONTROL ##########################
+        self.extentShp = os.path.join(self.inputDataPath, 'test_fullExtent.shp')
+        self.AOIShp = os.path.join(self.inputDataPath, 'test_AOI.shp')
+        ##########################################
+        ##########################################
+
         self.kClasses = os.path.join(self.inputDataPath, 'seed_Kea.img')    
+
 
         ### Area trapped in recent times.
         self.islands = os.path.join(self.inputDataPath, 'stoatTrappingRaster.img')
         self.DEM = os.path.join(self.inputDataPath, 'dem200_kea.img')
         self.preyHabitatShp = os.path.join(self.inputDataPath, 'Kea_Habitat.shp')
-        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
+
+        ##########################################
+        ## TEST CONTROL ##########################
+        self.controlFile = os.path.join(self.inputDataPath, 'testControl.csv') # control3 is effectively no control (st yr set to 100)
+        ##########################################
+        ##########################################
+
+
+#        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
         self.seasAdjResFile = os.path.join(self.inputDataPath, 'mastLUpTable.csv')
 
         ## SET PICKLE FILE NAMES FOR PRE-PROCESSING AND RESULTS
@@ -71,22 +89,9 @@ class PreyParams(object):
         resultsFName = 'results_' + scenDir + '.pkl'
         self.resultsFName = os.path.join(self.outputDataPath, resultsFName)
 
-
-#        ### SET DATA AND PATHS TO DIRECTORIES - dummy/simplified landscape
-#        self.extentShp = os.path.join(self.inputDataPath, 'fullExtent.shp')
-#        self.AOIShp = os.path.join(self.inputDataPath, 'Kea_Model_Region3.shp')
-#        self.KClasses = os.path.join(self.inputDataPath, 'kClassesDummy.grd')       #'seeds_RmIslands.img'))    
-#        ### Area trapped in recent times.
-#        self.islands = os.path.join(self.inputDataPath, 'trapsDummy.tif')
-#        self.DEM = os.path.join(self.inputDataPath, 'dem_region3.tif')
-#        self.resolutions = (200.0, 1000.0, 2000.0)
-#        self.controlFile = os.path.join(self.inputDataPath, 'controlDummy.csv') # control3 is effectively no control (st yr set to 100)
-#        self.seasAdjResFile = os.path.join(self.inputDataPath, 'mastLUpTable.csv')
-
+        ## DATA DICTIONARY TO ASSOCIATE CALENDAR MONTHS WITH NUMBERS
         self.monthDict = {'Sep' : 0, 'Oct' : 1, 'Nov' : 2, 'Dec' : 3, 'Jan' : 4, 
             'Feb' : 5, 'Mar' : 6, 'Apr' : 7, 'May' : 8, 'Jun' : 9, 'Jul' : 10, 'Aug' : 11}
-
-
 
         ## RESOLUTION (RATS, STOATS, PREY)
         self.resolutions = (200.0, 1000.0, 1000.0)

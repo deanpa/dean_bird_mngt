@@ -459,6 +459,8 @@ class PreyData(object):
                         # store it
                         preySpatialDict[shpFile] = mask.copy()
 
+                        print('preyAreaDict', preyAreaDict[shpFile], 'sum', np.sum(mask))
+
         ## IF SUMMARISE RESULTS OVER FULL EXTENT ADD TO 
         if self.params.summariseFullExtent:
             # put in a special key = 'ALL' that contains the extent mask

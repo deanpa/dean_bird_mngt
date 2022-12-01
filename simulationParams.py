@@ -16,8 +16,8 @@ class PreyParams(object):
         ######################################################
 
         ### SET YEARS AND BURN IN YEARS
-        self.burnin = 4
-        self.years = np.arange(12)
+        self.burnin = 5
+        self.years = np.arange(10)
         ### SET ITERATIONS
         self.iter = 1
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
@@ -56,8 +56,6 @@ class PreyParams(object):
         # ### SET DATA AND PATHS TO DIRECTORIES
 #        self.extentShp = os.path.join(self.inputDataPath, 'fullExtent.shp')
 #        self.AOIShp = os.path.join(self.inputDataPath, 'Kea_Model_Region3.shp')
-
-
         ##########################################
         ## TEST CONTROL ##########################
         self.extentShp = os.path.join(self.inputDataPath, 'test_fullExtent.shp')
@@ -78,9 +76,8 @@ class PreyParams(object):
         self.controlFile = os.path.join(self.inputDataPath, 'testControl.csv') # control3 is effectively no control (st yr set to 100)
         ##########################################
         ##########################################
-
-
 #        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
+
         self.seasAdjResFile = os.path.join(self.inputDataPath, 'mastLUpTable.csv')
 
         ## SET PICKLE FILE NAMES FOR PRE-PROCESSING AND RESULTS

@@ -5,11 +5,6 @@ import sys
 import importlib
 import optparse
 from modelScripts import resultsMain
-#from modelScripts import preProcessing
-
-
-
-
 
 class CmdArgs(object):
     def __init__(self):
@@ -22,7 +17,6 @@ class CmdArgs(object):
 cmdargs = CmdArgs()
 print('Species results start', cmdargs.species)
 print('Scenario results start', int(cmdargs.scenario), type(int(cmdargs.scenario)))
-
 
 #####################################################
 ######################
@@ -52,8 +46,6 @@ scenParams = importlib.import_module(paramsMod)
 params = scenParams.PreyParams(cmdargs.species, int(cmdargs.scenario))
 
 resultsMain.main(params)
-
-
 
 ##########  COMMAND LINE:
 ## ./resultsStart.py --species='Kea' --scenario=1

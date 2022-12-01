@@ -57,6 +57,23 @@ class PreyData(object):
         self.preyGeoTrans, self.preyNcols, self.preyNrows, preyMask = (
             self.rasterizeShape(self.params.preyHabitatShp, self.params.resolutions[2],
                 extent = fullExtTmp))
+        # extentMasks for prey
+        preyGeoTrans, preyNcols, preyNrows, tmpPreyMask = (
+            self.rasterizeShape(self.params.extentShp, self.params.resolutions[2]))
+        ## CLIP PREY MASK TO FULL EXTENT MASK
+
+        print('sum preyMask', np.sum(preyMask), 'sum tmpMask', np.sum(tmpPreyMask))
+
+
+        preyMask = preyMask & tmpPreyMask
+
+        print('AFTER sum preyMask', np.sum(preyMask), 'sum tmpMask', np.sum(tmpPreyMask))
+
+        del (preyGeoTrans, preyNcols, preyNrows, tmpPreyMask)
+
+
+
+
 
         ## FINEST RESOLUTION AMONG ALL SPECIES
         self.finestResol = np.min(self.params.resolutions)
@@ -65,6 +82,14 @@ class PreyData(object):
         (self.preyKCorrGeoTrans, self.preyKCorrNcols, self.preyKCorrNrows, 
             preyKCorrMask) = self.rasterizeShape(self.params.preyHabitatShp, 
             self.finestResol, extent = fullExtTmp)
+
+
+        tmpGeoTrans, tmpNcols, tmpNrows, tmpExtent = (
+            self.rasterizeShape(self.params.extentShp, self.finestResol))
+
+        ## CLIP PREY K CORRECTION RASTER TO FULL EXTENT AT FINE RESOL
+        preyKCorrMask = preyKCorrMask & tmpExtent
+        del (tmpGeoTrans, tmpNcols, tmpNrows, tmpExtent)
 
         # add the self.rodentMaxAltitude to the self.rodentExtentMask
         self.rodentExtentMask[self.DEM > self.params.rodentMaxAltitude] = 0
@@ -83,13 +108,10 @@ class PreyData(object):
         self.rodentExtentMask[self.kClasses == 0] = 0
 
         # get preyCorrectionK to scale pixels near water or high elevation
-        self.preyCorrectionK = scalePreyMask(self.finestResol, self.params.resolutions[2], self.preyNcols, self.preyNrows,
-            self.DEM, preyKCorrMask, self.params.preyMaxAltitude)
+        self.preyCorrectionK = scalePreyMask(self.finestResol, self.params.resolutions[2], 
+            self.preyNcols, self.preyNrows, self.DEM, preyKCorrMask, self.params.preyMaxAltitude)
         ## MAKE PREY EXTENT MASK
         self.preyExtentMask = self.preyCorrectionK > 0.0
-
-        ## GET REACTIVE CONTROL MONTHS FROM PARAMETERS
-        self.getReactCtrlMth()
 
 
 ## DELETE BELOW IF ABOVE WORKS
@@ -102,8 +124,8 @@ class PreyData(object):
 
 
 
-
-
+        ## GET REACTIVE CONTROL MONTHS FROM PARAMETERS
+        self.getReactCtrlMth()
 
         (self.stoatExtentMask, self.stoatPercentArea) = (
             scaleStoatMask(self.params.resolutions[0], 

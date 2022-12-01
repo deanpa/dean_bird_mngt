@@ -7,7 +7,7 @@ from scipy.special import logit
 from .preProcessing import NZTM_WKT
 from . import calcresults
 
-#rng = np.random.default_rng()
+rng = np.random.default_rng()
 
 # for resampleRasterDown
 RESAMPLE_SUM = 0
@@ -144,7 +144,7 @@ def runModel(rawdata, params=None, loopIter=0):
     #########
     # Eqn 8
     # random rodent population
-    rodentPresence = np.random.binomial(1, params.pRodentPres, (rodentRasterShape))
+    rodentPresence = rng.binomial(1, params.pRodentPres, (rodentRasterShape))
     rodentPresence[~rawdata.rodentExtentMask] = 0
 
     ## GET INITIAL RODENT DENSITY FOR EACH CELL AT RODENT RESOL (4 HA)
@@ -154,7 +154,7 @@ def runModel(rawdata, params=None, loopIter=0):
 #        rodentPresence, rodentRasterShape, rodent_kMap)
 
 
-    rodent_raster = rodentPresence * np.random.poisson(params.initialRodentN,
+    rodent_raster = rodentPresence * rng.poisson(params.initialRodentN,
             rodentRasterShape)
 
 
@@ -190,12 +190,12 @@ def runModel(rawdata, params=None, loopIter=0):
     #  Random stoat population and mask out 
     stoatExtentShape = rawdata.stoatExtentMask.shape
     # Eqn 22
-    stoatPresence = np.random.binomial(1, params.pStoatPres, stoatExtentShape)
+    stoatPresence = rng.binomial(1, params.pStoatPres, stoatExtentShape)
     stoatPresence[~rawdata.stoatExtentMask] = 0
 
     ## GET INITIAL STOAT DENSITY FOR EACH CELL AT STOAT RESOL (1 KM)
     # Eqn 23
-    stoat_raster = stoatPresence * np.random.poisson(0.75 * params.initialStoatN,
+    stoat_raster = stoatPresence * rng.poisson(0.75 * params.initialStoatN,
                 stoatShp) 
 #    stoat_raster = stoatPresence * np.exp(np.random.normal(np.log(params.initialStoatN),
 #        params.stoatPopSD), stoatShp).astype(int)
@@ -204,12 +204,12 @@ def runModel(rawdata, params=None, loopIter=0):
     stoat_raster[~rawdata.stoatExtentMask] = 0    
 
     ## Get initial prey population
-    preyPresence = np.random.binomial(1, params.pPreyPres, 
+    preyPresence = rng.binomial(1, params.pPreyPres, 
             rawdata.preyCorrectionK.shape)
 
     # Eqn 38 
-    prey_raster = (np.random.poisson(params.preyInitialMultiplier * params.preyK, 
-                            rawdata.preyCorrectionK.shape) * preyPresence )
+    prey_raster = (rng.poisson(params.preyInitialMultiplier * params.preyK, 
+                            rawdata.preyCorrectionK.shape) * preyPresence)
  
 
 
@@ -229,7 +229,7 @@ def runModel(rawdata, params=None, loopIter=0):
     ## ADD AGE STRUCTURE TO EACH PIXEL IN PREY RASTER
     #split prey_raster into diff age classes
     ## EACH BAND IN 3D RASTER IS AN AGE GROUP (0-4)
-    preyByAgeRasts = np.random.multinomial(prey_raster, params.preyInitAgeStr)
+    preyByAgeRasts = rng.multinomial(prey_raster, params.preyInitAgeStr)
     ## ADD THE TOTAL NUMBER IN EACH PIXEL AS A 6TH BAND IN 3D RASTER
     prey_raster = np.concatenate((preyByAgeRasts.transpose(2,0,1),prey_raster.reshape(1,
                         prey_raster.shape[0],prey_raster.shape[1])),axis=0)
@@ -650,7 +650,7 @@ def calcStoatPopulation(stoat_raster, rodent_raster, nToxicRodents, stoatMask, p
 
 #    stoat_t = np.random.poisson(stoat_t)
     ## EQN 28: ADD STOCHASTICITY GAUSSIAN PROCESS
-    stoat_t = (np.exp(np.random.normal(np.log(stoat_t + 1.0), 
+    stoat_t = (np.exp(rng.normal(np.log(stoat_t + 1.0), 
                 params.stoatPopSD)) - 1.0)
 
 #    print('stoat_t min, max', np.min(stoat_t),
@@ -681,7 +681,7 @@ def eatToxicRodents(stoat_raster, toxic_raster_stoat, params):
     # probability individ. stoat eating a toxic rodent
     pEat = params.pEatEncToxic * pEnc
     # Eqn 26     # update stoat_raster
-    stoat_raster = np.random.binomial(stoat_raster, (1.0 - pEat))
+    stoat_raster = rng.binomial(stoat_raster, (1.0 - pEat))
     return(stoat_raster)                   
 
 
@@ -700,7 +700,7 @@ def doRodentDispersal(rawdata, params, rodent_raster, rodent_kMth,
 #        np.exp(-rodent_kMth[rawdata.rodentExtentMask] * params.tauImmigrate[0]))
 
     # Eqn 17
-    rodent_emigrant_raster = np.random.binomial(rodent_raster, probRodentEmigrate)
+    rodent_emigrant_raster = rng.binomial(rodent_raster, probRodentEmigrate)
 
 
 

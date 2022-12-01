@@ -28,12 +28,12 @@ def inv_logit(x):
 
 def runModel(rawdata, params=None, loopIter=0):
     """
-    Run the Kea model for a given iteration number.
-    rawdata should be an instance of preProcessing.KeaData.
-    params should be a params.KeaParams. If not given, the one
+    Run the Prey model for a given iteration number.
+    rawdata should be an instance of preProcessing.PreyData.
+    params should be a params.PreyParams. If not given, the one
     in rawdata is used.
     loopIter is the iteration number that this model run is for.
-    Returns an instance of calcresults.KeaResults.
+    Returns an instance of calcresults.PreyResults.
     """
     if params is None:
         params = rawdata.params
@@ -45,22 +45,22 @@ def runModel(rawdata, params=None, loopIter=0):
 #    print('loopIter in runModel', loopIter)
 
     # create results object.
-    results = calcresults.KeaResults()
+    results = calcresults.PreyResults()
     # stash the params in case useful for plotting.
     results.params = params 
 
-    nControlAreas = len(rawdata.keaSpatialDictByMgmt)
+    nControlAreas = len(rawdata.preySpatialDictByMgmt)
     nYears = len(params.years)
-    
+
     ### MAKE BURNIN AND KEEP MASK ARRAY
     totalYears = nYears + params.burnin
     keepMask = np.arange(totalYears) >= params.burnin
 
     # NOTE: data just for this iteration
-    results.keaDensity_2D = np.zeros((nControlAreas, totalYears))
+    results.preyDensity_2D = np.zeros((nControlAreas, totalYears))
     results.stoatDensity_2D = np.zeros((nControlAreas, totalYears))
     results.rodentDensity_2D = np.zeros((nControlAreas, totalYears))
-    results.keaDensity_2D_mth = np.zeros((nControlAreas, totalYears*12))
+    results.preyDensity_2D_mth = np.zeros((nControlAreas, totalYears*12))
     results.stoatDensity_2D_mth = np.zeros((nControlAreas, totalYears*12))
     results.rodentDensity_2D_mth = np.zeros((nControlAreas, totalYears*12))
 
@@ -69,12 +69,12 @@ def runModel(rawdata, params=None, loopIter=0):
     results.controlCount = 0
 
     stoatShp = np.shape(rawdata.stoatExtentMask)
-    keaShp = np.shape(rawdata.keaExtentMask)
+    preyShp = np.shape(rawdata.preyExtentMask)
     # are we storing result.popAllYears_3D for this iteration?
     # if so, create the array.
     if loopIter == 0:
         rodentShp = np.shape(rawdata.rodentExtentMask)
-        results.popAllYears_3D = {'Mastt': np.zeros((nYears, rodentShp[0], rodentShp[1]), 
+        results.popAllYears_3D = {'MastT': np.zeros((nYears, rodentShp[0], rodentShp[1]), 
                                         dtype = np.bool),
                       'ControlT': np.zeros((nYears, rodentShp[0], rodentShp[1]), 
                                         dtype = np.bool),     
@@ -82,7 +82,7 @@ def runModel(rawdata, params=None, loopIter=0):
                                         dtype = float),
                       'stoatDensity': np.zeros((nYears, stoatShp[0], stoatShp[1]), 
                                         dtype = float),
-                      'keaDensity': np.zeros((nYears, keaShp[0], keaShp[1]), 
+                      'preyDensity': np.zeros((nYears, preyShp[0], preyShp[1]), 
                                         dtype = float)}
 
     # For each year in params.years
@@ -93,7 +93,7 @@ def runModel(rawdata, params=None, loopIter=0):
     # 5. Stoat Peak (using Rodent Population at control, and num dead toxic rodents)
     # 6. Stoat Dispersal
     # 7. Analysis of shape of Stoat Population Tail 
-    # 8. Kea population decrease
+    # 8. Prey population decrease
 
     # Create our internal rasters
     rodentRasterShape = rawdata.DEM.shape
@@ -127,7 +127,7 @@ def runModel(rawdata, params=None, loopIter=0):
     stoatEmigrationWindowSizePxls = round_up_to_odd(
                 params.emigrationWindowSize[1] / params.resolutions[1])
 
-    keaEmigrationWindowSizePxls = round_up_to_odd(
+    preyEmigrationWindowSizePxls = round_up_to_odd(
                 params.emigrationWindowSize[2] / params.resolutions[2])
 
     distArray = makeDistArray(mastWindowSizePxls, 
@@ -178,8 +178,10 @@ def runModel(rawdata, params=None, loopIter=0):
             rawdata.stoatExtentMask.shape, statMethod = RESAMPLE_SUM, 
             pixelRescale = islandPixRescale)
     stoatIslandMask = stoatIslandPrp > 0
+
     ## ARRAY OF RODENT DENSITY (PER HA) IN TRAPPED AREAS; SCALED FOR RODENT HABITAT
-    stoatIslandKArray = params.islandK * (stoatIslandPrp[stoatIslandMask]) 
+    stoatIslandKArray = params.islandK * (stoatIslandPrp[stoatIslandMask])
+
     ## ASSIGN NOTIONAL RODENT DENSITY TO ISLANDS
     rodent_raster_stoat[stoatIslandMask] = stoatIslandKArray
     # ## MAKE RODENT RASTER FOR t-lag
@@ -201,29 +203,45 @@ def runModel(rawdata, params=None, loopIter=0):
     ## REMOVE ALL NON-STOAT HABITAT
     stoat_raster[~rawdata.stoatExtentMask] = 0    
 
-    ## Get initial kea population
-    keaPresence = np.random.binomial(1, params.pKeaPres, 
-            rawdata.keaCorrectionK.shape)
-    # Eqn 38 
-    kea_raster = (rng.poisson(params.keaInitialMultiplier * params.keaK, 
-                            rawdata.keaCorrectionK.shape) * keaPresence )
- 
-    stoat_keaIslandMask = resampleRasterDown(stoatIslandMask, rawdata.keaExtentMask.shape, 
-                       statMethod = RESAMPLE_SUM, pixelRescale = 1)
-    adjustKeaIsland = (kea_raster > 3) & stoat_keaIslandMask
-    kea_raster[adjustKeaIsland] = 2
-    kea_raster[~rawdata.keaExtentMask] = 0
-    #split kea_raster into diff age classes
-    keaByAgeRasts = rng.multinomial(kea_raster, params.keaInitAgeStr)
-    kea_raster = np.concatenate((keaByAgeRasts.transpose(2,0,1),kea_raster.reshape(1,
-                        kea_raster.shape[0],kea_raster.shape[1])),axis=0)
-    del keaByAgeRasts
+    ## Get initial prey population
+    preyPresence = np.random.binomial(1, params.pPreyPres, 
+            rawdata.preyCorrectionK.shape)
 
-    ## CORRECT KEA RECRUIT AND SURVIVAL PARAMETERS FOR HABITAT AREA
-    keaRecDecay_1D = ((params.keaRecDDcoef* 
-            rawdata.keaCorrectionK)[rawdata.keaExtentMask])
-    keaSurvDecay_1D = ((params.keaSurvDDcoef * 
-            rawdata.keaCorrectionK)[rawdata.keaExtentMask])
+    # Eqn 38 
+    prey_raster = (rng.poisson(params.preyInitialMultiplier * params.preyK, 
+                            rawdata.preyCorrectionK.shape) * preyPresence )
+ 
+
+
+### TODO: CORRECT THIS. KEEP RESOL FOR STOATS AND PREY EQUAL FOR NOW
+
+#    stoat_preyIslandMask = resampleRasterDown(stoatIslandMask, rawdata.preyExtentMask.shape, 
+#                       statMethod = RESAMPLE_SUM, pixelRescale = 1)
+
+
+
+    adjustPreyIsland = (prey_raster > 3) & stoatIslandMask  #stoat_preyIslandMask
+    prey_raster[adjustPreyIsland] = 2
+    prey_raster[~rawdata.preyExtentMask] = 0
+
+
+
+    ## ADD AGE STRUCTURE TO EACH PIXEL IN PREY RASTER
+    #split prey_raster into diff age classes
+    ## EACH BAND IN 3D RASTER IS AN AGE GROUP (0-4)
+    preyByAgeRasts = rng.multinomial(prey_raster, params.preyInitAgeStr)
+    ## ADD THE TOTAL NUMBER IN EACH PIXEL AS A 6TH BAND IN 3D RASTER
+    prey_raster = np.concatenate((preyByAgeRasts.transpose(2,0,1),prey_raster.reshape(1,
+                        prey_raster.shape[0],prey_raster.shape[1])),axis=0)
+    del preyByAgeRasts
+
+
+
+    ## CORRECT PREY RECRUIT AND SURVIVAL PARAMETERS FOR HABITAT AREA
+    preyRecDecay_1D = ((params.preyRecDDcoef* 
+            rawdata.preyCorrectionK)[rawdata.preyExtentMask])
+    preySurvDecay_1D = ((params.preySurvDDcoef * 
+            rawdata.preyCorrectionK)[rawdata.preyExtentMask])
 
 
     # record when last control happens for each mask
@@ -232,39 +250,59 @@ def runModel(rawdata, params=None, loopIter=0):
     # set initial no mast in year t-1
     mastT_1 = False
     oldMastingMask = np.zeros_like(beechMask, dtype=np.bool) 
-    propControlMaskMasting = np.zeros((nControlAreas,2), dtype=float) 
-    
+    ## COLUMN 0 IS FOR CURRENT YEAR, COLUMN 1 IS FOR T-1
+    propControlMaskMasting = np.zeros(nControlAreas, dtype=float) 
+#    propControlMaskMasting = np.zeros((nControlAreas,2), dtype=float) 
+
+    ## MONTHLY CONTROL SCHEDULE FOR FOLLOWING YEAR (T+1) IF ASSESS/CONTROL JUMPS YEAR LINE
+    nextYearCtrlSched = np.full((nControlAreas), -1)
+
     ### SET INITIAL KEEP YEAR TO 0
     year = 0
     
     for year_all in range(totalYears):
-        print('Year', year_all)
-
         ### BOOLEAN INDICATOR OF A POST-BURNIN YEAR
         keepYear = keepMask[year_all]
+
+        print('year_all', year_all, 'keepYear', keepYear, 'year', year)
+
 
         #reactiveControlMask = None # nothing by default
 
         mastingMask  = np.zeros_like(beechMask, dtype=np.bool)
 
+        ## EMPTY OBJECT FOR STORING CONTROL MASK FOR ALL YEARS FOR RESULTS IN LOOP 0
+        controlThisYear = None
+
         ##create an monthly control schedule for this year
-        mthlyCtrlSched = np.full((nControlAreas), -1)
+        mthlyCtrlSched = nextYearCtrlSched
+        ## RESET CONTROL SCHEDULE FOR NEXT YEAR (T+1) IF ASSESS/CONTROL JUMPS YEAR LINE
+        nextYearCtrlSched = np.full((nControlAreas), -1)
+        ## GET PRESCRIPTIVE MONTHLY CONTROL SCHEDULE
         if keepYear:
-            for count, (dummask, startYear, ctrlMth, revisit, shp) in enumerate(rawdata.rodentControlList):
+            for count, (dummask, startYear, revisit, 
+                controlIndicator, shp) in enumerate(rawdata.rodentControlList):
                 lastControl = lastControlArray[count]
                 nYearsSinceControl = year - lastControl
-                if (year == startYear) or (year > startYear and nYearsSinceControl >= revisit):
-                    ## add control area to schedule
-                    mthlyCtrlSched[count] = ctrlMth
 
-                       
+                ## CONSIDER PRESCRIPTIVE IF CONTROL NOT SCHED FROM t-1 FROM MAST OR RODENTS
+                if mthlyCtrlSched[count] < 0:
+                    controlCondition =  ((year == startYear and nYearsSinceControl >= revisit) or 
+                        (year > startYear and nYearsSinceControl >= revisit))
+                    if controlCondition:
+                        ## add control area to schedule
+                        mthlyCtrlSched[count] = rawdata.prescrptCtrlMth
+                        print('Prescriptive', 'Area', count, 'year', year,
+                            'month', rawdata.prescrptCtrlMth, 
+                            'Yr Since', nYearsSinceControl, 'revisit', revisit,
+                            'condit', controlCondition)
+
         # Masting affects rodents the same year now
         #but year starts in Sept, spring cos that's when beech flowering starts
         #mastT = np.random.rand() < params.mastPrEvent
         #have all iterations mast in same year for some sims
-        mastYrarr=np.array([2,7,9,11,15,20,23,27])
+        mastYrarr=np.array([1,7,9,11,15,20,23,27])
         if (year_all in mastYrarr):
-        #if (year_all==3):
             mastT=True
         else:
             mastT=False   
@@ -276,20 +314,23 @@ def runModel(rawdata, params=None, loopIter=0):
             
             #if masting year and doing control reactive to masting then assess prop mgmt areas masting
             if (params.reactivePropMgmtMasting > 0):
-                for count, (controlMask, startYear, ctrlMth, revisit, shp) in enumerate(rawdata.rodentControlList):
-                    if shp == 'ALL':
+                for count, (controlMask, startYear, revisit, 
+                    controlIndicator, shp) in enumerate(rawdata.rodentControlList):
+                    if not controlIndicator:
                         continue
-                    propControlMaskMasting[count,0] = (np.count_nonzero(mastingMask & controlMask)
-                                / np.count_nonzero(controlMask))
-
+                    propControlMaskMasting[count] = (np.count_nonzero(mastingMask & 
+                        controlMask) / np.count_nonzero(controlMask))
+#                    propControlMaskMasting[count,0] = (np.count_nonzero(mastingMask & controlMask)
+#                                / np.count_nonzero(controlMask))
+                print('PropMaskMast', propControlMaskMasting)
       
-        ##age the kea
-        if year_all>0:
-            kea_raster[4,:,:] = kea_raster[4,:,:] + kea_raster[3,:,:]
-            kea_raster[3,:,:] = kea_raster[2,:,:] 
-            kea_raster[2,:,:] = kea_raster[1,:,:] 
-            kea_raster[1,:,:] = kea_raster[0,:,:]
-            kea_raster[0,:,:] = 0
+        ##age the prey
+        if year_all > 0:
+            prey_raster[4,:,:] = prey_raster[4,:,:] + prey_raster[3,:,:]
+            prey_raster[3,:,:] = prey_raster[2,:,:] 
+            prey_raster[2,:,:] = prey_raster[1,:,:] 
+            prey_raster[1,:,:] = prey_raster[0,:,:]
+            prey_raster[0,:,:] = 0
         
         for mth in range(12):
             
@@ -300,47 +341,83 @@ def runModel(rawdata, params=None, loopIter=0):
             rodent_kMth = rodent_kMap.copy()
             rodent_kMth[~mastingMask] = rodent_kMth[~mastingMask]*rawdata.seasAdjRes['nonmast'][mth]
             if mastT_1:
-                rodent_kMth[oldMastingMask] = rodent_kMapCrash[oldMastingMask]*rawdata.seasAdjRes['crash'][mth]
+                rodent_kMth[oldMastingMask] = (rodent_kMapCrash[oldMastingMask] * 
+                    rawdata.seasAdjRes['crash'][mth])
             if mastT:
                 rodent_kMth[mastingMask] = rodent_kMapMast[mastingMask]*rawdata.seasAdjRes['mast'][mth]
 
             rodent_raster = doRodentGrowth(rawdata, params,
                 rodent_raster, rodent_kMth, mth)
 
-            #assess need for control (due to mega mast or high tracking rates) in params.reactiveAssessMth 
+            #assess need for control (mast or high tracking rates) in params.reactiveAssessMth 
             #but don't actually apply control until a few months later
             #all in the same month for now until figure out how to vary
             #only do assessment and control after burnin (i.e. in a 'keep year')
             if (mth==params.reactiveAssessMth) and keepYear:
-                if (params.reactivePropMgmtMasting > 0):
+                if (params.reactivePropMgmtMasting > 0) and mastT:
                     #this is a fudge so if assess in Mar-Aug use prop mast this year
                     #in earlier months use prop masting in previous year
-                    if mastT and (mth>5):                   
-                        for i in range(nControlAreas):
-                            if propControlMaskMasting[i,0] >= params.reactivePropMgmtMasting:                      
-                                mthlyCtrlSched[i] = params.reactiveCtrlMth
-                    if mastT_1 and (mth<=5):                   
-                        for i in range(nControlAreas):
-                            if propControlMaskMasting[i,1] >= params.reactivePropMgmtMasting:                      
-                                mthlyCtrlSched[i] = params.reactiveCtrlMth                                
-   
-                    # Assess reactive control to tracking tunnels 
-                if (params.threshold_TT < 1.0):
-                    for count, (controlMask, startYear, ctrlMth, revisit, shp) in enumerate(rawdata.rodentControlList):
-                        if shp == 'ALL':
+###                    if mastT and (mth > params.monthDict['Feb']):                   
+                    for i in range(nControlAreas):
+                        if not rawdata.controlAreaBool[i]:
                             continue
-                       
+                        ## CHECK MASTING EXTENT
+                        if propControlMaskMasting[i] >= params.reactivePropMgmtMasting:
+                            ## SCHEDULE CONTROL IN THIS YEAR (T)
+                            if not rawdata.jumpYearCtrl:                      
+                                mthlyCtrlSched[i] = rawdata.reactiveCtrlMth
+                            ## SCHEDULED CONTROL JUMPS INTO THE NEXT YEAR (T+1)
+                            else:
+                                nextYearCtrlSched[i] = rawdata.reactiveCtrlMth
+    
+                            print('mast prp > thres', propControlMaskMasting[i] >= 
+                                params.reactivePropMgmtMasting, 'year', year, 
+                                'month', mth, 'Area', i, 'jumpYear', rawdata.jumpYearCtrl)
+                                
+                    
+#                    if mastT_1 and (mth <= params.monthDict['Feb']):                   
+#                        for i in range(nControlAreas):
+#                            if propControlMaskMasting[i,1] >= params.reactivePropMgmtMasting:                      
+#                                mthlyCtrlSched[i] = params.reactiveCtrlMth                                
+#                                ## UNLIKELY TO JUMP THE YEAR LINE FOR CONTROL
+#                               ## SO DO NOT ACCOUNT FOR THAT HERE
+
+
+                ## IF NOT REACTING TO MAST BUT COULD REACT TO TT, CHECK TT RATES
+                if (params.threshold_TT < 1.0):
+                    for count, (controlMask, startYear, revisit, controlIndicator, 
+                        shp) in enumerate(rawdata.rodentControlList):
+                        ## DON'T ASSESS MZ IF NOT CONTROL ZONE
+                        if not controlIndicator:
+                            continue
+                        ## TEST IF ALREADY SCHED TO DO CONTROL WITH PRESCRIBE OR MAST
+                        ## ASSESS IF NOTHING SCHED OR IF MONTH IS NOT TT CONTROL
+                        ## TT CONTROL MONTH SHOULD BE PRIORITISED OVER PRESCRIBED.
+                        no_TT_Test = mthlyCtrlSched[count] == rawdata.reactiveCtrlMth
+                        ## NO NEED TO ASSESS RODENTS IF ALREADY DOING CONTROL 
+                        if no_TT_Test:
+                            continue
+                        ## ASSESS TT RATE
                         nPixelsZone = rawdata.pixelsInControlAndBeechMask[shp]
                         nRodentsinControlAndBeechMask = np.sum(rodent_raster[rawdata.controlAndBeechMask[shp]])
-                        rodentsInControlAndBeechMaskDensity = (nRodentsinControlAndBeechMask / nPixelsZone)
-
+                        rodentsInControlAndBeechMaskDensity = (nRodentsinControlAndBeechMask/nPixelsZone)
                         TT_rate = trackingTunnelRate(rodentsInControlAndBeechMaskDensity, 
                                 params.g0_TT, params.sigma_TT, 
                                 params.nights_TT, params.nTunnels, params.resolutions[0])
-                            
+                        ## IF TT RATE EXCEEDS THRESHOLD                            
                         if TT_rate > params.threshold_TT:
-                            mthlyCtrlSched[count] = params.reactiveCtrlMth
-
+#                            mthlyCtrlSched[count] = rawdata.reactiveCtrlMth
+                            ## DOES CONTROL JUMP THE YEAR LINE????
+                            ## SCHEDULE CONTROL IN THIS YEAR (T)
+                            if not rawdata.jumpYearCtrl:                      
+                                mthlyCtrlSched[count] = rawdata.reactiveCtrlMth
+                            ## SCHEDULED CONTROL JUMPS INTO THE NEXT YEAR (T+1)
+                            else:
+                                nextYearCtrlSched[count] = rawdata.reactiveCtrlMth
+                        print('TT rate > threshold', np.round(TT_rate, 2),
+                            'year', year, 'assess mth', mth, 'ctrl mth', 
+                            rawdata.reactiveCtrlMth, 'area', count, 
+                            'jumpYear', rawdata.jumpYearCtrl)
 
             # Rodent Control. Get the combined control masks for this year
             # It's a bit hard to work out the mask ahead of time with the
@@ -349,7 +426,8 @@ def runModel(rawdata, params=None, loopIter=0):
             if (mth in mthlyCtrlSched):
                 schedControlMask = None
                 if keepYear:
-                    areaList = [i for i, mthlyCtrlSched in enumerate(mthlyCtrlSched) if mthlyCtrlSched == mth ]
+                    areaList = np.where(mthlyCtrlSched == mth)[0]
+#                    areaList = [i for i, mthlyCtrlSched in enumerate(mthlyCtrlSched) if mthlyCtrlSched == mth ]
                     for i in range(len(areaList)):
                         mArea=areaList[i]
                         cmask = rawdata.rodentControlList[mArea][0]
@@ -358,10 +436,15 @@ def runModel(rawdata, params=None, loopIter=0):
                             schedControlMask = cmask.copy()
                         else:
                             schedControlMask |= cmask
+                        ## ADD CONTROL ZONES TO CONTROLTHISYEAR FOR RESULTS.
+                        if loopIter == 0:
+                            if controlThisYear is None:
+                                controlThisYear = cmask.copy()
+                            else:
+                                controlThisYear |= cmask
     
                         lastControlArray[mArea] = year
                         results.controlCount += 1
-
                 control_mth = schedControlMask is not None and keepYear # and past burn in
         #        print('year', year, 'control_mth', control_mth)
                 # if reactiveControlMask is not None:
@@ -373,11 +456,13 @@ def runModel(rawdata, params=None, loopIter=0):
                 # if schedControlMask is not None:
                 #     # add in any reactive control
                 #     if reactiveControlMask is not None:
-                #         schedControlMask = schedControlMask | reactiveControlMask
+                #         schedControlmMask = schedControlMask | reactiveControlMask
                 # else:
                 #     # the control is just due to reactive control
                 #     schedControlMask = reactiveControlMask
     
+                
+
                 (rodent_raster, nToxicRodents) = doControl(rawdata, params, 
                     schedControlMask, rodent_raster)
     
@@ -439,21 +524,21 @@ def runModel(rawdata, params=None, loopIter=0):
     
     
     
-            # kea population growth after stoat and rodent dispersal
-            ## IF KEA RESOL != STOAT RESOL, HAVE TO REPLACE "rodent_raster_stoat" in
-            ## THE FOLLOWING FX AND GET 'rodent_raster_kea' WITHIN THE FX. THIS IS
-            ## FOR THE COMPETITION EFFECT BETWEEN RODENTS AND KEA.
-            kea_raster = doKeaGrowth(kea_raster, stoat_raster, params, 
-                    rawdata.keaExtentMask, rodent_raster_stoat,
-                    nHectInRodent, keaRecDecay_1D, keaSurvDecay_1D, mth)
+            # prey population growth after stoat and rodent dispersal
+            ## IF PREY RESOL != STOAT RESOL, HAVE TO REPLACE "rodent_raster_stoat" in
+            ## THE FOLLOWING FX AND GET 'rodent_raster_prey' WITHIN THE FX. THIS IS
+            ## FOR THE COMPETITION EFFECT BETWEEN RODENTS AND PREY.
+            prey_raster = doPreyGrowth(prey_raster, stoat_raster, params, 
+                    rawdata.preyExtentMask, rodent_raster_stoat,
+                    nHectInRodent, preyRecDecay_1D, preySurvDecay_1D, mth)
     
     
     
     
-            ## Kea dispersal
-            if params.keaSeasDisp[mth]:            
-                kea_raster = doKeaDispersal(rawdata, kea_raster, params, 
-                            rawdata.keaExtentMask, keaEmigrationWindowSizePxls)
+            ## Prey dispersal
+            if params.preySeasDisp[mth]:            
+                prey_raster = doPreyDispersal(rawdata, prey_raster, params, 
+                            rawdata.preyExtentMask, preyEmigrationWindowSizePxls)
     
     
             #populate storage arrays with just densities each mth
@@ -462,21 +547,33 @@ def runModel(rawdata, params=None, loopIter=0):
                             results.rodentDensity_2D_mth, stoat_raster, 
                             rawdata.stoatExtentMask, rawdata.stoatSpatialDictByMgmt, 
                             rawdata.stoatAreaDictByMgmt,results.stoatDensity_2D_mth, 
-                            kea_raster, rawdata.keaExtentMask,rawdata.keaSpatialDictByMgmt, 
-                            rawdata.keaAreaDictByMgmt, results.keaDensity_2D_mth, tMth)
+                            prey_raster, rawdata.preyExtentMask,rawdata.preySpatialDictByMgmt, 
+                            rawdata.preyAreaDictByMgmt, results.preyDensity_2D_mth, tMth)
 
             ## Populate storage arrays with updated densities and maps - full output 
             #only once per year in Jan (mth 4)
             if (mth==4):
-                populateResultArrays(loopIter, mastingMask, schedControlMask, rodent_raster, 
+                populateResultArrays(loopIter, mastingMask, rodent_raster, 
                     rawdata.rodentExtentMask, rawdata.rodentControlList, 
                     rawdata.rodentAreaDictByMgmt, results.rodentDensity_2D,
                     stoat_raster, rawdata.stoatExtentMask, rawdata.stoatSpatialDictByMgmt, 
-                    rawdata.stoatAreaDictByMgmt, results.stoatDensity_2D, kea_raster, 
-                    rawdata.keaExtentMask, rawdata.keaSpatialDictByMgmt, rawdata.keaAreaDictByMgmt, 
-                    results.keaDensity_2D, results.popAllYears_3D, year, year_all, keepYear)
-            ### IF BEYOND BURN IN PERIOD, STORE THE RESULTS
-            
+                    rawdata.stoatAreaDictByMgmt, results.stoatDensity_2D, prey_raster, 
+                    rawdata.preyExtentMask, rawdata.preySpatialDictByMgmt, rawdata.preyAreaDictByMgmt, 
+                    results.preyDensity_2D, results.popAllYears_3D, year, year_all, keepYear)
+
+
+#                populateResultArrays(loopIter, mastingMask, schedControlMask, rodent_raster, 
+#                    rawdata.rodentExtentMask, rawdata.rodentControlList, 
+#                    rawdata.rodentAreaDictByMgmt, results.rodentDensity_2D,
+#                    stoat_raster, rawdata.stoatExtentMask, rawdata.stoatSpatialDictByMgmt, 
+#                    rawdata.stoatAreaDictByMgmt, results.stoatDensity_2D, prey_raster, 
+#                    rawdata.preyExtentMask, rawdata.preySpatialDictByMgmt, rawdata.preyAreaDictByMgmt, 
+#                    results.preyDensity_2D, results.popAllYears_3D, year, year_all, keepYear)
+
+            if (mth == 11) and (loopIter == 0) and keepYear:
+                populateResultControl(year, results.popAllYears_3D, controlThisYear)
+
+        ### IF BEYOND BURN IN PERIOD, STORE THE RESULTS
         if keepYear:
             ## update the year
             year += 1
@@ -484,8 +581,8 @@ def runModel(rawdata, params=None, loopIter=0):
         # update the masting status of T_1 for next year
         mastT_1 = mastT
         oldMastingMask = mastingMask.copy()
-        if mastT_1:
-            propControlMaskMasting[:,1] = propControlMaskMasting[:,0]
+###        if mastT_1:
+###            propControlMaskMasting[:,1] = propControlMaskMasting[:,0]
 
     return results
         
@@ -659,7 +756,7 @@ def calcImmigration(emigrant_raster, winsize,
             deltaImmigrate, mask, resolution, raster, gammaPara,
             areaCorrection, tauPara, kMap):
     """
-    Note: same for rodents and stoats, but for kea correct for area in cell
+    Note: same for rodents and stoats, but for prey correct for area in cell
     """
     halfwinsize = int(winsize / 2)
 
@@ -709,7 +806,7 @@ def calcImmigration(emigrant_raster, winsize,
 #####                        relProbEm = 0.0     # force emigrants to leave.
 #####                    elif dist >= 50.0:
                     if tauPara == 0.0:
-                        ## EQN 45: KEA DISPERSAL
+                        ## EQN 45: PREY DISPERSAL
                         relProbEm = (np.exp(-(raster[cy,cx] * gammaPara) /
                             areaCorrection[cy, cx]) *
                             np.exp(-dist / 1000.0 * deltaImmigrate))
@@ -799,22 +896,24 @@ def doRodentGrowth(rawdata, params, rodent_raster, rodent_kMth, mth):
 
 
 
-def doKeaGrowth(kea_raster, stoat_raster, params, mask, 
-        rodent_raster_kea, nHectInRodent, keaRecDecay_1D, 
-        keaSurvDecay_1D, mth):
+
+
+def doPreyGrowth(prey_raster, stoat_raster, params, mask, 
+        rodent_raster_prey, nHectInRodent, preyRecDecay_1D, 
+        preySurvDecay_1D, mth):
     """
-    ## calc kea population growth by pixel
+    ## calc prey population growth by pixel
     """
-###    s = np.exp(-params.keaPsi * stoat_raster)
-    # get rodent population and toxic rodents at kea resolution
+###    s = np.exp(-params.preyPsi * stoat_raster)
+    # get rodent population and toxic rodents at prey resolution
     # it is rodents per 4 ha because we take the average
 
     ###################################################################
     ###################################################################
-    ## DO THE FOLLOWING ONLY IF STOAT AND KEA RESOL ARE NOT EQUAL
-###    rodent_raster_kea = resampleRasterDown(rodent_raster, 
+    ## DO THE FOLLOWING ONLY IF STOAT AND PREY RESOL ARE NOT EQUAL
+###    rodent_raster_prey = resampleRasterDown(rodent_raster, 
 ###                mask.shape, statMethod = RESAMPLE_AVERAGE)
-###    rodentsPerHect = rodent_raster_kea / nHectInRodent
+###    rodentsPerHect = rodent_raster_prey / nHectInRodent
 
     ###################################################################
     ###################################################################
@@ -825,84 +924,88 @@ def doKeaGrowth(kea_raster, stoat_raster, params, mask,
 ###    CS = s * c
     ###################################################################
     ###################################################################
-    
-    stoat_raster_kea = resampleRasterDown(stoat_raster, mask.shape, 
-                       statMethod = RESAMPLE_SUM, pixelRescale = 1)
+
+    ###################################################################
+    ###################################################################
+    ## DO THE FOLLOWING ONLY IF STOAT AND PREY RESOL ARE NOT EQUAL
+#    stoat_raster_prey = resampleRasterDown(stoat_raster, mask.shape, 
+#                       statMethod = RESAMPLE_SUM, pixelRescale = 1)
 
     ## MAKE 1-D ARRAYS FOR POPULATION UPDATE
-    kea0_t = kea_raster[0,mask]
-    kea1_t = kea_raster[1,mask]
-    kea2_t = kea_raster[2,mask]
-    kea3_t = kea_raster[3,mask]
-    kea4_t = kea_raster[4,mask]
-    keaN_t = kea_raster[5,mask]
-    stoat_t = stoat_raster_kea[mask]
-    ## KEA POPN DYNAMICS    
+    prey0_t = prey_raster[0,mask]
+    prey1_t = prey_raster[1,mask]
+    prey2_t = prey_raster[2,mask]
+    prey3_t = prey_raster[3,mask]
+    prey4_t = prey_raster[4,mask]
+    preyN_t = prey_raster[5,mask]
+    stoat_t = stoat_raster[mask]
+#    stoat_t = stoat_raster_prey[mask]
+    ## PREY POPN DYNAMICS    
     
-    pSurv = params.keaSurv[0] * np.exp(-((keaN_t/(keaSurvDecay_1D))**params.keaTheta))
-    kea0_t = rng.binomial(kea0_t, pSurv)
-    pSurv = params.keaSurv[1] * np.exp(-((keaN_t/(keaSurvDecay_1D))**params.keaTheta))
-    kea1_t = rng.binomial(kea1_t, pSurv)
-    pSurv = params.keaSurv[2] * np.exp(-((keaN_t/(keaSurvDecay_1D))**params.keaTheta))
-    kea2_t = rng.binomial(kea2_t, pSurv)
-    pSurv = params.keaSurv[3] * np.exp(-((keaN_t/(keaSurvDecay_1D))**params.keaTheta))
-    kea3_t = rng.binomial(kea3_t, pSurv)
-    pSurv = params.keaSurv[4] * np.exp(-((keaN_t/(keaSurvDecay_1D))**params.keaTheta))
-    kea4_t = rng.binomial(kea4_t, pSurv)
-    seasRec = params.keaSeasRec[mth]
-    recRate = (seasRec * params.keaProd *np.exp(-((keaN_t/(keaRecDecay_1D))**params.keaTheta))
-               * np.exp(-params.keaPsi * stoat_t))
-    kea0_t = kea0_t + rng.poisson(kea4_t * recRate) #fledglings get added to zero age class 
-    keaN_t = kea0_t + kea1_t + kea2_t + kea3_t + kea4_t  #sum to get total popn
+    pSurv = params.preySurv[0] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+    prey0_t = rng.binomial(prey0_t, pSurv)
+    pSurv = params.preySurv[1] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+    prey1_t = rng.binomial(prey1_t, pSurv)
+    pSurv = params.preySurv[2] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+    prey2_t = rng.binomial(prey2_t, pSurv)
+    pSurv = params.preySurv[3] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+    prey3_t = rng.binomial(prey3_t, pSurv)
+    pSurv = params.preySurv[4] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+    prey4_t = rng.binomial(prey4_t, pSurv)
+    seasRec = params.preySeasRec[mth]
+    recRate = (seasRec * params.preyProd *np.exp(-((preyN_t/(preyRecDecay_1D))**params.preyTheta))
+               * np.exp(-params.preyPsi * stoat_t))
+    prey0_t = prey0_t + rng.poisson(prey4_t * recRate) #fledglings get added to zero age class 
+    preyN_t = prey0_t + prey1_t + prey2_t + prey3_t + prey4_t  #sum to get total popn
  
     #shouldn't need to do this if drawing from binomial and poisson??
     ## ADD STOCHASTICITY GAUSSIAN PROCESS
     # # Eqn. 38
-    # kea_t = np.exp(np.random.normal(np.log(kea_t + 1.0), 
-    #             params.keaPopSD)) - 1.0
+    # prey_t = np.exp(np.random.normal(np.log(prey_t + 1.0), 
+    #             params.preyPopSD)) - 1.0
     # ## FIX UP INAPPROPRIATE VALUES
-    # kea_raster[mask] = np.round(kea_t, 0).astype(int)
-    # kea_raster = np.where(kea_raster < 0, 0, kea_raster)
-    # kea_raster[~mask] = 0
+    # prey_raster[mask] = np.round(prey_t, 0).astype(int)
+    # prey_raster = np.where(prey_raster < 0, 0, prey_raster)
+    # prey_raster[~mask] = 0
     
-    kea_raster[0,mask]=kea0_t
-    kea_raster[1,mask]=kea1_t
-    kea_raster[2,mask]=kea2_t
-    kea_raster[3,mask]=kea3_t
-    kea_raster[4,mask]=kea4_t
-    kea_raster[5,mask]=keaN_t
-    kea_raster[:,~mask]=0
+    prey_raster[0,mask]=prey0_t
+    prey_raster[1,mask]=prey1_t
+    prey_raster[2,mask]=prey2_t
+    prey_raster[3,mask]=prey3_t
+    prey_raster[4,mask]=prey4_t
+    prey_raster[5,mask]=preyN_t
+    prey_raster[:,~mask]=0
     
-    # ## RETURN KEA RASTER
-    return(kea_raster)
+    # ## RETURN PREY RASTER
+    return(prey_raster)
 
 
-def doKeaDispersal(rawdata, kea_raster, params, mask, keaEmigrationWindowSizePxls):
+def doPreyDispersal(rawdata, prey_raster, params, mask, preyEmigrationWindowSizePxls):
     # First Emigrants out of each cell
     # Eqn 43
     ## EMIGRATION
-    keaDispRaster = kea_raster[0,:,:]
-    probKeaEmigrate = np.zeros_like(keaDispRaster)
-    probKeaEmigrate[mask] = (1.0 - np.exp(-params.gammaProbEmigrate[2] * 
-                keaDispRaster[mask] / rawdata.keaCorrectionK[mask]))
+    preyDispRaster = prey_raster[0,:,:]
+    probPreyEmigrate = np.zeros_like(preyDispRaster)
+    probPreyEmigrate[mask] = (1.0 - np.exp(-params.gammaProbEmigrate[2] * 
+                preyDispRaster[mask] / rawdata.preyCorrectionK[mask]))
     # Eqn 42
-    kea_emigrant_raster = rng.binomial(keaDispRaster, probKeaEmigrate)
+    prey_emigrant_raster = rng.binomial(preyDispRaster, probPreyEmigrate)
 
 
     # Eqn 44-46
     ## IMMIGRATION
-    kea_immigrant_raster = calcImmigration(kea_emigrant_raster, 
-        keaEmigrationWindowSizePxls, params.deltaImmigrate[2], mask, 
-        params.resolutions[2], keaDispRaster, params.gammaProbEmigrate[2], 
-        rawdata.keaCorrectionK, params.tauImmigrate[2], rawdata.keaKDummy)
+    prey_immigrant_raster = calcImmigration(prey_emigrant_raster, 
+        preyEmigrationWindowSizePxls, params.deltaImmigrate[2], mask, 
+        params.resolutions[2], preyDispRaster, params.gammaProbEmigrate[2], 
+        rawdata.preyCorrectionK, params.tauImmigrate[2], rawdata.preyKDummy)
 
 
     ## POPULATE RASTERS
     # Eqn. 47
-    keaDispRaster += kea_immigrant_raster
-    keaDispRaster -= kea_emigrant_raster
-    kea_raster[0,:,:]=keaDispRaster
-    return kea_raster
+    preyDispRaster += prey_immigrant_raster
+    preyDispRaster -= prey_emigrant_raster
+    prey_raster[0,:,:]=preyDispRaster
+    return prey_raster
 
 
 def doMasting(rawdata, params, distArray, halfwinsize, beechMask):
@@ -1084,33 +1187,33 @@ def getRodentMaskForFile(rodentControlList, shpFile):
     mask for the file specified in shpPath
     """
     mask = None
-    for testmask, startYear, ctrlMth, revisit, testShpFile in rodentControlList:
+    for testmask, startYear, revisit, controlIndicator, testShpFile in rodentControlList:
         if testShpFile == shpFile:
             mask = testmask
             break
     return mask
 
-def populateResultArrays(loopIter, mastingMask, schedControlMask, rodent_raster, 
+def populateResultArrays(loopIter, mastingMask, rodent_raster, 
         rodentExtentMask, rodentControlList, rodentAreaDictByMgmt, rodentDensity_2D,
         stoat_raster, stoatExtentMask, stoatSpatialDictByMgmt,stoatAreaDictByMgmt, 
-        stoatDensity_2D, kea_raster, keaExtentMask, keaSpatialDictByMgmt, keaAreaDictByMgmt, 
-        keaDensity_2D, popAllYears_3D, year, year_all, keepYear):
+        stoatDensity_2D, prey_raster, preyExtentMask, preySpatialDictByMgmt, preyAreaDictByMgmt, 
+        preyDensity_2D, popAllYears_3D, year, year_all, keepYear):
     """
     ## Populate storage arrays
     """
     ## loop thru management areas (includes a key for total area)
     # NB: using sorted() keys to ensure the relation between i and key
     # is always consistent (might already be - not sure)
-    for i, key in enumerate(sorted(keaSpatialDictByMgmt.keys())):
+    for i, key in enumerate(sorted(preySpatialDictByMgmt.keys())):
         # for each control area, and for the entire area, calculate the mean proportion of
-            # of kea_KMap that is in kea_raster, excluding kmap values == 0.
+            # of prey_KMap that is in prey_raster, excluding kmap values == 0.
 
-        ### (1) DO KEAS
-        mgmtMask = keaSpatialDictByMgmt[key]               #mask kea cells in mgmt zone
-        ### KEA DENSITY
-        sppMgmtMask = mgmtMask & keaExtentMask            # kea habitat in mgmt zone
-        sppDensity = np.sum(kea_raster[5,sppMgmtMask]) / keaAreaDictByMgmt[key]
-        keaDensity_2D[i, year_all] = sppDensity        
+        ### (1) DO PREY
+        mgmtMask = preySpatialDictByMgmt[key]               #mask prey cells in mgmt zone
+        ### PREY DENSITY
+        sppMgmtMask = mgmtMask & preyExtentMask            # prey habitat in mgmt zone
+        sppDensity = np.sum(prey_raster[5,sppMgmtMask]) / preyAreaDictByMgmt[key]
+        preyDensity_2D[i, year_all] = sppDensity        
 
         ### (2) DO STOAT DENSITY 
         mgmtMask = stoatSpatialDictByMgmt[key]               #mask stoat cells in mgmt zone
@@ -1128,32 +1231,40 @@ def populateResultArrays(loopIter, mastingMask, schedControlMask, rodent_raster,
         # 2) populate 3-D array on given iteration
         # copying of arrays not needed since we are inserting into
         # a given layer of popAllYears_3D - copy done implicitly
-        popAllYears_3D['Mastt'][year] = mastingMask
-        popAllYears_3D['ControlT'][year] = schedControlMask
+        popAllYears_3D['MastT'][year] = mastingMask
+#        popAllYears_3D['ControlT'][year] = schedControlMask
         popAllYears_3D['rodentDensity'][year] = rodent_raster
         popAllYears_3D['stoatDensity'][year] = stoat_raster
-        popAllYears_3D['keaDensity'][year] = kea_raster[5,:,:]
+        popAllYears_3D['preyDensity'][year] = prey_raster[5,:,:]
+
+def populateResultControl(year, popAllYears_3D, controlThisYear):
+    """
+    ## POPULATE THE ANNUAL CONTROL RASTER FOR RESULTS
+    """
+    popAllYears_3D['ControlT'][year] = controlThisYear
+
+
 
 def populateResultDensity(rodent_raster, rodentExtentMask, rodentControlList, 
         rodentAreaDictByMgmt, rodentDensity_2D_mth, stoat_raster, stoatExtentMask, 
-        stoatSpatialDictByMgmt, stoatAreaDictByMgmt, stoatDensity_2D_mth, kea_raster, 
-        keaExtentMask, keaSpatialDictByMgmt, keaAreaDictByMgmt, keaDensity_2D_mth, tMth):
+        stoatSpatialDictByMgmt, stoatAreaDictByMgmt, stoatDensity_2D_mth, prey_raster, 
+        preyExtentMask, preySpatialDictByMgmt, preyAreaDictByMgmt, preyDensity_2D_mth, tMth):
     """
     ## Populate storage arrays
     """
     ## loop thru management areas (includes a key for total area)
     # NB: using sorted() keys to ensure the relation between i and key
     # is always consistent (might already be - not sure)
-    for i, key in enumerate(sorted(keaSpatialDictByMgmt.keys())):
+    for i, key in enumerate(sorted(preySpatialDictByMgmt.keys())):
         # for each control area, and for the entire area, calculate the mean proportion of
-            # of kea_KMap that is in kea_raster, excluding kmap values == 0.
+            # of prey_KMap that is in prey_raster, excluding kmap values == 0.
 
-        ### (1) DO KEAS
-        mgmtMask = keaSpatialDictByMgmt[key]               #mask kea cells in mgmt zone
-        ### KEA DENSITY
-        sppMgmtMask = mgmtMask & keaExtentMask            # kea habitat in mgmt zone
-        sppDensity = np.sum(kea_raster[5,sppMgmtMask]) / keaAreaDictByMgmt[key]
-        keaDensity_2D_mth[i, tMth] = sppDensity        
+        ### (1) DO PREY
+        mgmtMask = preySpatialDictByMgmt[key]               #mask prey cells in mgmt zone
+        ### PREY DENSITY
+        sppMgmtMask = mgmtMask & preyExtentMask            # prey habitat in mgmt zone
+        sppDensity = np.sum(prey_raster[5,sppMgmtMask]) / preyAreaDictByMgmt[key]
+        preyDensity_2D_mth[i, tMth] = sppDensity        
 
         ### (2) DO STOAT DENSITY  
         mgmtMask = stoatSpatialDictByMgmt[key]               #mask stoat cells in mgmt zone

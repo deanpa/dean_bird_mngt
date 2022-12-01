@@ -32,7 +32,10 @@ def indxLCDB(info, inputs, outputs):
 applier.apply(indxLCDB, infiles, outfiles)
 
 ##  call on command line:
-## ./reclassLCDB.py /home/dean/AA_Mega_Local/LCR_CurrentResearch/Walker_WarmForests/Modelling/Kea_Broadscale/GIS/NewRasters/lcdb_extent.tif /home/dean/workfolder/projects/dean_kiwi/kea/keaData/lcdb_kea_indx.img
+
+## ./reclassLCDB.py SpeciesProjects/Kea/Data/lcdb_kea_extent.img SpeciesProjects/Kea/Data/lcdb200_kea_classed.img
+
+## ./reclassLCDB.py /home/dean/AA_Mega_Local/LCR_CurrentResearch/Walker_WarmForests/Modelling/Kea_Broadscale/GIS/NewRasters/lcdb_extent.tif /home/dean/workfolder/projects/dean_bird_mngt/SpeciesProjects/Kea/Data/lcdbClassed.img
 
 
 ##  ./reclassLCDB.py kiwi_data/lcdbBase_Fiord.tif kiwi_data/lcdbINDX.img

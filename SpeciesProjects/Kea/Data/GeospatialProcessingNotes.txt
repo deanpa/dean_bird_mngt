@@ -1,0 +1,48 @@
+﻿Kea Geospatial data processing notes
+
+On 2 November 2022
+
+
+
+(1) Reproject a large DEM at about 25 m resol to 200-m resol and clip to area of interest
+
+gdalwarp -t_srs EPSG:2193 -te 1359000 5160600 1649900 5447200 -tap -tr 200 -200 -r bilinear -of HFA -dstnodata 0 /home/dean/AA_Mega_Local/GIS_Data/DEM/NorthernSouthIsland/dem_N_SI.tif dem200_kea.img
+
+
+
+(2) Rasterize LCDB5 shapefile with -tap command many values in field
+
+gdal_rasterize -a Class_2018 -tr 200.0 200.0 -a_nodata 0.0 -tap -te 1359000 5160600 1650000 5447200 -ot Float32 -of HFA /home/dean/AA_Mega_Local/GIS_Data/LCDB5/NorthernSouthIsland/lcdb-v50-land-cover-database-version-50-mainland-new-zeal.shp lcdb_kea_extent.img
+
+###################
+## Details on target extent. Note difference in -te from (1) and (2), which is due to the -tap command.
+-te <xmin ymin xmax ymax>
+###################
+
+
+
+
+(3) Reclassify LCDB raster into about 6 classes using RIOS
+
+./reclassLCDB.py SpeciesProjects/Kea/Data/lcdb_kea_extent.img SpeciesProjects/Kea/Data/lcdb200_kea_classed.img
+
+
+
+
+(4) Add attribute table to LCDB raster for potential mast, seed fall, mast seed and crash seed (use RIOS).
+./makeSeedDensity.py SpeciesProjects/Kea/Data/lcdb200_kea_classed.img SpeciesProjects/Kea/Data/dem200_kea.img SpeciesProjects/Kea/Data/seed_Kea.img
+
+
+
+(5) Create buffer around point shapefile of stoat traps (QGIS; Kea0.qgz)
+	(a)  point file: Kea_SpatialModel_Region3_StoatTraps.shp
+	(b)  750m buffer polygon: stoatTrapBuffer_750m.shp
+
+(6)  Rasterize trap buffer shape (stoatTrapBuffer_750m.shp) into raster at 200 m:
+gdal_rasterize  -te 1359000 5160600 1649900 5447200 -tap -tr 200 -200 -ot Byte -init 0 -burn 1 SpeciesProjects/Kea/Data/stoatTrapBuffer_750m.shp SpeciesProjects/Kea/Data/stoatTrappingRaster.img
+
+
+
+
+(7) Rasterize the kea habitat shapefile to raster at 200 m:  (Note, this is not needed)
+gdal_rasterize  -te 1359000 5160600 1649900 5447200 -tap -tr 200 -200 -ot Byte -init 0 -burn 1 /home/dean/AA_Mega_Local/LCR_CurrentResearch/Walker_WarmForests/Modelling/Kea_Broadscale/GIS/ShapesFromJosh_Aug2021/Region3/Kea_Habitat.shp SpeciesProjects/Kea/Data/keaHabitatRaster.img

@@ -1,7 +1,7 @@
 
 import pickle
 
-class KeaResults(object):
+class PreyResults(object):
     """
     Dummy class to take the parameters for the rios
     parallel processing. Needed in a separate module
@@ -9,14 +9,14 @@ class KeaResults(object):
 
     Contains the info for a single iteration
     """
-    ## Use these results to produce mean proportion of kiwi_K within the management
+    ## Use these results to produce mean proportion of prey_K within the management
     ## areas and the total area
     ## Use this to produce time series graphs for each area.
-#    kiwiPropKMap_2D = None
-    kiwiDensity_2D = None
+#    preyPropKMap_2D = None
+    preyDensity_2D = None
     stoatDensity_2D = None
     rodentDensity_2D = None
-    kiwiDensity_2D_mth = None
+    preyDensity_2D_mth = None
     stoatDensity_2D_mth = None
     rodentDensity_2D_mth = None    
 

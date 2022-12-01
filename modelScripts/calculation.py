@@ -7,7 +7,7 @@ from scipy.special import logit
 from .preProcessing import NZTM_WKT
 from . import calcresults
 
-rng = np.random.default_rng()
+#rng = np.random.default_rng()
 
 # for resampleRasterDown
 RESAMPLE_SUM = 0
@@ -208,7 +208,7 @@ def runModel(rawdata, params=None, loopIter=0):
             rawdata.preyCorrectionK.shape)
 
     # Eqn 38 
-    prey_raster = (rng.poisson(params.preyInitialMultiplier * params.preyK, 
+    prey_raster = (np.random.poisson(params.preyInitialMultiplier * params.preyK, 
                             rawdata.preyCorrectionK.shape) * preyPresence )
  
 
@@ -229,7 +229,7 @@ def runModel(rawdata, params=None, loopIter=0):
     ## ADD AGE STRUCTURE TO EACH PIXEL IN PREY RASTER
     #split prey_raster into diff age classes
     ## EACH BAND IN 3D RASTER IS AN AGE GROUP (0-4)
-    preyByAgeRasts = rng.multinomial(prey_raster, params.preyInitAgeStr)
+    preyByAgeRasts = np.random.multinomial(prey_raster, params.preyInitAgeStr)
     ## ADD THE TOTAL NUMBER IN EACH PIXEL AS A 6TH BAND IN 3D RASTER
     prey_raster = np.concatenate((preyByAgeRasts.transpose(2,0,1),prey_raster.reshape(1,
                         prey_raster.shape[0],prey_raster.shape[1])),axis=0)
@@ -943,19 +943,19 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
     ## PREY POPN DYNAMICS    
     
     pSurv = params.preySurv[0] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-    prey0_t = rng.binomial(prey0_t, pSurv)
+    prey0_t = np.random.binomial(prey0_t, pSurv)
     pSurv = params.preySurv[1] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-    prey1_t = rng.binomial(prey1_t, pSurv)
+    prey1_t = np.random.binomial(prey1_t, pSurv)
     pSurv = params.preySurv[2] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-    prey2_t = rng.binomial(prey2_t, pSurv)
+    prey2_t = np.random.binomial(prey2_t, pSurv)
     pSurv = params.preySurv[3] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-    prey3_t = rng.binomial(prey3_t, pSurv)
+    prey3_t = np.random.binomial(prey3_t, pSurv)
     pSurv = params.preySurv[4] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-    prey4_t = rng.binomial(prey4_t, pSurv)
+    prey4_t = np.random.binomial(prey4_t, pSurv)
     seasRec = params.preySeasRec[mth]
     recRate = (seasRec * params.preyProd *np.exp(-((preyN_t/(preyRecDecay_1D))**params.preyTheta))
                * np.exp(-params.preyPsi * stoat_t))
-    prey0_t = prey0_t + rng.poisson(prey4_t * recRate) #fledglings get added to zero age class 
+    prey0_t = prey0_t + np.random.poisson(prey4_t * recRate) #fledglings get added to zero age class 
     preyN_t = prey0_t + prey1_t + prey2_t + prey3_t + prey4_t  #sum to get total popn
  
     #shouldn't need to do this if drawing from binomial and poisson??
@@ -989,7 +989,7 @@ def doPreyDispersal(rawdata, prey_raster, params, mask, preyEmigrationWindowSize
     probPreyEmigrate[mask] = (1.0 - np.exp(-params.gammaProbEmigrate[2] * 
                 preyDispRaster[mask] / rawdata.preyCorrectionK[mask]))
     # Eqn 42
-    prey_emigrant_raster = rng.binomial(preyDispRaster, probPreyEmigrate)
+    prey_emigrant_raster = np.random.binomial(preyDispRaster, probPreyEmigrate)
 
 
     # Eqn 44-46

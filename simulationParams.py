@@ -16,8 +16,8 @@ class PreyParams(object):
         ######################################################
 
         ### SET YEARS AND BURN IN YEARS
-        self.burnin = 5
-        self.years = np.arange(10)
+        self.burnin = 1
+        self.years = np.arange(2)
         ### SET ITERATIONS
         self.iter = 1
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
@@ -37,14 +37,14 @@ class PreyParams(object):
 
         ## GET BASE DIRECTORY LOCALLY OR ON NESI
         baseDir = os.getenv('KIWIPROJDIR', default='.')
+        if baseDir == '.':
+            baseDir = Path.cwd()
         # SET PATH TO DATA - SHOULD EXIST ALREADY 
         self.inputDataPath = os.path.join(baseDir, 'SpeciesProjects', self.species, 'Data')
         ## RESULTS DIRECTORY FOR THIS SCENARIO AND SPECIES
         scenDir = 'Scen' + str(self.scenario) + self.species
         resultsPath = os.path.join('SpeciesProjects', self.species, 'Results', scenDir)
         ## PUT TOGETHER THE BASE DIRECTORY AND PATH TO RESULTS DIRECTORY 
-        if baseDir == '.':
-            baseDir = Path.cwd()
         self.outputDataPath = os.path.join(baseDir, resultsPath)
         ## MAKE NEW RESULTS DIRECTORY IF DOESN'T EXIST
         if not os.path.isdir(self.outputDataPath):

@@ -144,7 +144,7 @@ def runModel(rawdata, params=None, loopIter=0):
     #########
     # Eqn 8
     # random rodent population
-    rodentPresence = np.random.binomial(1, params.pRodentPres, (rodentRasterShape))
+    rodentPresence = rng.binomial(1, params.pRodentPres, (rodentRasterShape))
     rodentPresence[~rawdata.rodentExtentMask] = 0
 
     ## GET INITIAL RODENT DENSITY FOR EACH CELL AT RODENT RESOL (4 HA)
@@ -154,7 +154,7 @@ def runModel(rawdata, params=None, loopIter=0):
 #        rodentPresence, rodentRasterShape, rodent_kMap)
 
 
-    rodent_raster = rodentPresence * np.random.poisson(params.initialRodentN,
+    rodent_raster = rodentPresence * rng.poisson(params.initialRodentN,
             rodentRasterShape)
 
 
@@ -190,12 +190,12 @@ def runModel(rawdata, params=None, loopIter=0):
     #  Random stoat population and mask out 
     stoatExtentShape = rawdata.stoatExtentMask.shape
     # Eqn 22
-    stoatPresence = np.random.binomial(1, params.pStoatPres, stoatExtentShape)
+    stoatPresence = rng.binomial(1, params.pStoatPres, stoatExtentShape)
     stoatPresence[~rawdata.stoatExtentMask] = 0
 
     ## GET INITIAL STOAT DENSITY FOR EACH CELL AT STOAT RESOL (1 KM)
     # Eqn 23
-    stoat_raster = stoatPresence * np.random.poisson(0.75 * params.initialStoatN,
+    stoat_raster = stoatPresence * rng.poisson(0.75 * params.initialStoatN,
                 stoatShp) 
 #    stoat_raster = stoatPresence * np.exp(np.random.normal(np.log(params.initialStoatN),
 #        params.stoatPopSD), stoatShp).astype(int)
@@ -204,12 +204,12 @@ def runModel(rawdata, params=None, loopIter=0):
     stoat_raster[~rawdata.stoatExtentMask] = 0    
 
     ## Get initial prey population
-    preyPresence = np.random.binomial(1, params.pPreyPres, 
+    preyPresence = rng.binomial(1, params.pPreyPres, 
             rawdata.preyCorrectionK.shape)
 
     # Eqn 38 
     prey_raster = (rng.poisson(params.preyInitialMultiplier * params.preyK, 
-                            rawdata.preyCorrectionK.shape) * preyPresence )
+                            rawdata.preyCorrectionK.shape) * preyPresence)
  
 
 
@@ -650,7 +650,7 @@ def calcStoatPopulation(stoat_raster, rodent_raster, nToxicRodents, stoatMask, p
 
 #    stoat_t = np.random.poisson(stoat_t)
     ## EQN 28: ADD STOCHASTICITY GAUSSIAN PROCESS
-    stoat_t = (np.exp(np.random.normal(np.log(stoat_t + 1.0), 
+    stoat_t = (np.exp(rng.normal(np.log(stoat_t + 1.0), 
                 params.stoatPopSD)) - 1.0)
 
 #    print('stoat_t min, max', np.min(stoat_t),
@@ -681,7 +681,7 @@ def eatToxicRodents(stoat_raster, toxic_raster_stoat, params):
     # probability individ. stoat eating a toxic rodent
     pEat = params.pEatEncToxic * pEnc
     # Eqn 26     # update stoat_raster
-    stoat_raster = np.random.binomial(stoat_raster, (1.0 - pEat))
+    stoat_raster = rng.binomial(stoat_raster, (1.0 - pEat))
     return(stoat_raster)                   
 
 
@@ -700,7 +700,7 @@ def doRodentDispersal(rawdata, params, rodent_raster, rodent_kMth,
 #        np.exp(-rodent_kMth[rawdata.rodentExtentMask] * params.tauImmigrate[0]))
 
     # Eqn 17
-    rodent_emigrant_raster = np.random.binomial(rodent_raster, probRodentEmigrate)
+    rodent_emigrant_raster = rng.binomial(rodent_raster, probRodentEmigrate)
 
 
 
@@ -943,19 +943,19 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
     ## PREY POPN DYNAMICS    
     
     pSurv = params.preySurv[0] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-    prey0_t = rng.binomial(prey0_t, pSurv)
+    prey0_t = np.random.binomial(prey0_t, pSurv)
     pSurv = params.preySurv[1] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-    prey1_t = rng.binomial(prey1_t, pSurv)
+    prey1_t = np.random.binomial(prey1_t, pSurv)
     pSurv = params.preySurv[2] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-    prey2_t = rng.binomial(prey2_t, pSurv)
+    prey2_t = np.random.binomial(prey2_t, pSurv)
     pSurv = params.preySurv[3] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-    prey3_t = rng.binomial(prey3_t, pSurv)
+    prey3_t = np.random.binomial(prey3_t, pSurv)
     pSurv = params.preySurv[4] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-    prey4_t = rng.binomial(prey4_t, pSurv)
+    prey4_t = np.random.binomial(prey4_t, pSurv)
     seasRec = params.preySeasRec[mth]
     recRate = (seasRec * params.preyProd *np.exp(-((preyN_t/(preyRecDecay_1D))**params.preyTheta))
                * np.exp(-params.preyPsi * stoat_t))
-    prey0_t = prey0_t + rng.poisson(prey4_t * recRate) #fledglings get added to zero age class 
+    prey0_t = prey0_t + np.random.poisson(prey4_t * recRate) #fledglings get added to zero age class 
     preyN_t = prey0_t + prey1_t + prey2_t + prey3_t + prey4_t  #sum to get total popn
  
     #shouldn't need to do this if drawing from binomial and poisson??
@@ -989,7 +989,7 @@ def doPreyDispersal(rawdata, prey_raster, params, mask, preyEmigrationWindowSize
     probPreyEmigrate[mask] = (1.0 - np.exp(-params.gammaProbEmigrate[2] * 
                 preyDispRaster[mask] / rawdata.preyCorrectionK[mask]))
     # Eqn 42
-    prey_emigrant_raster = rng.binomial(preyDispRaster, probPreyEmigrate)
+    prey_emigrant_raster = np.random.binomial(preyDispRaster, probPreyEmigrate)
 
 
     # Eqn 44-46

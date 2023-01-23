@@ -733,7 +733,7 @@ def doStoatDispersal(rawdata, params, stoat_raster, rodent_raster_stoat,
         np.exp(-rodentRasterStoat*params.tauImmigrate[1]), 0.0)
 
     # Eqn 33
-    stoat_emigrant_raster = np.random.binomial(stoat_raster, probstoatEmigrate)
+    stoat_emigrant_raster = rng.binomial(stoat_raster, probstoatEmigrate)
 
     # updates stoat_change_raster
     # Eqn 34-36
@@ -864,7 +864,7 @@ def doControl(rawdata, params, schedControlMask, rodent_raster):
     """
     # Eqn 14
     nToxicRodents = np.where(schedControlMask, 
-                np.random.binomial(rodent_raster, params.rodentProbEatBait), 0)
+                rng.binomial(rodent_raster, params.rodentProbEatBait), 0)
     ## update rodent pop. with mortality
     # Eqn 15
     rodent_raster = rodent_raster - nToxicRodents
@@ -890,7 +890,7 @@ def doRodentGrowth(rawdata, params, rodent_raster, rodent_kMth, mth):
     ## Eqn. 13 POPULATE MU RASTER
     mu[rawdata.rodentExtentMask] = rodent_t * pSurv * (1 + recRate) 
     # Eqn 12: Add stochasticity
-    rodent_raster = np.random.poisson(mu, rodent_raster.shape)
+    rodent_raster = rng.poisson(mu, rodent_raster.shape)
     ## RETURN RASTER
     return rodent_raster
 
@@ -943,25 +943,25 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
     ## PREY POPN DYNAMICS    
     
     pSurv = params.preySurv[0] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-    prey0_t = np.random.binomial(prey0_t, pSurv)
+    prey0_t = rng.binomial(prey0_t, pSurv)
     pSurv = params.preySurv[1] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-    prey1_t = np.random.binomial(prey1_t, pSurv)
+    prey1_t = rng.binomial(prey1_t, pSurv)
     pSurv = params.preySurv[2] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-    prey2_t = np.random.binomial(prey2_t, pSurv)
+    prey2_t = rng.binomial(prey2_t, pSurv)
     pSurv = params.preySurv[3] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-    prey3_t = np.random.binomial(prey3_t, pSurv)
+    prey3_t = rng.binomial(prey3_t, pSurv)
     pSurv = params.preySurv[4] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-    prey4_t = np.random.binomial(prey4_t, pSurv)
+    prey4_t = rng.binomial(prey4_t, pSurv)
     seasRec = params.preySeasRec[mth]
     recRate = (seasRec * params.preyProd *np.exp(-((preyN_t/(preyRecDecay_1D))**params.preyTheta))
                * np.exp(-params.preyPsi * stoat_t))
-    prey0_t = prey0_t + np.random.poisson(prey4_t * recRate) #fledglings get added to zero age class 
+    prey0_t = prey0_t + rng.poisson(prey4_t * recRate) #fledglings get added to zero age class 
     preyN_t = prey0_t + prey1_t + prey2_t + prey3_t + prey4_t  #sum to get total popn
  
     #shouldn't need to do this if drawing from binomial and poisson??
     ## ADD STOCHASTICITY GAUSSIAN PROCESS
     # # Eqn. 38
-    # prey_t = np.exp(np.random.normal(np.log(prey_t + 1.0), 
+    # prey_t = np.exp(rng.normal(np.log(prey_t + 1.0), 
     #             params.preyPopSD)) - 1.0
     # ## FIX UP INAPPROPRIATE VALUES
     # prey_raster[mask] = np.round(prey_t, 0).astype(int)
@@ -989,7 +989,7 @@ def doPreyDispersal(rawdata, prey_raster, params, mask, preyEmigrationWindowSize
     probPreyEmigrate[mask] = (1.0 - np.exp(-params.gammaProbEmigrate[2] * 
                 preyDispRaster[mask] / rawdata.preyCorrectionK[mask]))
     # Eqn 42
-    prey_emigrant_raster = np.random.binomial(preyDispRaster, probPreyEmigrate)
+    prey_emigrant_raster = rng.binomial(preyDispRaster, probPreyEmigrate)
 
 
     # Eqn 44-46
@@ -1011,7 +1011,7 @@ def doPreyDispersal(rawdata, prey_raster, params, mask, preyEmigrationWindowSize
 def doMasting(rawdata, params, distArray, halfwinsize, beechMask):
     # risk of masting for a given cell
     a, b = params.mastCellParams
-    mastingRisk = np.random.gamma(a, b, (rawdata.rodentNrows, rawdata.rodentNcols))
+    mastingRisk = rng.gamma(a, b, (rawdata.rodentNrows, rawdata.rodentNcols))
     if np.isnan(mastingRisk).any():
         raise ValueError("NaNs in mastingRisk")
 
@@ -1026,7 +1026,7 @@ def doMasting(rawdata, params, distArray, halfwinsize, beechMask):
         raise ValueError("NaNs in absolMastingRisk")
 
     a, b = params.mastProportionParams
-    propMastingCells = np.random.beta(a, b)
+    propMastingCells = rng.beta(a, b)
 
     # invert proportion so we can use greater than
     # Eqn 2
@@ -1294,14 +1294,14 @@ def trackingTunnelRate(densityRodent, g0_TT, sigma_TT,
     nRats = np.int8(np.round((den_m2 * TTArea), 0))
     ## Eqn. 7
     # generate some random distances
-    dist = np.random.uniform(0.0, (4.0 * sigma_TT), nRats)
+    dist = rng.uniform(0.0, (4.0 * sigma_TT), nRats)
     # probability of detection by a single tracking tunnel over 1 night
     pdect = g0_TT * np.exp(-(dist**2) / 2.0 / (sigma_TT**2))
     ## Eqn. 6
     # probability of detection over multiple nights
     PD = 1.0 - np.prod((1.0 - pdect)**nights_TT)
     ## Eqn. 5
-    trackingRate = np.random.binomial(nTunnels, PD, 1) / nTunnels
+    trackingRate = rng.binomial(nTunnels, PD, 1) / nTunnels
     return(trackingRate)
 
 
@@ -1316,7 +1316,7 @@ def initialPopWrapper(sppProd, sppSurv, sppSurvDecay,
     mu = growthLoop(mu, sppRasterShape, sppProd, 
         sppSurv, sppSurvDecay, sppRecDecay, sppInitialN, sppT, sppKMap, sppPresence)
     # Eqn 9: Add stochasticity
-    spp_raster = np.random.poisson(mu * 0.7, sppRasterShape)
+    spp_raster = rng.poisson(mu * 0.7, sppRasterShape)
     return(spp_raster)
 
 

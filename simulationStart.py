@@ -14,11 +14,11 @@ class CmdArgs(object):
         (options, args) = p.parse_args()
         self.__dict__.update(options.__dict__)
 
-cmdargs = CmdArgs()
-
-params = simulationParams.PreyParams(cmdargs.species, int(cmdargs.scenario))
-
 if __name__ == '__main__':
+
+    cmdargs = CmdArgs()
+
+    params = simulationParams.PreyParams(cmdargs.species, int(cmdargs.scenario))
 
     simulationMain.main(params)
 

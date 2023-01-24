@@ -18,7 +18,10 @@ cmdargs = CmdArgs()
 
 params = simulationParams.PreyParams(cmdargs.species, int(cmdargs.scenario))
 
-simulationMain.main(params)
+if __name__ == '__main__':
+
+    simulationMain.main(params)
+
 
 
 ## ON COMMAND LINE, RUN SCRIPT LIKE THIS FOR KEA AND SCENARIO 1:

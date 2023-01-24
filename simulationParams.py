@@ -19,7 +19,7 @@ class PreyParams(object):
         self.burnin = 2
         self.years = np.arange(2)
         ### SET ITERATIONS
-        self.iter = 4
+        self.iter = 1
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
         self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE

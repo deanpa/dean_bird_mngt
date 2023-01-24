@@ -137,4 +137,4 @@ def main(params):
     runMultipleJobs(data, resultsFName)
 
 if __name__ == '__main__':
-    main()    
+    main(params)    

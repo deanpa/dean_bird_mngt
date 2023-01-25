@@ -14,12 +14,15 @@ class CmdArgs(object):
         (options, args) = p.parse_args()
         self.__dict__.update(options.__dict__)
 
-cmdargs = CmdArgs()
+if __name__ == '__main__':
 
-#params = simulationParams.PreyParams(cmdargs.species, int(cmdargs.scenario))
-params = simulationParams.PreyParams("Kea", int("1"))
 
-simulationMain.main(params)
+    cmdargs = CmdArgs()
+
+    params = simulationParams.PreyParams(cmdargs.species, int(cmdargs.scenario))
+
+    simulationMain.main(params)
+
 
 
 ## ON COMMAND LINE, RUN SCRIPT LIKE THIS FOR KEA AND SCENARIO 1:

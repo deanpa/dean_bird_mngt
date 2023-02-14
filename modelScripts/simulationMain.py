@@ -115,12 +115,8 @@ def main(params):
     ## PREPROCESSING AND RESULTS PICKLE NAMES
 
     preProcFName = params.preProcFName
-#    preProcFName = 'preProc_' + params.species + 'Scen' + str(params.scenario) + '.pkl' 
-#    preProcFName = os.path.join(params.outputDataPath, preProcFName)
 
     resultsFName = params.resultsFName
-#    resultsFName = 'results_' + params.species + 'Scen' + str(params.scenario) + '.pkl'
-#    resultsFName = os.path.join(params.outputDataPath, resultsFName)
 
     ## MAKE PARAMS FILE NAME TO COPY TO RESULTS DIRECTORY FOR REFERENCE
     paramsFName = 'params_' + params.species + 'Scen' + str(params.scenario) + '.py'

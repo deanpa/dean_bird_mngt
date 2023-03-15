@@ -154,7 +154,10 @@ class PreyData(object):
         self.paramRodentCrashCCLU = rat.readColumn(kMapDS, "Rodent_CrashCC")
 
 
-#        print('self.mastingLU', self.mastingLU, 'rodentCCLU', self.paramRodentCCLU)
+        # print('self.mastingLU', self.mastingLU, 'rodentCCLU', 
+        #       self.paramRodentCCLU,'rodentMastCCLU', self.paramRodentMastCCLU,
+        #       'rodentCrashCCLU', self.paramRodentCrashCCLU)
+        #print('self.kClasses',self.kClasses)
 
         # for assessing tracking tunnel rates in calculation.py
         self.beechMask = self.mastingLU[self.kClasses] & self.rodentExtentForStoats

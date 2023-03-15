@@ -16,10 +16,10 @@ class PreyParams(object):
         ######################################################
 
         ### SET YEARS AND BURN IN YEARS
-        self.burnin = 2
-        self.years = np.arange(2)
+        self.burnin = 5
+        self.years = np.arange(15)
         ### SET ITERATIONS
-        self.iter = 1
+        self.iter = 100
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
         self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
@@ -58,22 +58,27 @@ class PreyParams(object):
 #        self.AOIShp = os.path.join(self.inputDataPath, 'Kea_Model_Region3.shp')
         ##########################################
         ## TEST CONTROL ##########################
-        self.extentShp = os.path.join(self.inputDataPath, 'test_fullExtent.shp')
-        self.AOIShp = os.path.join(self.inputDataPath, 'test_AOI.shp')
+        # self.extentShp = os.path.join(self.inputDataPath, 'test_fullExtent.shp')
+        # self.AOIShp = os.path.join(self.inputDataPath, 'test_AOI.shp')
+        self.extentShp = os.path.join(self.inputDataPath, 'extentDummy.shp')
+        self.AOIShp = os.path.join(self.inputDataPath, 'AOIDummy.shp')        
         ##########################################
         ##########################################
 
-        self.kClasses = os.path.join(self.inputDataPath, 'seed_Kea.img')    
-
+        #self.kClasses = os.path.join(self.inputDataPath, 'seed_Kea.img')    
+        self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummy.grd')    
 
         ### Area trapped in recent times.
-        self.islands = os.path.join(self.inputDataPath, 'stoatTrappingRaster.img')
-        self.DEM = os.path.join(self.inputDataPath, 'dem200_kea.img')
-        self.preyHabitatShp = os.path.join(self.inputDataPath, 'Kea_Habitat.shp')
+        # self.islands = os.path.join(self.inputDataPath, 'stoatTrappingRaster.img')
+        # self.DEM = os.path.join(self.inputDataPath, 'dem200_kea.img')
+        # self.preyHabitatShp = os.path.join(self.inputDataPath, 'Kea_Habitat.shp')
+        self.islands = os.path.join(self.inputDataPath, 'trapsDummy.tif')
+        self.DEM = os.path.join(self.inputDataPath, 'DEMDummy.tif')
+        self.preyHabitatShp = os.path.join(self.inputDataPath, 'KeaHabDummy.shp')
 
         ##########################################
         ## TEST CONTROL ##########################
-        self.controlFile = os.path.join(self.inputDataPath, 'testControl.csv') # control3 is effectively no control (st yr set to 100)
+        self.controlFile = os.path.join(self.inputDataPath, '3yrlyCtrlDummy.csv') # "3yrlyCtrlDummy.csv" or "noCtrlDummy.csv"
         ##########################################
         ##########################################
 #        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
@@ -96,7 +101,7 @@ class PreyParams(object):
         # Control parameters
         # proportion of zone in mast required for reactive control
         # model for control that is reactive to masting
-        self.reactivePropMgmtMasting = 0.5    #0.5 # set > 0 to enable
+        self.reactivePropMgmtMasting = 0   #0.5 # set > 0 to enable
         self.reactiveAssessMth = self.monthDict['Apr']  #what month to do a mast prop or tracking tunnel assessment, mth7=Apr
         self.reactiveCtrlDelay = 2  #delay implement reactive control, mth7+2=9=June 
         ## PRESCRIPTIVE CONTROL MONTH WILL BE SAME AS REACTIVE
@@ -139,7 +144,7 @@ class PreyParams(object):
         self.rodentMaxAltitude = 1000.0  # metres
 
         ######## TRACKING TUNNEL PARAMETERS
-        self.threshold_TT = 0.25            #(1 = no reac) Thres prop of TT with detections
+        self.threshold_TT = 1            #(1 = no reac) Thres prop of TT with detections
         self.g0_TT = 0.02                   # Tracking tunnel g0
         self.sigma_TT = 22.0                # Rat sigma
         self.nights_TT = 4                  # Tracking tunnel nights

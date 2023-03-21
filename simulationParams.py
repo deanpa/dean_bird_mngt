@@ -78,7 +78,7 @@ class PreyParams(object):
 
         ##########################################
         ## TEST CONTROL ##########################
-        self.controlFile = os.path.join(self.inputDataPath, '3yrlyCtrlDummy.csv') # "3yrlyCtrlDummy.csv" or "noCtrlDummy.csv"
+        self.controlFile = os.path.join(self.inputDataPath, 'noCtrlDummy.csv') # "3yrlyCtrlDummy.csv" or "noCtrlDummy.csv"
         ##########################################
         ##########################################
 #        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
@@ -172,7 +172,13 @@ class PreyParams(object):
         self.pPreyPres = 0.68
         self.initialpreyN = 5.0
         self.preyInitialMultiplier = 0.3
-        self.preyPsi = 0.7  # Eqn 32
+        #self.preyPsi = 0.7  # Eqn 32
+        self.preyPsiStoat = 0.3  #  Effect of stoats on kea recruitment
+        self.preyEtaStoatJuv = 0.08  #Effect of stoats on juvenile (age class 0) on kea survival
+        self.preyEtaStoatAd = 0.02  #Effect of stoats on adult (age class 1-4) on kea survival
+        self.preyPsiRodent = 0.0  #Effect of rodents on kea recruitment
+        self.preyEtaRodentJuv = 0.0  #Effect of rodents on juvenile (age class 0) on kea survival
+        self.preyEtaRodentAd = 0.0  #Effect of rodentss on adult (age class 1-4) on kea survival
         self.competEffect = 0.0
         self.preyPopSD = .12
 

@@ -939,25 +939,47 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
     prey4_t = prey_raster[4,mask]
     preyN_t = prey_raster[5,mask]
     stoat_t = stoat_raster[mask]
+    rodent_t = rodent_raster_prey[mask]
 #    stoat_t = stoat_raster_prey[mask]
     ## PREY POPN DYNAMICS    
     
-    pSurv = params.preySurv[0] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+    # pSurv = params.preySurv[0] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+    # prey0_t = rng.binomial(prey0_t, pSurv)
+    # pSurv = params.preySurv[1] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+    # prey1_t = rng.binomial(prey1_t, pSurv)
+    # pSurv = params.preySurv[2] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+    # prey2_t = rng.binomial(prey2_t, pSurv)
+    # pSurv = params.preySurv[3] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+    # prey3_t = rng.binomial(prey3_t, pSurv)
+    # pSurv = params.preySurv[4] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+    # prey4_t = rng.binomial(prey4_t, pSurv)
+    # seasRec = params.preySeasRec[mth]
+    # recRate = (seasRec * params.preyProd *np.exp(-((preyN_t/(preyRecDecay_1D))**params.preyTheta))
+    #            * np.exp(-params.preyPsi * stoat_t))
+    # prey0_t = prey0_t + rng.poisson(prey4_t * recRate) #fledglings get added to zero age class 
+    # preyN_t = prey0_t + prey1_t + prey2_t + prey3_t + prey4_t  #sum to get total popn
+ 
+    pSurv = (params.preySurv[0] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+         * np.exp(-params.preyEtaStoatJuv * stoat_t)* np.exp(-params.preyEtaRodentJuv * rodent_t))
     prey0_t = rng.binomial(prey0_t, pSurv)
-    pSurv = params.preySurv[1] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+    pSurv = (params.preySurv[1] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+         * np.exp(-params.preyEtaStoatAd * stoat_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
     prey1_t = rng.binomial(prey1_t, pSurv)
-    pSurv = params.preySurv[2] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+    pSurv = (params.preySurv[2] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+         * np.exp(-params.preyEtaStoatAd * stoat_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
     prey2_t = rng.binomial(prey2_t, pSurv)
-    pSurv = params.preySurv[3] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+    pSurv = (params.preySurv[3] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+         * np.exp(-params.preyEtaStoatAd * stoat_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
     prey3_t = rng.binomial(prey3_t, pSurv)
-    pSurv = params.preySurv[4] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+    pSurv = (params.preySurv[4] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+         * np.exp(-params.preyEtaStoatAd * stoat_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
     prey4_t = rng.binomial(prey4_t, pSurv)
     seasRec = params.preySeasRec[mth]
     recRate = (seasRec * params.preyProd *np.exp(-((preyN_t/(preyRecDecay_1D))**params.preyTheta))
-               * np.exp(-params.preyPsi * stoat_t))
+           * np.exp(-params.preyPsiStoat * stoat_t)* np.exp(-params.preyPsiRodent * rodent_t))
     prey0_t = prey0_t + rng.poisson(prey4_t * recRate) #fledglings get added to zero age class 
     preyN_t = prey0_t + prey1_t + prey2_t + prey3_t + prey4_t  #sum to get total popn
- 
+
     #shouldn't need to do this if drawing from binomial and poisson??
     ## ADD STOCHASTICITY GAUSSIAN PROCESS
     # # Eqn. 38

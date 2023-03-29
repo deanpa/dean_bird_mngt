@@ -195,6 +195,9 @@ class PreyParams(object):
         self.preyEtaRodentAd = 0.0  #Effect of rodentss on adult (age class 1-4) on kea survival
         self.competEffect = 0.0
         self.preyPopSD = .12
+        
+        self.rodentThresh = 0.5 #Threshold rat density per ha at which stoat prey switching kicks in
+        self.stoatMult = 3 #Multiplier for stoat offtake of prey once prey switch kicks in
 
         self.preySurv = np.array([0.982,0.992,0.994,0.997,0.998])
         self.preySurvDDcoef = 110.0

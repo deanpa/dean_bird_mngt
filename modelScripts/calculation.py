@@ -942,8 +942,8 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
 #   stoat_t = stoat_raster_prey[mask]
     rodent_t = rodent_raster_prey[mask]
     rodentSwitchMult_t = rodent_t.copy()
-    rodentSwitchMult_t[np.where(rodent_t<=0.5)] = 3 #if rodent density <1 per ha multiply stoat offtake by 3
-    rodentSwitchMult_t[np.where(rodent_t>0.5)] = 1 #if rodent density >1 per ha don't multiply stoat offtake
+    rodentSwitchMult_t[np.where(rodent_t<=params.rodentThresh)] = params.stoatMult #if rodent density <1 per ha multiply stoat offtake by 3
+    rodentSwitchMult_t[np.where(rodent_t>params.rodentThresh)] = 1 #if rodent density >1 per ha don't multiply stoat offtake
     #not sure why so many 3s in print output yet summary file "monthlyDensities.csv" doesn't show this???
     #oh is prob cos monthlyDensities are not per ha??    
     # if (mth==1):

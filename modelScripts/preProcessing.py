@@ -143,7 +143,7 @@ class PreyData(object):
         self.preyKMap = getPreyKMap(self.preyNcols, self.preyNrows,  
             self.preyCorrectionK, self.preyExtentMask, self.params.preySurv, 
             self.params.preySurvDDcoef, self.params.preyRecDDcoef,
-            self.params.preyProd, self.params.preyTheta)
+            self.params.preyIRR, self.params.preyTheta)
 
         kMapDS = gdal.Open(self.params.kClasses)
         ### MASK FOR CELLS THAT CAN MAST????
@@ -614,7 +614,7 @@ def scaleStoatMask(rodentResol, stoatResol, stoatNcols, stoatNrows,
 
 @jit(nopython=True)
 def getPreyKMap(preyNcols, preyNrows, preyCorrectionK,
-        preyExtentMask, preySurv, preySurvDDcoef, preyRecDDcoef, preyProd, preyTheta):
+        preyExtentMask, preySurv, preySurvDDcoef, preyRecDDcoef, preyMIRR, preyTheta):
     """
     ## MAKE PREY EQUILIBRIUM POP DENSITY BY PIXEL FOR SENSITIVITY TEST
     """
@@ -630,7 +630,7 @@ def getPreyKMap(preyNcols, preyNrows, preyCorrectionK,
             for i in range(15):
                 surv_i= preySurv[3] * np.exp(-((N/(preySurvDDcoef*prp))**preyTheta))
                 NStar = N * surv_i
-                recRate = preyProd *np.exp(-(N/(preyRecDDcoef*prp))**preyTheta)
+                recRate = (np.exp(preyMIRR*4)-1) *np.exp(-(N/(preyRecDDcoef*prp))**preyTheta)
                 N = (1 + recRate) * NStar
             prey_KMap[row, col] = N
     return(prey_KMap)

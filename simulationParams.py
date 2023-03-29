@@ -78,7 +78,8 @@ class PreyParams(object):
 
         ##########################################
         ## TEST CONTROL ##########################
-        self.controlFile = os.path.join(self.inputDataPath, 'noCtrlDummy.csv') # "3yrlyCtrlDummy.csv" or "noCtrlDummy.csv"
+        self.controlFile = os.path.join(self.inputDataPath, 'noCtrlDummy.csv') 
+        # "3yrlyCtrlDummy.csv" or "noCtrlDummy.csv"
         ##########################################
         ##########################################
 #        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
@@ -124,19 +125,25 @@ class PreyParams(object):
         ## RODENT PARAMETERS
         self.islandK = 2.0
         self.initialRodentN = 10
-        self.rodentProd = 0.3916
-        self.rodentSurv = 0.9707
+        #self.rodentProd = 0.3916
+        rodentFec= 5.5  #num offspring recruited per generation
+        self.rodentIRR = np.log(1+rodentFec/2)/4 #convert to monthly Instantaneous Rec Rate 
+                        #divided by generation time (4 mths to sexual mturity) in this case
+        #seasRec describes what proportion of population is breeding in each month
+        # where month 0= Sept, month 11 = Aug BUT is actually time of recruitment - 
+        # when indep young recruited into population
+        #could also use as a proxy for age structure even if breeding season by setting
+        # <1 because proportion of population is still juvenile and not breeding 
+        self.rodentSeasRec = np.array([1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.]) 
+                        #can potentially breed year round - can reign this in...
+        #Dispersl: bodge this for now boolean on or off (in future could have sine function rather than step): 
+        #Maybe should just have dispersal in a pulse/only 1 month to save running dispersal algorithm multiple times?
+        self.rodentSeasDisp = np.array([1,1,1,1,1,1,1,1,1,0,0,0], dtype=bool) #can disp most months of yr, don't in winter?? 
+                            #Juv males tend to make up most of disp. popn. but we don't have age or sex structure so yeah...
+        self.rodentSurv = 0.95 #per month 0.9707
         self.rodentSurvDDcoef = 3.0
         self.rodentRecDDcoef = 1.8
         self.rodentTheta = 0.6  #1 gives Ricker model
-        #bodge this for now (in future could have sine function rather than step): 
-        #seasRec describes what proportion of population
-        #is breeding in each month where month 0= Sept, month 11 = Aug
-        #actually is recruitment - when indep young recruited into population
-        #could also use as a proxy for age structure even if breeding season set
-        # <1 because proportion of population is still juvenile and not breeding 
-        self.rodentSeasRec = [1.,1.,1.,1.,1.,1.,1.,1.,1.,0.5,0.5,0.5] #can potentially breed year round -
-        self.rodentSeasDisp = np.array([1,1,1,1,1,1,1,1,1,0,0,0], dtype=bool) #can disperse most months o
         self.prpGrowRateControl = 1.0  # proportion of rodent growth before control is applied
         self.rodentProbEatBait = 0.7 # pT
         self.pRodentPres = 0.95
@@ -151,13 +158,20 @@ class PreyParams(object):
         self.nTunnels = 120                 # number of tracking tunnels
 
         ######## STOAT PARAMETERS
-        self.stoatProd = 0.71
+        #self.stoatProd = 0.71
+        stoatFec= 9.2  #num offspring recruited per generation
+        self.stoatIRR = np.log(1+stoatFec/2) #convert to Instantaneous Rec Rate  
+                        #Stoat breeding highly synchronised (daylength dependent) 
+                        #so breed in one pulse/time step
+        self.stoatSeasRec = np.array([0,0,0,0,1.,0,0,0,0,0,0,0]) 
+                        #most births in Oct but dependent on mum until families  
+                        #break up when young are 12-14 wks so say Jan recruitment
+        #make sure dispersal happens after recuritment                        
+        self.stoatSeasDisp = np.array([0,0,0,0,0,1,0,0,0,0,0,0], dtype=bool) #disperse Feb
         self.stoatRecDDcoef = 8
-        self.stoatSurv = 0.9439
+        self.stoatSurv = 0.9475
         self.stoatSurvDDcoef = 10
         self.stoatTheta = 1
-        self.stoatSeasRec = [0,0,0,1.,1.,1.,0,0,0,0,0,0] #born Sep-Nov, become indep Dec-Feb
-        self.stoatSeasDisp = np.array([0,0,0,1,1,1,0,0,0,0,0,0], dtype=bool) #disperse Dec-Feb
         #self.stoatRecLag = 3 #calc recruitment based on rat numbers 3 mths before young stoats become in
         self.stoatPopSD = 0.22
         self.pEncToxic = 0.004          # operates at stoat scale
@@ -173,7 +187,7 @@ class PreyParams(object):
         self.initialpreyN = 5.0
         self.preyInitialMultiplier = 0.3
         #self.preyPsi = 0.7  # Eqn 32
-        self.preyPsiStoat = 0.3  #  Effect of stoats on kea recruitment
+        self.preyPsiStoat = 0.05  #  Effect of stoats on kea recruitment
         self.preyEtaStoatJuv = 0.08  #Effect of stoats on juvenile (age class 0) on kea survival
         self.preyEtaStoatAd = 0.02  #Effect of stoats on adult (age class 1-4) on kea survival
         self.preyPsiRodent = 0.0  #Effect of rodents on kea recruitment
@@ -182,13 +196,21 @@ class PreyParams(object):
         self.competEffect = 0.0
         self.preyPopSD = .12
 
-        self.preySurv = np.array([0.982,0.992,0.995,0.995,0.997])
-
+        self.preySurv = np.array([0.982,0.992,0.994,0.997,0.998])
         self.preySurvDDcoef = 110.0
-        self.preyProd = 0.1067
+#        self.preyProd = 0.1067
+        preyFec= 2  #num chicks fledged per clutch
+        self.preyIRR = np.log(1+preyFec/2) #convert to annual Instantaneous Rec Rate  
+                        #only have one clutch per season will try again later if lose first clutch 
+                        #this prod is spread out across season by preySeasRec param                 
+        self.preySeasRec = np.array([0,0,0,0.3,0.4,0.3,0,0,0,0,0,0]) 
+                        #egg laying pks Aug-Oct theefore recruitment peaks (+4mths=
+                        #incubation 22-24 days + 13 weeks in nest b4 fledge)in Dec-Feb
+        self.preySeasDisp = np.array([0,0,0,0,0,0,1,0,0,0,0,0], dtype=bool) 
+                        #dispersasl in autumn Mar after rec.
+                        #oh what age class does dispersal act on? <<<<chk this - should be juvs[0]
         self.preyRecDDcoef = 10.00
         self.preyTheta = 2
-        self.preySeasRec = np.array([0,0,0.5,0.8,1.,0.8,0.5,0.3,0.1,0,0,0]) #egg laying July-Jan with peak in Sept therefore peak recruitment (+4mths) in Jan
         self.preySeasDisp = np.array([0,0,0,1,1,1,1,0,0,0,0,0], dtype=bool) #disperse Dec-Mar
         self.preyInitAgeStr = np.array([0.3,0.1,0.1,0.1,0.4], dtype=float)
         self.preyMaxAltitude = 2000.0  # metres

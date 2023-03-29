@@ -184,24 +184,26 @@ class PreyParams(object):
         ## PREY SPECIES PARAMETERS
         self.preyK = 20.0
         self.pPreyPres = 0.68
-        self.initialpreyN = 5.0
-        self.preyInitialMultiplier = 0.3
+        self.initialpreyN = 5.0    #not used anymore?
+        self.preyInitialMultiplier = 0.3  #Binomial(pPreyPres)*preyK*preyInitialMultiplier 
+                                          #used to initialise kea densities (@t=0)
         #self.preyPsi = 0.7  # Eqn 32
         self.preyPsiStoat = 0.05  #  Effect of stoats on kea recruitment
         self.preyEtaStoatJuv = 0.08  #Effect of stoats on juvenile (age class 0) on kea survival
         self.preyEtaStoatAd = 0.02  #Effect of stoats on adult (age class 1-4) on kea survival
         self.preyPsiRodent = 0.0  #Effect of rodents on kea recruitment
         self.preyEtaRodentJuv = 0.0  #Effect of rodents on juvenile (age class 0) on kea survival
-        self.preyEtaRodentAd = 0.0  #Effect of rodentss on adult (age class 1-4) on kea survival
-        self.competEffect = 0.0
-        self.preyPopSD = .12
+        self.preyEtaRodentAd = 0.0  #Effect of rodents on adult (age class 1-4) on kea survival
+        self.competEffect = 0.0  #not used anymore?
+        self.preyPopSD = .12     #not used anymore? 
         
         self.rodentThresh = 0.5 #Threshold rat density per ha at which stoat prey switching kicks in
         self.stoatMult = 3 #Multiplier for stoat offtake of prey once prey switch kicks in
 
-        self.preySurv = np.array([0.982,0.992,0.994,0.997,0.998])
-        self.preySurvDDcoef = 110.0
-#        self.preyProd = 0.1067
+        self.preySurv = np.array([0.982,0.992,0.994,0.997,0.998]) #mthly max surv rats for age class 0-4
+        self.preySurvDDcoef = 110.0 #this is effectively a carrying capacity (per 1km2) for Kea survival, 
+                                    #since so large here effectively no density dependence in surv
+        #self.preyProd = 0.1067
         preyFec= 2  #num chicks fledged per clutch
         self.preyIRR = np.log(1+preyFec/2) #convert to annual Instantaneous Rec Rate  
                         #only have one clutch per season will try again later if lose first clutch 
@@ -210,11 +212,12 @@ class PreyParams(object):
                         #egg laying pks Aug-Oct theefore recruitment peaks (+4mths=
                         #incubation 22-24 days + 13 weeks in nest b4 fledge)in Dec-Feb
         self.preySeasDisp = np.array([0,0,0,0,0,0,1,0,0,0,0,0], dtype=bool) 
-                        #dispersasl in autumn Mar after rec.
+                        #dispersasl in autumn Mar after recruit.
                         #oh what age class does dispersal act on? <<<<chk this - should be juvs[0]
-        self.preyRecDDcoef = 10.00
-        self.preyTheta = 2
-        self.preySeasDisp = np.array([0,0,0,1,1,1,1,0,0,0,0,0], dtype=bool) #disperse Dec-Mar
+        self.preyRecDDcoef = 10.00  #this is effectively a carrying capacity (per 1km2) for Kea recruitment
+        self.preyTheta = 2          #theta is how density dependence scales if <1 dd kicks in early, 
+                                    #if >1 rate inc remains close to rm until K nearly reached
+        self.preySeasDisp = np.array([0,0,0,0,0,0,1,0,0,0,0,0], dtype=bool) #disperse Mar after last recruitment
         self.preyInitAgeStr = np.array([0.3,0.1,0.1,0.1,0.4], dtype=float)
         self.preyMaxAltitude = 2000.0  # metres
 

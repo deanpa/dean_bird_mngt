@@ -31,6 +31,7 @@ class PreyData(object):
         self.seasAdjRes = np.genfromtxt(self.params.seasAdjResFile, delimiter=",",
             names=True)
 
+
         self.rodentGeoTrans, self.rodentNcols, self.rodentNrows, originalExtent = (
             self.rasterizeShape(self.params.extentShp, self.params.resolutions[0]))
         self.rodentExtentMask = originalExtent > 0
@@ -52,6 +53,8 @@ class PreyData(object):
         ogrLayerTmp = ogrDatasetTmp.GetLayer()
         x0, x1, y0, y1 = ogrLayerTmp.GetExtent()
         fullExtTmp = [x0, x1, y0, y1]
+
+        print('fullExtTmp', fullExtTmp)
         del ogrDatasetTmp, ogrLayerTmp
         ## RASTERISE PREY HABITAT AT PREY RESOLUTION AND FULL EXTENT
         self.preyGeoTrans, self.preyNcols, self.preyNrows, preyMask = (
@@ -70,10 +73,6 @@ class PreyData(object):
         print('AFTER sum preyMask', np.sum(preyMask), 'sum tmpMask', np.sum(tmpPreyMask))
 
         del (preyGeoTrans, preyNcols, preyNrows, tmpPreyMask)
-
-
-
-
 
         ## FINEST RESOLUTION AMONG ALL SPECIES
         self.finestResol = np.min(self.params.resolutions)
@@ -183,22 +182,13 @@ class PreyData(object):
         band.WriteArray(self.preyCorrectionK)
         del ds
 
-        driver = gdal.GetDriverByName('HFA')
-        ds = driver.Create('preyExtentMaskTemp.img', self.stoatNcols, self.stoatNrows, 
-                1, gdal.GDT_Byte)
-        ds.SetProjection(NZTM_WKT)
-        ds.SetGeoTransform(self.stoatGeoTrans)
-        band = ds.GetRasterBand(1)
-        band.WriteArray(self.preyExtentMask)
-        del ds
-     
         driver = gdal.GetDriverByName('GTiff')
         ds = driver.Create('demTemp.tif', self.rodentNcols, self.rodentNrows, 
                 1, gdal.GDT_Float32)
         ds.SetProjection(NZTM_WKT)
         ds.SetGeoTransform(self.rodentGeoTrans)
         band = ds.GetRasterBand(1)
-        bantuid.WriteArray(self.DEM)
+        band.WriteArray(self.DEM)
         del ds
 
 
@@ -231,6 +221,49 @@ class PreyData(object):
 
         (self.stoatSpatialDictByMgmt, self.stoatAreaDictByMgmt) = (
             self.readAndResampleControlForStoats())
+
+        ## READ IN LEAD POINT DATA FROM DIRECTORY IF NOT NONE, MAKE 2D ARRAY OF PROBABILITIES
+        self.readInLeadPointData()
+        print('Do Lead Poisoning: ', self.doLeadPoisoning)
+        if self.doLeadPoisoning:
+            fullPreyExt = np.array(fullExtTmp)
+
+            makeProbLeadDeath(self.pLeadDeath2D, self.preyExtentMask, self.monthlyLeadProb, 
+                self.params.preySigma, self.nLeadPts, self.leadPoints, 
+                fullPreyExt, self.params.resolutions[2], self.preyNcols, self.preyNrows)            
+
+        
+#        driver = gdal.GetDriverByName('HFA')
+#        ds = driver.Create('pLeadDieTemp.img', self.preyNcols, self.preyNrows, 
+#                1, gdal.GDT_Float32)
+#        ds.SetProjection(NZTM_WKT)
+#        ds.SetGeoTransform(self.preyGeoTrans)
+#        band = ds.GetRasterBand(1)
+#        band.WriteArray(self.pLeadDeath2D)
+#        del ds
+
+
+
+
+
+    def readInLeadPointData(self):
+        """
+        ## READ IN LEAD POINT DATA FROM DIRECTORY IF NOT NONE
+        """
+        if self.params.leadPointData is not None:
+            self.doLeadPoisoning = True        
+            leadPtsTmp = np.genfromtxt(self.params.leadPointData, delimiter=",", names=True,
+                dtype=['S10', 'f8', 'f8'])
+            xx = leadPtsTmp['xcoord']
+            yy = leadPtsTmp['ycoord']
+            self.nLeadPts = len(xx)
+            self.leadPoints = np.hstack([np.expand_dims(xx, 1),np.expand_dims(yy, 1)])
+            self.monthlyLeadProb = self.params.pLeadMax  # 1.0 - np.exp(np.log(1.0 - self.params.pLeadMax) / 12.0)
+            self.pLeadDeath2D = np.zeros_like(self.preyKMap, dtype = np.float32)
+        else:
+            self.doLeadPoisoning = False
+
+
 
     def getReactCtrlMth(self):
         """
@@ -634,3 +667,29 @@ def getPreyKMap(preyNcols, preyNrows, preyCorrectionK,
                 N = (1 + recRate) * NStar
             prey_KMap[row, col] = N
     return(prey_KMap)
+
+
+@jit
+def makeProbLeadDeath(pLeadDeath2D, preyExtentMask, monthlyLeadProb, preySigma, 
+        nLeadPts, leadPoints, fullExtTmp, resol, preyNcols, preyNrows):
+    """
+    ## MAKE 2D ARRAY AT PREY RESOL WITH PROB OF ENC, INT, DEATH
+    """
+    ulx = fullExtTmp[0]
+    uly = fullExtTmp[3]
+    # loop thru prey raster to populate
+    for row in range(preyNrows):
+        for col in range(preyNcols):
+            if ~preyExtentMask[row, col]:
+                continue
+            pNotDie = 1.0
+            xx = ulx + col*resol
+            yy = uly - row*resol
+            ## LOOP THRU LEAD POINTS TO GET DISTANCE
+            for pt in range(nLeadPts):
+                dist = np.sqrt((xx - leadPoints[pt, 0])**2 + (yy - leadPoints[pt, 1])**2) 
+                pDie = monthlyLeadProb * np.exp(-(dist**2) / 2.0 / (preySigma**2))
+                pNotDie = pNotDie * (1.0 - pDie)
+            pLeadDeath2D[row, col] = 1.0 - pNotDie
+
+           

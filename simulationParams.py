@@ -16,10 +16,10 @@ class PreyParams(object):
         ######################################################
 
         ### SET YEARS AND BURN IN YEARS
-        self.burnin = 5
-        self.years = np.arange(15)
+        self.burnin = 2
+        self.years = np.arange(2)
         ### SET ITERATIONS
-        self.iter = 100
+        self.iter = 1
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
         self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
@@ -58,31 +58,39 @@ class PreyParams(object):
 #        self.AOIShp = os.path.join(self.inputDataPath, 'Kea_Model_Region3.shp')
         ##########################################
         ## TEST CONTROL ##########################
-        # self.extentShp = os.path.join(self.inputDataPath, 'test_fullExtent.shp')
-        # self.AOIShp = os.path.join(self.inputDataPath, 'test_AOI.shp')
-        self.extentShp = os.path.join(self.inputDataPath, 'extentDummy.shp')
-        self.AOIShp = os.path.join(self.inputDataPath, 'AOIDummy.shp')        
+        self.extentShp = os.path.join(self.inputDataPath, 'test_fullExtent.shp')
+        self.AOIShp = os.path.join(self.inputDataPath, 'test_AOI.shp')
+#        self.extentShp = os.path.join(self.inputDataPath, 'extentDummy.shp')
+#        self.AOIShp = os.path.join(self.inputDataPath, 'AOIDummy.shp')        
         ##########################################
         ##########################################
 
-        #self.kClasses = os.path.join(self.inputDataPath, 'seed_Kea.img')    
-        self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummy.grd')    
+        self.kClasses = os.path.join(self.inputDataPath, 'seed_Kea.img')    
+#        self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummy.grd')    
 
         ### Area trapped in recent times.
-        # self.islands = os.path.join(self.inputDataPath, 'stoatTrappingRaster.img')
-        # self.DEM = os.path.join(self.inputDataPath, 'dem200_kea.img')
-        # self.preyHabitatShp = os.path.join(self.inputDataPath, 'Kea_Habitat.shp')
-        self.islands = os.path.join(self.inputDataPath, 'trapsDummy.tif')
-        self.DEM = os.path.join(self.inputDataPath, 'DEMDummy.tif')
-        self.preyHabitatShp = os.path.join(self.inputDataPath, 'KeaHabDummy.shp')
+        self.islands = os.path.join(self.inputDataPath, 'stoatTrappingRaster.img')
+        self.DEM = os.path.join(self.inputDataPath, 'dem200_kea.img')
+        self.preyHabitatShp = os.path.join(self.inputDataPath, 'Kea_Habitat.shp')
+#        self.islands = os.path.join(self.inputDataPath, 'trapsDummy.tif')
+#        self.DEM = os.path.join(self.inputDataPath, 'DEMDummy.tif')
+#        self.preyHabitatShp = os.path.join(self.inputDataPath, 'KeaHabDummy.shp')
 
         ##########################################
         ## TEST CONTROL ##########################
-        self.controlFile = os.path.join(self.inputDataPath, '3yrlyCtrlDummy.csv') 
+        #self.controlFile = os.path.join(self.inputDataPath, '3yrlyCtrlDummy.csv') 
+        self.controlFile = os.path.join(self.inputDataPath, 'testControl.csv') 
+#        self.controlFile = os.path.join(self.inputDataPath, 'noCtrlDummy.csv') 
+
         # "3yrlyCtrlDummy.csv" or "noCtrlDummy.csv"
         ##########################################
         ##########################################
 #        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
+
+        ## LEAD POINT DATA
+        self.leadPointData = os.path.join(self.inputDataPath, 'test_LeadPoints.csv')
+#        self.leadPointData = None
+
 
         self.seasAdjResFile = os.path.join(self.inputDataPath, 'mastLUpTable.csv')
 
@@ -224,7 +232,10 @@ class PreyParams(object):
         self.preySeasDisp = np.array([0,0,0,0,0,0,1,0,0,0,0,0], dtype=bool) #disperse Mar after last recruitment
         self.preyInitAgeStr = np.array([0.3,0.1,0.1,0.1,0.4], dtype=float)
         self.preyMaxAltitude = 2000.0  # metres
-
+        ## PREY SIGMA FOR HOME RANGE STANDARD DEVIATION OF BIVARIATE NORMAL KERNEL
+        self.preySigma = 5000
+        self.pLeadMax = 0.07
+        
 
         ## IMMIGRATION AND EMIGRATION PARAMETERS
         self.gammaProbEmigrate = np.array([0.1, 0.2, 0.4])   # gamma for rodent, stoats, 

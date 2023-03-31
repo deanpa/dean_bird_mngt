@@ -93,9 +93,9 @@ class KeaParams(object):
 
         self.keaK = 20.0
         self.pKeaPres = 0.68
-        self.initialkeaN = 5.0
+        self.initialkeaN = 2.0
         self.keaInitialMultiplier = 0.5
-        self.keaPsi = 2.0  # Eqn 32
+        self.preyPsi = 0.7  # Eqn 32 
         self.competEffect = 0.0
         self.keaPopSD = .12
 
@@ -325,9 +325,9 @@ class KeaParams(object):
     def setKeaInitialMultiplier(self, keaInitialMultiplier):
         self.keaInitialMultiplier = keaInitialMultiplier
 
-    def setKeaPsi(self, keaPsi):
-        self.keaPsi = keaPsi
-
+    def setPreyPsi(self, preyPsi):
+        self.preyPsi = preyPsi
+ 
 #    def setKeaGrowthRate(self, keaGrowthRate):
 #        self.keaGrowthRate = keaGrowthRate
 

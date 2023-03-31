@@ -159,6 +159,12 @@ def runModel(rawdata, params=None, loopIter=0):
 
 
     rodent_raster[~rawdata.rodentExtentMask] = 0
+    
+    # create a time since control raster based on rodent extent and initialise
+    # with months=rodentBouncePeriod so that doesn't have an effect yet
+    timeSinceCtrl = np.zeros_like(rawdata.rodentExtentMask, dtype=(np.int16))
+    timeSinceCtrl[rawdata.rodentExtentMask] = params.rodentBouncePeriod
+
 
     # get rodent population and toxic rodents at stoat resolution
     # sum rodents at rodent resolution, but raster is at stoat resol.
@@ -335,6 +341,11 @@ def runModel(rawdata, params=None, loopIter=0):
         for mth in range(12):
             
             tMth = (year_all * 12) + mth
+            
+            #update time since control
+            timeSinceCtrl[rawdata.rodentExtentMask] += 1
+            #print('year=', year_all, 'month=', mth, 'time since ctrl=', timeSinceCtrl[1,1])
+            
             ## DO RODENT GROWTH, first have to do some bodging to get seasonal stuff 
             ## use different kmaps depending on if crash or mast year, needs to be this
             #order so if double mast, the mast overrrides using the crash k map
@@ -345,7 +356,13 @@ def runModel(rawdata, params=None, loopIter=0):
                     rawdata.seasAdjRes['crash'][mth])
             if mastT:
                 rodent_kMth[mastingMask] = rodent_kMapMast[mastingMask]*rawdata.seasAdjRes['mast'][mth]
-
+            else:
+                rodent_kMth = np.where(timeSinceCtrl<params.rodentBouncePeriod,params.rodentBounceMult*rodent_kMth ,rodent_kMth)
+            # print('t since:', timeSinceCtrl[1,15:25]) 
+            # print('kvals b4:', rodent_kMth[1,15:25]) 
+            ###now adjust rodent_kMth for time since ctrl
+            # print('kvals after:', rodent_kMth[1,15:25])
+            
             rodent_raster = doRodentGrowth(rawdata, params,
                 rodent_raster, rodent_kMth, mth)
 
@@ -461,10 +478,11 @@ def runModel(rawdata, params=None, loopIter=0):
                 #     # the control is just due to reactive control
                 #     schedControlMask = reactiveControlMask
     
-                
-
                 (rodent_raster, nToxicRodents) = doControl(rawdata, params, 
                     schedControlMask, rodent_raster)
+                timeSinceCtrl[schedControlMask] = 0
+                #print('time since ctrl =', timeSinceCtrl[1,1:40])
+
     
             else:
                 # no control
@@ -573,6 +591,7 @@ def runModel(rawdata, params=None, loopIter=0):
             if (mth == 11) and (loopIter == 0) and keepYear:
                 populateResultControl(year, results.popAllYears_3D, controlThisYear)
 
+        #print('time since ctrl =', timeSinceCtrl[1,1:40])
         ### IF BEYOND BURN IN PERIOD, STORE THE RESULTS
         if keepYear:
             ## update the year
@@ -941,14 +960,14 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
     stoat_t = stoat_raster[mask]
 #   stoat_t = stoat_raster_prey[mask]
     rodent_t = rodent_raster_prey[mask]
-    rodentSwitchMult_t = rodent_t.copy()
-    rodentSwitchMult_t[np.where(rodent_t<=params.rodentThresh)] = params.stoatMult #if rodent density <1 per ha multiply stoat offtake by 3
-    rodentSwitchMult_t[np.where(rodent_t>params.rodentThresh)] = 1 #if rodent density >1 per ha don't multiply stoat offtake
+    rodentSwitchMult_t = np.where(rodent_t<=params.rodentThresh,params.stoatMult,1)
     #not sure why so many 3s in print output yet summary file "monthlyDensities.csv" doesn't show this???
-    #oh is prob cos monthlyDensities are not per ha??    
+    #oh is prob cos monthlyDensities are not per ha - yes they are - maybe something to chk... 
+    #rodent raster is all integers?! understandable when at rodent resolution but thought 
+    #would be diff for stoat or pre resol rodent_raster_stoat cos averages???
     # if (mth==1):
-    #     #print(rodent_t[100:115])
-    #     #print(np.array2string(rodentSwitchMult_t[100:115], precision=2))
+    #     print(np.array2string(rodent_t[100:115], precision=2))
+    #     print(np.array2string(rodentSwitchMult_t[100:115], precision=2))
     #     print('num <=0.5', np.sum(rodent_t <=0.5), 'num >0.5', np.sum(rodent_t >0.5))
     #     print('num <=0.5', np.sum(rodentSwitchMult_t==3), 'num >0.5', np.sum(rodentSwitchMult_t==1))
     ## PREY POPN DYNAMICS    

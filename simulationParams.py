@@ -78,7 +78,7 @@ class PreyParams(object):
 
         ##########################################
         ## TEST CONTROL ##########################
-        self.controlFile = os.path.join(self.inputDataPath, 'noCtrlDummy.csv') 
+        self.controlFile = os.path.join(self.inputDataPath, '3yrlyCtrlDummy.csv') 
         # "3yrlyCtrlDummy.csv" or "noCtrlDummy.csv"
         ##########################################
         ##########################################
@@ -149,6 +149,10 @@ class PreyParams(object):
         self.pRodentPres = 0.95
         self.rodentInitialMultiplier = 0.8     
         self.rodentMaxAltitude = 1000.0  # metres
+        
+        ##rat bounce parameters###
+        self.rodentBouncePeriod = 24  #in months - time since control within which K/resources are multiplied to drive rat bounce
+        self.rodentBounceMult = 2.5  #how much to multiply resources/Kmap by to drive rat bounce
 
         ######## TRACKING TUNNEL PARAMETERS
         self.threshold_TT = 1            #(1 = no reac) Thres prop of TT with detections

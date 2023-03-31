@@ -121,9 +121,7 @@ class PreyData(object):
 #            self.params.resolutions[2], self.preyNcols, self.preyNrows,
 #            self.DEM, originalExtent, self.params.preyMaxAltitude)
 #########################
-
-
-
+        
         ## GET REACTIVE CONTROL MONTHS FROM PARAMETERS
         self.getReactCtrlMth()
 

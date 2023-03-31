@@ -16,8 +16,8 @@ class PreyParams(object):
         ######################################################
 
         ### SET YEARS AND BURN IN YEARS
-        self.burnin = 2
-        self.years = np.arange(2)
+        self.burnin = 1
+        self.years = np.arange(10)
         ### SET ITERATIONS
         self.iter = 1
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
@@ -206,7 +206,8 @@ class PreyParams(object):
         self.rodentThresh = 0.5 #Threshold rat density per ha at which stoat prey switching kicks in
         self.stoatMult = 3 #Multiplier for stoat offtake of prey once prey switch kicks in
 
-        self.preySurv = np.array([0.982,0.992,0.994,0.997,0.998]) #mthly max surv rats for age class 0-4
+        self.preySurv = np.array([0.982, 0.992, 0.994, 0.998]) #mthly max surv rats for age class 0-4
+#        self.preySurv = np.array([0.982,0.992,0.994,0.997,0.998]) #mthly max surv rats for age class 0-4
         self.preySurvDDcoef = 110.0 #this is effectively a carrying capacity (per 1km2) for Kea survival, 
                                     #since so large here effectively no density dependence in surv
         #self.preyProd = 0.1067
@@ -224,7 +225,8 @@ class PreyParams(object):
         self.preyTheta = 2          #theta is how density dependence scales if <1 dd kicks in early, 
                                     #if >1 rate inc remains close to rm until K nearly reached
         self.preySeasDisp = np.array([0,0,0,0,0,0,1,0,0,0,0,0], dtype=bool) #disperse Mar after last recruitment
-        self.preyInitAgeStr = np.array([0.3,0.1,0.1,0.1,0.4], dtype=float)
+        self.preyInitAgeStr = np.array([0.3, 0.15, 0.15, 0.4], dtype=float)
+#        self.preyInitAgeStr = np.array([0.3,0.1,0.1,0.1,0.4], dtype=float)
         self.preyMaxAltitude = 2000.0  # metres
         ## PREY SIGMA FOR HOME RANGE STANDARD DEVIATION OF BIVARIATE NORMAL KERNEL
         self.preySigma = 5000

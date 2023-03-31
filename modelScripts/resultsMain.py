@@ -20,6 +20,12 @@ def main(params):
     print('simulation results data:', params.resultsFName)    
 
 
+
+#    resultsFX.writeTmpArray(params, data, results)
+
+
+
+
     ## RUN RESULTS PROCESSING MODULE
     results = resultsFX.processResults(params, data, results)
 

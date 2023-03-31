@@ -8,13 +8,20 @@ import csv
 import numpy as np
 from osgeo import gdal
 from osgeo import gdalconst
+from osgeo import osr
+from osgeo import ogr
 from scipy.stats.mstats import mquantiles
 import pylab
-from wand.image import Image
-from wand.drawing import Drawing
-#from modelScripts import calcresults
+##from wand.image import Image
+##from wand.drawing import Drawing
+from modelScripts import calcresults
 from modelScripts import preProcessing
 
+
+COMPRESSED_HFA = ['COMPRESSED=YES']
+sr = osr.SpatialReference()
+sr.ImportFromEPSG(2193) # always nztm?
+NZTM_WKT = sr.ExportToWkt()
 
 #########################################
 #
@@ -50,6 +57,19 @@ COLOUR_RAMP_FRACTION = 0.1 # of the image width
 annGrowthYears = 1      ## CHANGE TO 5
 
 
+def writeTmpArray(params, data, results):
+    # 'MastT', 'preyDensity', 'rodentDensity'
+    driver = gdal.GetDriverByName('HFA')
+    ds = driver.Create('mastTmp.img', data.rodentNcols, data.rodentNrows, 
+         1, gdal.GDT_Byte)
+    ds.SetProjection(NZTM_WKT)
+    ds.SetGeoTransform(data.rodentGeoTrans)
+    band = ds.GetRasterBand(1)
+    band.WriteArray(results[0].popAllYears_3D['MastT'][-1])
+    del ds
+
+
+
 def processResults(params, data, results):
     ### Output data path to write graphs, imagees and movies
 #    outputDataPath = os.path.join(os.getenv('PREYPROJDIR', default='.'), 
@@ -76,6 +96,8 @@ def processResults(params, data, results):
     # first, do the plots
     doTimeSeriesPlots(results, sorted(data.preySpatialDictByMgmt.keys()), params.outputDataPath)
     doMthlyTimeSeriesPlots(results, sorted(data.preySpatialDictByMgmt.keys()), params.outputDataPath)
+
+
 ###    # first, do the plots
 ###    doPreyPlots(results, sorted(data.preyControlDictByMgmt.keys()), params.outputDataPath)
 
@@ -86,7 +108,7 @@ def processResults(params, data, results):
 
 
     # then the movie
-    makeMovie(results, movieFName, params.outputDataPath)
+#    makeMovie(results, movieFName, params.outputDataPath)
 
 
     #########
@@ -130,6 +152,8 @@ def makeMovie(results, movieFName, outputDataPath):
 
         # Note: Current directory
         thisFramePNG = 'frame_%02d.png' % yearn
+
+        print('thisFramePNG', thisFramePNG)
 
         mastingMask = popMovie['MastT'][yearn]
         makeMaskPNG(tempDir, mastingMask, mastingPNG, 
@@ -220,7 +244,7 @@ def doTimeSeriesPlots(results, controlKeys, outputDataPath):
     annGrowYearsStop = burnin + annGrowthYears - 1
     annGrowYears = np.min([annGrowthYears, mngtYears])
     nIterations = len(results)
-    print('nIterations', nIterations)
+    print('nIterations', nIterations, nYears, mngtYears)
     popChangeArray = np.empty((nAreas, ), dtype=[('Area', 'U32'), ('TotalMean', float), 
             ('TotalLow_CI', float), ('TotalHigh_CI', float),
             ('AnnualMean', float), ('AnnualLow_CI', float), 
@@ -410,16 +434,16 @@ def makeMaskPNG(tempDir, mask, fname, title, resizePercent):
     os.remove(maskIMG)
 
     # write text
-    # subprocess.check_call(['mogrify', '-fill', 'yellow', '-pointsize', '10', 
-    #     '-draw', 'text %d, %d "%s"' % (TEXT_LOCATION[0], TEXT_LOCATION[1], title), 
-    #     fname])
-    with Image(filename=fname) as img:
-        with Drawing() as ctx:
-            ctx.fill_color = 'yellow'   
-            ctx.font_size = 10
-            ctx.text(TEXT_LOCATION[0], TEXT_LOCATION[1], title)
-            ctx(img)
-        img.save(filename=fname)
+    subprocess.check_call(['mogrify', '-fill', 'yellow', '-pointsize', '10', 
+        '-draw', 'text %d, %d "%s"' % (TEXT_LOCATION[0], TEXT_LOCATION[1], title), 
+        fname])
+#    with Image(filename=fname) as img:
+#        with Drawing() as ctx:
+#            ctx.fill_color = 'yellow'   
+#            ctx.font_size = 10
+#            ctx.text(TEXT_LOCATION[0], TEXT_LOCATION[1], title)
+#            ctx(img)
+#        img.save(filename=fname)
 
 def makeColourMapPNG(tempDir, density, fname, title, resizePercent, densityRange):
     """

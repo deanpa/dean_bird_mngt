@@ -258,11 +258,11 @@ class PreyData(object):
             yy = leadPtsTmp['ycoord']
             self.nLeadPts = len(xx)
             self.leadPoints = np.hstack([np.expand_dims(xx, 1),np.expand_dims(yy, 1)])
-            self.monthlyLeadProb = self.params.pLeadMax  # 1.0 - np.exp(np.log(1.0 - self.params.pLeadMax) / 12.0)
+            self.monthlyLeadProb = 1.0 - np.exp(np.log(1.0 - self.params.pLeadMax) / 12.0)
             self.pLeadDeath2D = np.zeros_like(self.preyKMap, dtype = np.float32)
         else:
             self.doLeadPoisoning = False
-
+            self.pLeadDeath2D = None
 
 
     def getReactCtrlMth(self):

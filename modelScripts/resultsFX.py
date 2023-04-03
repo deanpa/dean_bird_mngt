@@ -657,6 +657,50 @@ def doPlot(i, key, meansAllYears, quantsAllYears, outputDataPath):
     pylab.cla()
     
 
+def writeMultiTif(results, data, params, arrNames = None, yearIndx = None):
+    """
+    write single or multi-band tifs to directory
+    """
+    ## DEFAULT RASTER NAMES TO WRITE TO TIF, IF NOT SPECIFIED
+    if arrNames is None:
+        arrNames = ['MastT', 'ControlT', 'rodentDensity', 'stoatDensity', 'preyDensity']
+#    nNames = len(arrNames)
+    ## DEFAULT YEARS TO WRITE TO TIF: LAST FIVE YEARS
+    if yearIndx is None:
+        nTotalLayers = len(results[0].popAllYears_3D['stoatDensity'])
+        if nTotalLayers >= 5:
+            yearIndx = [nTotalLayers - 5, nTotalLayers]
+        else:
+            yearIndx = [0, nTotalLayers]
+    nLayers = yearIndx[1] - yearIndx[0]
+    ## DICTIONARY OF DATA TYPES
+    gdt_DType = {'MastT' : gdal.GDT_Byte, 'ControlT' : gdal.GDT_Byte, 
+        'rodentDensity' : gdal.GDT_Float32, 'stoatDensity' : gdal.GDT_Float32, 
+        'preyDensity' : gdal.GDT_Float32}
+    geoTrans_Dict = {'MastT' : data.rodentGeoTrans, 'ControlT' : data.rodentGeoTrans, 
+        'rodentDensity' : data.rodentGeoTrans, 'stoatDensity' : data.stoatGeoTrans, 
+        'preyDensity' : data.preyGeoTrans}
+
+    for nn in arrNames:
+        FName = nn + '_3D.tif'
+        outFNamePath = os.path.join(params.outputDataPath, FName)
+        print('FName', outFNamePath)
+        raster_nn = results[0].popAllYears_3D[nn][yearIndx[0]:yearIndx[1]]
+
+        (nrows, ncols) = np.shape(raster_nn[0])
+        ds = gdal.GetDriverByName('GTiff').Create(outFNamePath, ncols,
+            nrows, nLayers, gdt_DType[nn],
+            options=['TILED=YES', 'COMPRESS=LZW', 'INTERLEAVE=BAND', 'BIGTIFF=IF_SAFER'])
+        ds.SetGeoTransform(geoTrans_Dict[nn])
+        ds.SetProjection(NZTM_WKT)
+        # loop thru years (layers in tif)
+        for nLay in range(nLayers):
+            band = ds.GetRasterBand(nLay+1)
+            band.WriteArray(raster_nn[nLay])
+    del ds  # Flush
+
+
+
 def writeTif(results, tempTifName, gdt_type, wkt, match_geotrans):
     """
     write single or multi-band tifs to directory
@@ -688,4 +732,5 @@ def writeTif(results, tempTifName, gdt_type, wkt, match_geotrans):
             band = ds.GetRasterBand(n+1)
             band.WriteArray(raster[n])
     del ds  # Flush
+
 

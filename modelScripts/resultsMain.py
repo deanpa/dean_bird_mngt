@@ -21,9 +21,9 @@ def main(params):
 
 
 
-#    resultsFX.writeTmpArray(params, data, results)
+###    resultsFX.writeTmpArray(params, data, results)
 
-    resultsFX.writeMultiTif(results, data, params, arrNames = None, yearIndx = None)
+###    resultsFX.writeMultiTif(results, data, params, arrNames = None, yearIndx = None)
 
 
     ## RUN RESULTS PROCESSING MODULE

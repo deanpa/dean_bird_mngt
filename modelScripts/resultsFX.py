@@ -200,10 +200,10 @@ def makeMovie(results, movieFName, outputDataPath):
 
         
         #now make the movie
-    subprocess.check_call(['ffmpeg', '-framerate', str(FRAMERATE), '-i', 
-        os.path.join(params.outputDataPath, 'frame_%02d.png'),
-        '-vcodec', 'mpeg4', '-q:v', '1', '-y', 
-        '-loglevel', 'error', movieFName])
+#    subprocess.check_call(['ffmpeg', '-framerate', str(FRAMERATE), '-i', 
+#        os.path.join(params.outputDataPath, 'frame_%02d.png'),
+#        '-vcodec', 'mpeg4', '-q:v', '1', '-y', 
+#        '-loglevel', 'error', movieFName])
 
     # tidy up
     shutil.rmtree(tempDir)

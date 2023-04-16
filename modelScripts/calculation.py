@@ -105,6 +105,9 @@ def runModel(rawdata, params=None, loopIter=0):
     rodent_kMapMast = rawdata.paramRodentMastCCLU[rawdata.kClasses] * 1
     rodent_kMapCrash = rawdata.paramRodentCrashCCLU[rawdata.kClasses] * 1
 
+    print('k classes', rawdata.kClasses[1,1:10],'kMap', rodent_kMap[1,1:10], 
+          'kMapMast', rodent_kMapMast[1,1:10],  'kMapCrash', rodent_kMapCrash[1,1:10] )
+   
     # number of hectares in a rodent pixel; for getting stoat_K
     nHectInRodent = (params.resolutions[0] / 100.0)**2
 

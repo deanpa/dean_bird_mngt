@@ -16,8 +16,8 @@ class PreyParams(object):
         ######################################################
 
         ### SET YEARS AND BURN IN YEARS
-        self.burnin = 2
-        self.years = np.arange(2)
+        self.burnin = 5
+        self.years = np.arange(15)
         ### SET ITERATIONS
         self.iter = 1
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
@@ -65,7 +65,7 @@ class PreyParams(object):
         ##########################################
         ##########################################
 
-        self.kClasses = os.path.join(self.inputDataPath, 'seed_Kea.img')    
+        self.kClasses = os.path.join(self.inputDataPath, 'seed_Kea2.img')    
 #        self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummy.grd')    
 
         ### Area trapped in recent times.
@@ -160,7 +160,7 @@ class PreyParams(object):
         
         ##rat bounce parameters###
         self.rodentBouncePeriod = 24  #in months - time since control within which K/resources are multiplied to drive rat bounce
-        self.rodentBounceMult = 2.5  #how much to multiply resources/Kmap by to drive rat bounce
+        self.rodentBounceMult = 2  #how much to multiply resources/Kmap by to drive rat bounce
 
         ######## TRACKING TUNNEL PARAMETERS
         self.threshold_TT = 1            #(1 = no reac) Thres prop of TT with detections

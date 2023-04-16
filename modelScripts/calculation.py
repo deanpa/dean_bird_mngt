@@ -26,6 +26,7 @@ def inv_logit(x):
     """
     return np.exp(x) / (1 + np.exp(x))
 
+
 def runModel(rawdata, params=None, loopIter=0):
     """
     Run the Prey model for a given iteration number.
@@ -335,8 +336,9 @@ def runModel(rawdata, params=None, loopIter=0):
       
         ##age the prey
         if year_all > 0:
-            prey_raster[4,:,:] = prey_raster[4,:,:] + prey_raster[3,:,:]
-            prey_raster[3,:,:] = prey_raster[2,:,:] 
+#            prey_raster[4,:,:] = prey_raster[4,:,:] + prey_raster[3,:,:]
+#            prey_raster[3,:,:] = prey_raster[2,:,:] 
+            prey_raster[3,:,:] = prey_raster[3,:,:] + prey_raster[2,:,:] 
             prey_raster[2,:,:] = prey_raster[1,:,:] 
             prey_raster[1,:,:] = prey_raster[0,:,:]
             prey_raster[0,:,:] = 0
@@ -550,8 +552,8 @@ def runModel(rawdata, params=None, loopIter=0):
             ## THE FOLLOWING FX AND GET 'rodent_raster_prey' WITHIN THE FX. THIS IS
             ## FOR THE COMPETITION EFFECT BETWEEN RODENTS AND PREY.
             prey_raster = doPreyGrowth(prey_raster, stoat_raster, params, 
-                    rawdata.preyExtentMask, rodent_raster_stoat,
-                    nHectInRodent, preyRecDecay_1D, preySurvDecay_1D, mth)
+                    rawdata.preyExtentMask, rodent_raster_stoat, nHectInRodent, 
+                    preyRecDecay_1D, preySurvDecay_1D, mth, rawdata.pLeadDeath2D)
     
     
     
@@ -922,7 +924,7 @@ def doRodentGrowth(rawdata, params, rodent_raster, rodent_kMth, mth):
 
 def doPreyGrowth(prey_raster, stoat_raster, params, mask, 
         rodent_raster_prey, nHectInRodent, preyRecDecay_1D, 
-        preySurvDecay_1D, mth):
+        preySurvDecay_1D, mth, pLeadDeath2D):
     """
     ## calc prey population growth by pixel
     """
@@ -954,12 +956,18 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
 #                       statMethod = RESAMPLE_SUM, pixelRescale = 1)
 
     ## MAKE 1-D ARRAYS FOR POPULATION UPDATE
+
+## LEAD POISONING EFFECT ON SURVIVAL
+    if pLeadDeath2D is not None:
+        pLead_t = pLeadDeath2D[mask]
+
     prey0_t = prey_raster[0,mask]
     prey1_t = prey_raster[1,mask]
     prey2_t = prey_raster[2,mask]
     prey3_t = prey_raster[3,mask]
-    prey4_t = prey_raster[4,mask]
-    preyN_t = prey_raster[5,mask]
+#    prey4_t = prey_raster[4,mask]
+    preyN_t = prey_raster[4,mask]
+#    preyN_t = prey_raster[5,mask]
     stoat_t = stoat_raster[mask]
 #   stoat_t = stoat_raster_prey[mask]
     rodent_t = rodent_raster_prey[mask]
@@ -991,26 +999,49 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
     # prey0_t = prey0_t + rng.poisson(prey4_t * recRate) #fledglings get added to zero age class 
     # preyN_t = prey0_t + prey1_t + prey2_t + prey3_t + prey4_t  #sum to get total popn
  
+
+    ## YEAR 0-1
     pSurv = (params.preySurv[0] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
          * np.exp(-params.preyEtaStoatJuv * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentJuv * rodent_t))
+    ## LEAD POISONING EFFECT ON SURVIVAL
+    if pLeadDeath2D is not None:
+        pSurv = pSurv * (1.0 - pLead_t)
     prey0_t = rng.binomial(prey0_t, pSurv)
+
+    ## YEAR 1-2
     pSurv = (params.preySurv[1] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
          * np.exp(-params.preyEtaStoatAd * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
+    ## LEAD POISONING EFFECT ON SURVIVAL
+    if pLeadDeath2D is not None:
+        pSurv = pSurv * (1.0 - pLead_t)
     prey1_t = rng.binomial(prey1_t, pSurv)
+
+    ## YEAR 2-3
     pSurv = (params.preySurv[2] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
          * np.exp(-params.preyEtaStoatAd * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
+    ## LEAD POISONING EFFECT ON SURVIVAL
+    if pLeadDeath2D is not None:
+        pSurv = pSurv * (1.0 - pLead_t)
     prey2_t = rng.binomial(prey2_t, pSurv)
+
+    ## YEAR > 3
     pSurv = (params.preySurv[3] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
          * np.exp(-params.preyEtaStoatAd * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
+    ## LEAD POISONING EFFECT ON SURVIVAL
+    if pLeadDeath2D is not None:
+        pSurv = pSurv * (1.0 - pLead_t)
     prey3_t = rng.binomial(prey3_t, pSurv)
-    pSurv = (params.preySurv[4] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-         * np.exp(-params.preyEtaStoatAd * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
-    prey4_t = rng.binomial(prey4_t, pSurv)
+
+#    pSurv = (params.preySurv[4] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+#         * np.exp(-params.preyEtaStoatAd * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
+#    prey4_t = rng.binomial(prey4_t, pSurv)
     seasRec = params.preySeasRec[mth]
     recRate = ((np.exp(seasRec * params.preyIRR)-1) *np.exp(-((preyN_t/(preyRecDecay_1D))**params.preyTheta))
            * np.exp(-params.preyPsiStoat * stoat_t)* np.exp(-params.preyPsiRodent * rodent_t))
-    prey0_t = prey0_t + rng.poisson(prey4_t * recRate) #fledglings get added to zero age class 
-    preyN_t = prey0_t + prey1_t + prey2_t + prey3_t + prey4_t  #sum to get total popn
+
+    prey0_t = prey0_t + rng.poisson(prey3_t * recRate) #fledglings get added to zero age class 
+    preyN_t = prey0_t + prey1_t + prey2_t + prey3_t   #sum to get total popn
+#    preyN_t = prey0_t + prey1_t + prey2_t + prey3_t + prey4_t  #sum to get total popn
 
     #shouldn't need to do this if drawing from binomial and poisson??
     ## ADD STOCHASTICITY GAUSSIAN PROCESS
@@ -1026,8 +1057,8 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
     prey_raster[1,mask]=prey1_t
     prey_raster[2,mask]=prey2_t
     prey_raster[3,mask]=prey3_t
-    prey_raster[4,mask]=prey4_t
-    prey_raster[5,mask]=preyN_t
+#    prey_raster[4,mask]=prey4_t
+    prey_raster[4,mask]=preyN_t
     prey_raster[:,~mask]=0
     
     # ## RETURN PREY RASTER
@@ -1266,7 +1297,8 @@ def populateResultArrays(loopIter, mastingMask, rodent_raster,
         mgmtMask = preySpatialDictByMgmt[key]               #mask prey cells in mgmt zone
         ### PREY DENSITY
         sppMgmtMask = mgmtMask & preyExtentMask            # prey habitat in mgmt zone
-        sppDensity = np.sum(prey_raster[5,sppMgmtMask]) / preyAreaDictByMgmt[key]
+        sppDensity = np.sum(prey_raster[4,sppMgmtMask]) / preyAreaDictByMgmt[key]
+#        sppDensity = np.sum(prey_raster[5,sppMgmtMask]) / preyAreaDictByMgmt[key]
         preyDensity_2D[i, year_all] = sppDensity        
 
         ### (2) DO STOAT DENSITY 
@@ -1289,7 +1321,13 @@ def populateResultArrays(loopIter, mastingMask, rodent_raster,
 #        popAllYears_3D['ControlT'][year] = schedControlMask
         popAllYears_3D['rodentDensity'][year] = rodent_raster
         popAllYears_3D['stoatDensity'][year] = stoat_raster
-        popAllYears_3D['preyDensity'][year] = prey_raster[5,:,:]
+        popAllYears_3D['preyDensity'][year] = prey_raster[4,:,:]
+
+
+
+
+
+
 
 def populateResultControl(year, popAllYears_3D, controlThisYear):
     """
@@ -1317,7 +1355,7 @@ def populateResultDensity(rodent_raster, rodentExtentMask, rodentControlList,
         mgmtMask = preySpatialDictByMgmt[key]               #mask prey cells in mgmt zone
         ### PREY DENSITY
         sppMgmtMask = mgmtMask & preyExtentMask            # prey habitat in mgmt zone
-        sppDensity = np.sum(prey_raster[5,sppMgmtMask]) / preyAreaDictByMgmt[key]
+        sppDensity = np.sum(prey_raster[4,sppMgmtMask]) / preyAreaDictByMgmt[key]
         preyDensity_2D_mth[i, tMth] = sppDensity        
 
         ### (2) DO STOAT DENSITY  
@@ -1331,6 +1369,10 @@ def populateResultDensity(rodent_raster, rodentExtentMask, rodentControlList,
         sppMgmtMask = mgmtMask & rodentExtentMask           # rodent habitat in mgmt zone
         sppDensity = np.sum(rodent_raster[sppMgmtMask]) / rodentAreaDictByMgmt[key]
         rodentDensity_2D_mth[i, tMth] = sppDensity        
+
+
+
+
 
 
 

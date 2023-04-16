@@ -8,13 +8,20 @@ import csv
 import numpy as np
 from osgeo import gdal
 from osgeo import gdalconst
+from osgeo import osr
+from osgeo import ogr
 from scipy.stats.mstats import mquantiles
 import pylab
-from wand.image import Image
-from wand.drawing import Drawing
-#from modelScripts import calcresults
+##from wand.image import Image
+##from wand.drawing import Drawing
+from modelScripts import calcresults
 from modelScripts import preProcessing
 
+
+COMPRESSED_HFA = ['COMPRESSED=YES']
+sr = osr.SpatialReference()
+sr.ImportFromEPSG(2193) # always nztm?
+NZTM_WKT = sr.ExportToWkt()
 
 #########################################
 #
@@ -26,7 +33,7 @@ x =1
 
 # resize to this percent for each rodent image
 # stoat and prey resizes are calculated from this
-RODENT_RESIZE_PERCENT = 30 
+RODENT_RESIZE_PERCENT = 175  #30
 
 # these may need tweaking
 RODENT_DENSITY_RANGE = (0.0, 80.0)
@@ -48,6 +55,19 @@ COLOUR_RAMP_FRACTION = 0.1 # of the image width
 
 ## NUMBER OF YEARS OVER WHICH CALC PREY ANN GROWTH RATE
 annGrowthYears = 1      ## CHANGE TO 5
+
+
+def writeTmpArray(params, data, results):
+    # 'MastT', 'preyDensity', 'rodentDensity'
+    driver = gdal.GetDriverByName('HFA')
+    ds = driver.Create('mastTmp.img', data.rodentNcols, data.rodentNrows, 
+         1, gdal.GDT_Byte)
+    ds.SetProjection(NZTM_WKT)
+    ds.SetGeoTransform(data.rodentGeoTrans)
+    band = ds.GetRasterBand(1)
+    band.WriteArray(results[0].popAllYears_3D['MastT'][-1])
+    del ds
+
 
 
 def processResults(params, data, results):
@@ -76,6 +96,8 @@ def processResults(params, data, results):
     # first, do the plots
     doTimeSeriesPlots(results, sorted(data.preySpatialDictByMgmt.keys()), params.outputDataPath)
     doMthlyTimeSeriesPlots(results, sorted(data.preySpatialDictByMgmt.keys()), params.outputDataPath)
+
+
 ###    # first, do the plots
 ###    doPreyPlots(results, sorted(data.preyControlDictByMgmt.keys()), params.outputDataPath)
 
@@ -131,6 +153,8 @@ def makeMovie(results, movieFName, outputDataPath):
         # Note: Current directory
         thisFramePNG = 'frame_%02d.png' % yearn
 
+        print('thisFramePNG', thisFramePNG)
+
         mastingMask = popMovie['MastT'][yearn]
         makeMaskPNG(tempDir, mastingMask, mastingPNG, 
                 'Masting Year %d' % yearName, 
@@ -163,16 +187,16 @@ def makeMovie(results, movieFName, outputDataPath):
 
         # make the frame with all the inputs
         frameDataPath = os.path.join(outputDataPath, thisFramePNG)
-        # subprocess.check_call(['montage', mastingPNG, controlPNG, 
-        #         rodentPNG, stoatPNG, preyPNG,'-geometry', 
-        #         '+2+2', frameDataPath])
-        filesList =  [mastingPNG, controlPNG, rodentPNG, stoatPNG, preyPNG]
-        newfig = Image()
-        for fname in filesList:        
-            with Image(filename=fname) as img:
-                newfig.sequence.append(img)
-                newfig.smush(False, 0)
-            newfig.save(filename=frameDataPath)        
+        subprocess.check_call(['montage', mastingPNG, controlPNG, 
+                 rodentPNG, stoatPNG, preyPNG,'-geometry', 
+                 '+2+2', frameDataPath])
+#        filesList =  [mastingPNG, controlPNG, rodentPNG, stoatPNG, preyPNG]
+#        newfig = Image()
+#        for fname in filesList:        
+#            with Image(filename=fname) as img:
+#                newfig.sequence.append(img)
+#                newfig.smush(False, 0)
+#            newfig.save(filename=frameDataPath)        
 
         
         #now make the movie
@@ -220,7 +244,7 @@ def doTimeSeriesPlots(results, controlKeys, outputDataPath):
     annGrowYearsStop = burnin + annGrowthYears - 1
     annGrowYears = np.min([annGrowthYears, mngtYears])
     nIterations = len(results)
-    print('nIterations', nIterations)
+    print('nIterations', nIterations, nYears, mngtYears)
     popChangeArray = np.empty((nAreas, ), dtype=[('Area', 'U32'), ('TotalMean', float), 
             ('TotalLow_CI', float), ('TotalHigh_CI', float),
             ('AnnualMean', float), ('AnnualLow_CI', float), 
@@ -410,16 +434,16 @@ def makeMaskPNG(tempDir, mask, fname, title, resizePercent):
     os.remove(maskIMG)
 
     # write text
-    # subprocess.check_call(['mogrify', '-fill', 'yellow', '-pointsize', '10', 
-    #     '-draw', 'text %d, %d "%s"' % (TEXT_LOCATION[0], TEXT_LOCATION[1], title), 
-    #     fname])
-    with Image(filename=fname) as img:
-        with Drawing() as ctx:
-            ctx.fill_color = 'yellow'   
-            ctx.font_size = 10
-            ctx.text(TEXT_LOCATION[0], TEXT_LOCATION[1], title)
-            ctx(img)
-        img.save(filename=fname)
+    subprocess.check_call(['mogrify', '-fill', 'yellow', '-pointsize', '10', 
+        '-draw', 'text %d, %d "%s"' % (TEXT_LOCATION[0], TEXT_LOCATION[1], title), 
+        fname])
+#    with Image(filename=fname) as img:
+#        with Drawing() as ctx:
+#            ctx.fill_color = 'yellow'   
+#            ctx.font_size = 10
+#            ctx.text(TEXT_LOCATION[0], TEXT_LOCATION[1], title)
+#            ctx(img)
+#        img.save(filename=fname)
 
 def makeColourMapPNG(tempDir, density, fname, title, resizePercent, densityRange):
     """
@@ -486,35 +510,35 @@ def makeColourMapPNG(tempDir, density, fname, title, resizePercent, densityRange
     os.remove(rampIMG)
 
     # write labels on ramp first as montage writes text on all input images
-    # subprocess.check_call(['mogrify', '-fill', 'black', '-pointsize', '8',
-    #     '-draw', 'text %d, %d "%.1f"' % (0, 8, densityRange[1]),
-    #     '-draw', 'text %d, %d "%.1f"' % (0, int(nrows/2), (densityRange[1] - densityRange[0]) / 2),
-    #     '-draw', 'text %d, %d "%.1f"' % (0, nrows-2, densityRange[0]),
-    #     rampPNG])
-    with Image(filename=rampPNG) as img:
-        with Drawing() as ctx:
-            ctx.fill_color = 'black'   
-            ctx.font_size = 8
-            ctx.text(0, 8, f'{densityRange[1]}')
-            ctx.text(0, int(nrows/2), f'{(densityRange[1] - densityRange[0]) / 2}')
-            ctx.text(0, nrows-2, f'{densityRange[0]}')
-            ctx(img)
-        img.save(filename=rampPNG)  
+    subprocess.check_call(['mogrify', '-fill', 'black', '-pointsize', '8',
+         '-draw', 'text %d, %d "%.1f"' % (0, 8, densityRange[1]),
+         '-draw', 'text %d, %d "%.1f"' % (0, int(nrows/2), (densityRange[1] - densityRange[0]) / 2),
+         '-draw', 'text %d, %d "%.1f"' % (0, nrows-2, densityRange[0]),
+         rampPNG])
+#    with Image(filename=rampPNG) as img:
+#        with Drawing() as ctx:
+#            ctx.fill_color = 'black'   
+#            ctx.font_size = 8
+#            ctx.text(0, 8, f'{densityRange[1]}')
+#            ctx.text(0, int(nrows/2), f'{(densityRange[1] - densityRange[0]) / 2}')
+#            ctx.text(0, nrows-2, f'{densityRange[0]}')
+#            ctx(img)
+#        img.save(filename=rampPNG)  
 
     # do mosaic and write text - thankfully the title is far enough over that 
     # it doesn't appear in the ramp image also
-    # subprocess.check_call(['montage', rampPNG, densityPNG, '-geometry', 
-    #             '+0+0', '-fill', 'yellow', '-pointsize', '10',
-    #             '-draw', 'text %d, %d "%s"' % (TEXT_LOCATION[0] + rampWidth, TEXT_LOCATION[1], title),
-    #             fname])
-    fg = Image(filename = densityPNG)
-    with Drawing() as ctx:
-        ctx.fill_color = 'yellow'   
-        ctx.font_size = 10
-        ctx.text(TEXT_LOCATION[0] + rampWidth, TEXT_LOCATION[1], title)
-        ctx(fg)
-    fg.composite(image=Image(filename = rampPNG), left = 0, top = 0)    
-    fg.save(filename = fname)
+    subprocess.check_call(['montage', rampPNG, densityPNG, '-geometry', 
+                 '+0+0', '-fill', 'yellow', '-pointsize', '10',
+                 '-draw', 'text %d, %d "%s"' % (TEXT_LOCATION[0] + rampWidth, TEXT_LOCATION[1], title),
+                 fname])
+#    fg = Image(filename = densityPNG)
+#    with Drawing() as ctx:
+#        ctx.fill_color = 'yellow'   
+#        ctx.font_size = 10
+#        ctx.text(TEXT_LOCATION[0] + rampWidth, TEXT_LOCATION[1], title)
+#        ctx(fg)
+#    fg.composite(image=Image(filename = rampPNG), left = 0, top = 0)    
+#    fg.save(filename = fname)
     os.remove(densityPNG)
     os.remove(rampPNG)
 
@@ -633,6 +657,50 @@ def doPlot(i, key, meansAllYears, quantsAllYears, outputDataPath):
     pylab.cla()
     
 
+def writeMultiTif(results, data, params, arrNames = None, yearIndx = None):
+    """
+    write single or multi-band tifs to directory
+    """
+    ## DEFAULT RASTER NAMES TO WRITE TO TIF, IF NOT SPECIFIED
+    if arrNames is None:
+        arrNames = ['MastT', 'ControlT', 'rodentDensity', 'stoatDensity', 'preyDensity']
+#    nNames = len(arrNames)
+    ## DEFAULT YEARS TO WRITE TO TIF: LAST FIVE YEARS
+    if yearIndx is None:
+        nTotalLayers = len(results[0].popAllYears_3D['stoatDensity'])
+        if nTotalLayers >= 5:
+            yearIndx = [nTotalLayers - 5, nTotalLayers]
+        else:
+            yearIndx = [0, nTotalLayers]
+    nLayers = yearIndx[1] - yearIndx[0]
+    ## DICTIONARY OF DATA TYPES
+    gdt_DType = {'MastT' : gdal.GDT_Byte, 'ControlT' : gdal.GDT_Byte, 
+        'rodentDensity' : gdal.GDT_Float32, 'stoatDensity' : gdal.GDT_Float32, 
+        'preyDensity' : gdal.GDT_Float32}
+    geoTrans_Dict = {'MastT' : data.rodentGeoTrans, 'ControlT' : data.rodentGeoTrans, 
+        'rodentDensity' : data.rodentGeoTrans, 'stoatDensity' : data.stoatGeoTrans, 
+        'preyDensity' : data.preyGeoTrans}
+
+    for nn in arrNames:
+        FName = nn + '_3D.tif'
+        outFNamePath = os.path.join(params.outputDataPath, FName)
+        print('FName', outFNamePath)
+        raster_nn = results[0].popAllYears_3D[nn][yearIndx[0]:yearIndx[1]]
+
+        (nrows, ncols) = np.shape(raster_nn[0])
+        ds = gdal.GetDriverByName('GTiff').Create(outFNamePath, ncols,
+            nrows, nLayers, gdt_DType[nn],
+            options=['TILED=YES', 'COMPRESS=LZW', 'INTERLEAVE=BAND', 'BIGTIFF=IF_SAFER'])
+        ds.SetGeoTransform(geoTrans_Dict[nn])
+        ds.SetProjection(NZTM_WKT)
+        # loop thru years (layers in tif)
+        for nLay in range(nLayers):
+            band = ds.GetRasterBand(nLay+1)
+            band.WriteArray(raster_nn[nLay])
+    del ds  # Flush
+
+
+
 def writeTif(results, tempTifName, gdt_type, wkt, match_geotrans):
     """
     write single or multi-band tifs to directory
@@ -664,4 +732,5 @@ def writeTif(results, tempTifName, gdt_type, wkt, match_geotrans):
             band = ds.GetRasterBand(n+1)
             band.WriteArray(raster[n])
     del ds  # Flush
+
 

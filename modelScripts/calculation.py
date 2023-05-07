@@ -106,8 +106,8 @@ def runModel(rawdata, params=None, loopIter=0):
     rodent_kMapMast = rawdata.paramRodentMastCCLU[rawdata.kClasses] * 1
     rodent_kMapCrash = rawdata.paramRodentCrashCCLU[rawdata.kClasses] * 1
 
-    print('k classes', rawdata.kClasses[1,1:10],'kMap', rodent_kMap[1,1:10], 
-          'kMapMast', rodent_kMapMast[1,1:10],  'kMapCrash', rodent_kMapCrash[1,1:10] )
+    # print('k classes', rawdata.kClasses[1,1:10],'kMap', rodent_kMap[1,1:10], 
+    #       'kMapMast', rodent_kMapMast[1,1:10],  'kMapCrash', rodent_kMapCrash[1,1:10] )
    
     # number of hectares in a rodent pixel; for getting stoat_K
     nHectInRodent = (params.resolutions[0] / 100.0)**2
@@ -280,6 +280,7 @@ def runModel(rawdata, params=None, loopIter=0):
         #reactiveControlMask = None # nothing by default
 
         mastingMask  = np.zeros_like(beechMask, dtype=np.bool)
+        preyMastingMask = np.zeros_like(prey_raster[0,0:,0:], dtype=float)
 
         ## EMPTY OBJECT FOR STORING CONTROL MASK FOR ALL YEARS FOR RESULTS IN LOOP 0
         controlThisYear = None
@@ -297,7 +298,7 @@ def runModel(rawdata, params=None, loopIter=0):
 
                 ## CONSIDER PRESCRIPTIVE IF CONTROL NOT SCHED FROM t-1 FROM MAST OR RODENTS
                 if mthlyCtrlSched[count] < 0:
-                    controlCondition =  ((year == startYear and nYearsSinceControl >= revisit) or 
+                    controlCondition =  ((year == startYear) or 
                         (year > startYear and nYearsSinceControl >= revisit))
                     if controlCondition:
                         ## add control area to schedule
@@ -321,7 +322,8 @@ def runModel(rawdata, params=None, loopIter=0):
             print('Masting Year', year_all)
             mastingMask = doMasting(rawdata, params, distArray, masthalfwinsize, 
                         beechMask)
-            
+            preyMastingMask = resampleRasterDown(mastingMask*1.0,prey_raster[0,0:,0:].shape, 
+                                                 statMethod = RESAMPLE_AVERAGE, pixelRescale=1)
             #if masting year and doing control reactive to masting then assess prop mgmt areas masting
             if (params.reactivePropMgmtMasting > 0):
                 for count, (controlMask, startYear, revisit, 
@@ -356,13 +358,15 @@ def runModel(rawdata, params=None, loopIter=0):
             #order so if double mast, the mast overrrides using the crash k map
             rodent_kMth = rodent_kMap.copy()
             rodent_kMth[~mastingMask] = rodent_kMth[~mastingMask]*rawdata.seasAdjRes['nonmast'][mth]
+            #bounce adjustment shifted to before mast and crash adjustments are made so that these override the rat bounce effect
+            rodent_kMth = np.where(timeSinceCtrl<params.rodentBouncePeriod,params.rodentBounceMult*rodent_kMth ,rodent_kMth)
             if mastT_1:
                 rodent_kMth[oldMastingMask] = (rodent_kMapCrash[oldMastingMask] * 
                     rawdata.seasAdjRes['crash'][mth])
             if mastT:
                 rodent_kMth[mastingMask] = rodent_kMapMast[mastingMask]*rawdata.seasAdjRes['mast'][mth]
-            else:
-                rodent_kMth = np.where(timeSinceCtrl<params.rodentBouncePeriod,params.rodentBounceMult*rodent_kMth ,rodent_kMth)
+            # else:
+            #     rodent_kMth = np.where(timeSinceCtrl<params.rodentBouncePeriod,params.rodentBounceMult*rodent_kMth ,rodent_kMth)
             # print('t since:', timeSinceCtrl[1,15:25]) 
             # print('kvals b4:', rodent_kMth[1,15:25]) 
             ###now adjust rodent_kMth for time since ctrl
@@ -552,8 +556,9 @@ def runModel(rawdata, params=None, loopIter=0):
             ## THE FOLLOWING FX AND GET 'rodent_raster_prey' WITHIN THE FX. THIS IS
             ## FOR THE COMPETITION EFFECT BETWEEN RODENTS AND PREY.
             prey_raster = doPreyGrowth(prey_raster, stoat_raster, params, 
-                    rawdata.preyExtentMask, rodent_raster_stoat, nHectInRodent, 
-                    preyRecDecay_1D, preySurvDecay_1D, mth, rawdata.pLeadDeath2D)
+                    rawdata.preyExtentMask, rodent_raster_stoat, nHectInRodent,
+                    preyMastingMask, preyRecDecay_1D, preySurvDecay_1D, mth, 
+                    rawdata.pLeadDeath2D)
     
     
     
@@ -923,7 +928,7 @@ def doRodentGrowth(rawdata, params, rodent_raster, rodent_kMth, mth):
 
 
 def doPreyGrowth(prey_raster, stoat_raster, params, mask, 
-        rodent_raster_prey, nHectInRodent, preyRecDecay_1D, 
+        rodent_raster_prey, nHectInRodent, mastMsk, preyRecDecay_1D, 
         preySurvDecay_1D, mth, pLeadDeath2D):
     """
     ## calc prey population growth by pixel
@@ -981,8 +986,10 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
     #     print(np.array2string(rodentSwitchMult_t[100:115], precision=2))
     #     print('num <=0.5', np.sum(rodent_t <=0.5), 'num >0.5', np.sum(rodent_t >0.5))
     #     print('num <=0.5', np.sum(rodentSwitchMult_t==3), 'num >0.5', np.sum(rodentSwitchMult_t==1))
-    ## PREY POPN DYNAMICS    
+    mastEff_t = mastMsk[mask]
+    mastEff_t = np.where(mastEff_t>0,mastEff_t*params.preyMastMultFec,1)
     
+    ## PREY POPN DYNAMICS        
     # pSurv = params.preySurv[0] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
     # prey0_t = rng.binomial(prey0_t, pSurv)
     # pSurv = params.preySurv[1] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
@@ -1036,8 +1043,10 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
 #         * np.exp(-params.preyEtaStoatAd * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
 #    prey4_t = rng.binomial(prey4_t, pSurv)
     seasRec = params.preySeasRec[mth]
-    recRate = ((np.exp(seasRec * params.preyIRR)-1) *np.exp(-((preyN_t/(preyRecDecay_1D))**params.preyTheta))
-           * np.exp(-params.preyPsiStoat * stoat_t)* np.exp(-params.preyPsiRodent * rodent_t))
+    recRate = ((np.exp(seasRec * params.preyIRR * mastEff_t)-1) *
+               np.exp(-((preyN_t/(preyRecDecay_1D))**params.preyTheta)) * 
+               np.exp(-params.preyPsiStoat * stoat_t) *
+               np.exp(-params.preyPsiRodent * rodent_t))
 
     prey0_t = prey0_t + rng.poisson(prey3_t * recRate) #fledglings get added to zero age class 
     preyN_t = prey0_t + prey1_t + prey2_t + prey3_t   #sum to get total popn

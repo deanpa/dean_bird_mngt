@@ -23,7 +23,7 @@ class PreyParams(object):
         # self.years = np.arange(6)
 
         ### SET ITERATIONS
-        self.iter = 1
+        self.iter = 100
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
         self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
@@ -62,38 +62,40 @@ class PreyParams(object):
 #        self.AOIShp = os.path.join(self.inputDataPath, 'Kea_Model_Region3.shp')
         ##########################################
         ## TEST CONTROL ##########################
-        self.extentShp = os.path.join(self.inputDataPath, 'test_fullExtent.shp')
-        self.AOIShp = os.path.join(self.inputDataPath, 'test_AOI.shp')
-#        self.extentShp = os.path.join(self.inputDataPath, 'extentDummy.shp')
-#        self.AOIShp = os.path.join(self.inputDataPath, 'AOIDummy.shp')        
+        # self.extentShp = os.path.join(self.inputDataPath, 'test_fullExtent.shp')
+        # self.AOIShp = os.path.join(self.inputDataPath, 'test_AOI.shp')
+        self.extentShp = os.path.join(self.inputDataPath, 'extentDummy.shp')
+        self.AOIShp = os.path.join(self.inputDataPath, 'AOIDummy.shp')        
         ##########################################
         ##########################################
 
-        self.kClasses = os.path.join(self.inputDataPath, 'seed_Kea2.img')    
-#        self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummy.grd')    
+#        self.kClasses = os.path.join(self.inputDataPath, 'seed_Kea2.img')    
+        self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummy.grd')    
 
         ### Area trapped in recent times.
-        self.islands = os.path.join(self.inputDataPath, 'stoatTrappingRaster.img')
-        self.DEM = os.path.join(self.inputDataPath, 'dem200_kea.img')
-        self.preyHabitatShp = os.path.join(self.inputDataPath, 'Kea_Habitat.shp')
-#        self.islands = os.path.join(self.inputDataPath, 'trapsDummy.tif')
-#        self.DEM = os.path.join(self.inputDataPath, 'DEMDummy.tif')
-#        self.preyHabitatShp = os.path.join(self.inputDataPath, 'KeaHabDummy.shp')
+        # self.islands = os.path.join(self.inputDataPath, 'stoatTrappingRaster.img')
+        # self.DEM = os.path.join(self.inputDataPath, 'dem200_kea.img')
+        # self.preyHabitatShp = os.path.join(self.inputDataPath, 'Kea_Habitat.shp')
+        self.islands = os.path.join(self.inputDataPath, 'trapsDummy.tif')
+        self.DEM = os.path.join(self.inputDataPath, 'DEMDummy.tif')
+        self.preyHabitatShp = os.path.join(self.inputDataPath, 'KeaHabDummy.shp')
 
         ##########################################
         ## TEST CONTROL ##########################
+#        self.controlFile = os.path.join(self.inputDataPath, 'testControl.csv') 
+        self.controlFile = os.path.join(self.inputDataPath, 'noCtrlDummy.csv') 
+        #self.controlFile = os.path.join(self.inputDataPath, 'oneOffCtrlDummy.csv') 
+        #self.controlFile = os.path.join(self.inputDataPath, 'dblNovCtrlDummy.csv') 
         #self.controlFile = os.path.join(self.inputDataPath, '3yrlyCtrlDummy.csv') 
-        self.controlFile = os.path.join(self.inputDataPath, 'testControl.csv') 
-#        self.controlFile = os.path.join(self.inputDataPath, 'noCtrlDummy.csv') 
 
-        # "3yrlyCtrlDummy.csv" or "noCtrlDummy.csv"
+        # "3yrlyCtrlDummy.csv" or "noCtrlDummy.csv" or "oneOffCtrlDumm.csv"
         ##########################################
         ##########################################
 #        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
 
         ## LEAD POINT DATA
-        self.leadPointData = os.path.join(self.inputDataPath, 'test_LeadPoints.csv')
-#        self.leadPointData = None
+        #self.leadPointData = os.path.join(self.inputDataPath, 'test_LeadPoints.csv')
+        self.leadPointData = None
 
 
         self.seasAdjResFile = os.path.join(self.inputDataPath, 'mastLUpTable.csv')
@@ -153,9 +155,9 @@ class PreyParams(object):
         self.rodentSeasDisp = np.array([1,1,1,1,1,1,1,1,1,0,0,0], dtype=bool) #can disp most months of yr, don't in winter?? 
                             #Juv males tend to make up most of disp. popn. but we don't have age or sex structure so yeah...
         self.rodentSurv = 0.95 #per month 0.9707
-        self.rodentSurvDDcoef = 3.0
-        self.rodentRecDDcoef = 1.8
-        self.rodentTheta = 0.6  #1 gives Ricker model
+        self.rodentSurvDDcoef = 1.5
+        self.rodentRecDDcoef = 0.6
+        self.rodentTheta = 0.7  #1 gives Ricker model
         self.prpGrowRateControl = 1.0  # proportion of rodent growth before control is applied
         self.rodentProbEatBait = 0.7 # pT
         self.pRodentPres = 0.95
@@ -163,8 +165,8 @@ class PreyParams(object):
         self.rodentMaxAltitude = 1000.0  # metres
         
         ##rat bounce parameters###
-        self.rodentBouncePeriod = 24  #in months - time since control within which K/resources are multiplied to drive rat bounce
-        self.rodentBounceMult = 2  #how much to multiply resources/Kmap by to drive rat bounce
+        self.rodentBouncePeriod = 28  #28 in months - time since control within which K/resources are multiplied to drive rat bounce
+        self.rodentBounceMult = 1  #2 how much to multiply resources/Kmap by to drive rat bounce
 
         ######## TRACKING TUNNEL PARAMETERS
         self.threshold_TT = 1            #(1 = no reac) Thres prop of TT with detections
@@ -213,8 +215,8 @@ class PreyParams(object):
         self.competEffect = 0.0  #not used anymore?
         self.preyPopSD = .12     #not used anymore? 
         
-        self.rodentThresh = 0.5 #Threshold rat density per ha at which stoat prey switching kicks in
-        self.stoatMult = 3 #Multiplier for stoat offtake of prey once prey switch kicks in
+        self.rodentThresh = 0.5 #0.5 Threshold rat density per ha at which stoat prey switching kicks in
+        self.stoatMult = 3 #3 Multiplier for stoat offtake of prey once prey switch kicks in
 
         self.preySurv = np.array([0.982, 0.992, 0.994, 0.998]) #mthly max surv rats for age class 0-4
 #        self.preySurv = np.array([0.982,0.992,0.994,0.997,0.998]) #mthly max surv rats for age class 0-4
@@ -231,10 +233,10 @@ class PreyParams(object):
         self.preySeasDisp = np.array([0,0,0,0,0,0,1,0,0,0,0,0], dtype=bool) 
                         #dispersasl in autumn Mar after recruit.
                         #oh what age class does dispersal act on? <<<<chk this - should be juvs[0]
+        self.preyMastMultFec = 1 #multiplies up recruitment rate if masting is occuring #not needed for kea but will be for kaka
         self.preyRecDDcoef = 10.00  #this is effectively a carrying capacity (per 1km2) for Kea recruitment
         self.preyTheta = 2          #theta is how density dependence scales if <1 dd kicks in early, 
                                     #if >1 rate inc remains close to rm until K nearly reached
-        self.preySeasDisp = np.array([0,0,0,0,0,0,1,0,0,0,0,0], dtype=bool) #disperse Mar after last recruitment
         self.preyInitAgeStr = np.array([0.3, 0.15, 0.15, 0.4], dtype=float)
 #        self.preyInitAgeStr = np.array([0.3,0.1,0.1,0.1,0.4], dtype=float)
         self.preyMaxAltitude = 2000.0  # metres

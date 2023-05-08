@@ -17,11 +17,11 @@ def indxLCDB(info, inputs, outputs):
     nonHab = [1, 5, 6, 10, 12, 14, 16, 20, 21, 22, 45, 46, 70]
     grassScrub = [2, 15, 30, 33, 40, 41, 43, 44]
     shrub = [33, 47, 50, 51, 52, 55, 56, 58, 80, 81]
-    exoticForest = [64, 71]
+    prodForest = [64, 71]
     broadLeaf = [54, 68]
-    beech = [69]
+    native = [69]
     # put into a tuple and loop thru to reclass lcdb
-    habClass = (nonHab, grassScrub, shrub, exoticForest, broadLeaf, beech)
+    habClass = (nonHab, grassScrub, shrub, prodForest, broadLeaf, native)
     for i in range(1, len(habClass)):
         # find values in lcdb == habClass_i
         mask_i = np.in1d(inputs.lcdb, habClass[i]).reshape(np.shape(inputs.lcdb))

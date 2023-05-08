@@ -3,7 +3,7 @@
 import sys
 import optparse
 from modelScripts import simulationMain
-import simulationParams
+import simulationParamsDean
 
 
 class CmdArgs(object):
@@ -19,8 +19,10 @@ if __name__ == '__main__':
 
     cmdargs = CmdArgs()
 
-    params = simulationParams.PreyParams(cmdargs.species, int(cmdargs.scenario))
+    params = simulationParamsDean.PreyParams(cmdargs.species, int(cmdargs.scenario))
     #params = simulationParams.PreyParams("Kea", int(8))
+
+    print('self.extentShp', params.extentShp)
 
     simulationMain.main(params)
 

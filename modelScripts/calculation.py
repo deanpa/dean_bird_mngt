@@ -440,10 +440,10 @@ def runModel(rawdata, params=None, loopIter=0):
                             ## SCHEDULED CONTROL JUMPS INTO THE NEXT YEAR (T+1)
                             else:
                                 nextYearCtrlSched[count] = rawdata.reactiveCtrlMth
-                        print('TT rate > threshold', np.round(TT_rate, 2),
-                            'year', year, 'assess mth', mth, 'ctrl mth', 
-                            rawdata.reactiveCtrlMth, 'area', count, 
-                            'jumpYear', rawdata.jumpYearCtrl)
+                            print('TT rate > threshold', np.round(TT_rate, 2),
+                                'year', year, 'assess mth', mth, 'ctrl mth', 
+                                rawdata.reactiveCtrlMth, 'area', count, 
+                                'jumpYear', rawdata.jumpYearCtrl)
 
             # Rodent Control. Get the combined control masks for this year
             # It's a bit hard to work out the mask ahead of time with the

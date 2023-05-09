@@ -35,8 +35,6 @@ JOBMGR_TYPE = os.getenv('RIOS_DFLT_JOBMGRTYPE', default='multiprocessing')
 ## TEMP SCRATCH DIRECTORY 
 NESI_TMP_DIR=os.path.join(os.sep, 'nesi', 'nobackup', 'landcare00074')
 
-
-
 def parallelRunModel(data, iteration, results):
     """
     A slight variation on calculation.runModel

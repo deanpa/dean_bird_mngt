@@ -22,8 +22,6 @@ if __name__ == '__main__':
     params = simulationParamsDean.PreyParams(cmdargs.species, int(cmdargs.scenario))
     #params = simulationParams.PreyParams("Kea", int(8))
 
-    print('self.extentShp', params.extentShp)
-
     simulationMain.main(params)
 
 

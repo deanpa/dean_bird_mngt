@@ -17,8 +17,8 @@ class PreyParams(object):
 
         ### SET YEARS AND BURN IN YEARS
 
-        self.burnin = 5
-        self.years = np.arange(5)
+        self.burnin = 10
+        self.years = np.arange(20)
         # self.burnin = 4
         # self.years = np.arange(6)
 
@@ -91,7 +91,8 @@ class PreyParams(object):
         # "3yrlyCtrlDummy.csv" or "noCtrlDummy.csv" or "oneOffCtrlDumm.csv"
         ##########################################
         ##########################################
-        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
+        self.controlFile = os.path.join(self.inputDataPath, 'reactControl_kea1.csv') # control3 is effectively no control (st yr set to 100)
+#        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
 
         ## LEAD POINT DATA
         self.leadPointData = os.path.join(self.inputDataPath, 'leadPtsRegion3.csv')
@@ -131,7 +132,7 @@ class PreyParams(object):
         self.mastCellParams = (0.001, 1000.0)
         self.mastWindowSize = self.resolutions[0] * 150 # in metres
         self.mastRho = 16000.0
-        self.mastPrEvent = 1.0 / 6.0  # p(mast) = 1 out of 5.1 years
+        self.mastPrEvent = 1.0 / 5.2  # p(mast) = 1 out of 5.1 years
         self.mastProportionParams = findBeta(0.5, 0.4)  # ALPHA AND BETA PARAMETERS
         self.mastSpatialSD = 2.1 
 
@@ -170,7 +171,7 @@ class PreyParams(object):
         self.rodentBounceMult = 1  #2 how much to multiply resources/Kmap by to drive rat bounce
 
         ######## TRACKING TUNNEL PARAMETERS
-        self.threshold_TT = .2            #(1 = no reac) Thres prop of TT with detections
+        self.threshold_TT = .25            #(1 = no reac) Thres prop of TT with detections
         self.g0_TT = 0.02                   # Tracking tunnel g0
         self.sigma_TT = 22.0                # Rat sigma
         self.nights_TT = 4                  # Tracking tunnel nights
@@ -188,14 +189,14 @@ class PreyParams(object):
         #make sure dispersal happens after recuritment                        
         self.stoatSeasDisp = np.array([0,0,0,0,0,1,0,0,0,0,0,0], dtype=bool) #disperse Feb
         self.stoatRecDDcoef = 8
-        self.stoatSurv = 0.9475
-        self.stoatSurvDDcoef = 10
+        self.stoatSurv = 0.92        ###0.9475
+        self.stoatSurvDDcoef = 9.0  ### 10.
         self.stoatTheta = 1
         #self.stoatRecLag = 3 #calc recruitment based on rat numbers 3 mths before young stoats become in
         self.stoatPopSD = 0.22
         self.pEncToxic = 0.004          # operates at stoat scale
         self.pEatEncToxic = 0.8          # operates at stoat scale
-        self.stoatInitialMultiplier = .85
+        self.stoatInitialMultiplier = .75   #.85
         self.pStoatPres = 0.75
         self.initialStoatN = 4.0
         self.stoatMaxAltitude = 1100.0

@@ -310,13 +310,13 @@ def runModel(rawdata, params=None, loopIter=0):
 
         # Masting affects rodents the same year now
         #but year starts in Sept, spring cos that's when beech flowering starts
-        #mastT = np.random.rand() < params.mastPrEvent
+        mastT = np.random.rand() < params.mastPrEvent
         #have all iterations mast in same year for some sims
-        mastYrarr=np.array([1,7,10,11,15,20,23,27])
-        if (year_all in mastYrarr):
-            mastT=True
-        else:
-            mastT=False   
+###        mastYrarr=np.array([1,7,10,11,15,20,23,27])
+###        if (year_all in mastYrarr):
+###            mastT=True
+###        else:
+###            mastT=False   
             
         if mastT:
             print('Masting Year', year_all)

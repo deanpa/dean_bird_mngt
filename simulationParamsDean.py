@@ -17,8 +17,8 @@ class PreyParams(object):
 
         ### SET YEARS AND BURN IN YEARS
 
-        self.burnin = 10
-        self.years = np.arange(20)
+        self.burnin = 5
+        self.years = np.arange(10)
         # self.burnin = 4
         # self.years = np.arange(6)
 
@@ -132,7 +132,7 @@ class PreyParams(object):
         self.mastCellParams = (0.001, 1000.0)
         self.mastWindowSize = self.resolutions[0] * 150 # in metres
         self.mastRho = 16000.0
-        self.mastPrEvent = 1.0 / 5.2  # p(mast) = 1 out of 5.1 years
+        self.mastPrEvent = 1.0 / 5.1  # p(mast) = 1 out of 5.1 years
         self.mastProportionParams = findBeta(0.5, 0.4)  # ALPHA AND BETA PARAMETERS
         self.mastSpatialSD = 2.1 
 
@@ -156,7 +156,7 @@ class PreyParams(object):
         #Maybe should just have dispersal in a pulse/only 1 month to save running dispersal algorithm multiple times?
         self.rodentSeasDisp = np.array([1,1,1,1,1,1,1,1,1,0,0,0], dtype=bool) #can disp most months of yr, don't in winter?? 
                             #Juv males tend to make up most of disp. popn. but we don't have age or sex structure so yeah...
-        self.rodentSurv = 0.95 #per month 0.9707
+        self.rodentSurv = 0.97 #per month 0.9707
         self.rodentSurvDDcoef = 1.5
         self.rodentRecDDcoef = 0.6
         self.rodentTheta = 0.7  #1 gives Ricker model
@@ -171,7 +171,7 @@ class PreyParams(object):
         self.rodentBounceMult = 1  #2 how much to multiply resources/Kmap by to drive rat bounce
 
         ######## TRACKING TUNNEL PARAMETERS
-        self.threshold_TT = .25            #(1 = no reac) Thres prop of TT with detections
+        self.threshold_TT = .20            #(1 = no reac) Thres prop of TT with detections
         self.g0_TT = 0.02                   # Tracking tunnel g0
         self.sigma_TT = 22.0                # Rat sigma
         self.nights_TT = 4                  # Tracking tunnel nights
@@ -189,8 +189,8 @@ class PreyParams(object):
         #make sure dispersal happens after recuritment                        
         self.stoatSeasDisp = np.array([0,0,0,0,0,1,0,0,0,0,0,0], dtype=bool) #disperse Feb
         self.stoatRecDDcoef = 8
-        self.stoatSurv = 0.92        ###0.9475
-        self.stoatSurvDDcoef = 9.0  ### 10.
+        self.stoatSurv = 0.94        ###0.9475
+        self.stoatSurvDDcoef = 9.5  ### 10.
         self.stoatTheta = 1
         #self.stoatRecLag = 3 #calc recruitment based on rat numbers 3 mths before young stoats become in
         self.stoatPopSD = 0.22

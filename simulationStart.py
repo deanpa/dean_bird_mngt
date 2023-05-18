@@ -3,7 +3,7 @@
 import sys
 import optparse
 from modelScripts import simulationMain
-import simulationParamsDean
+import simulationParams
 #import os
 #import multiprocessing
 #from rios.parallel import jobmanager
@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     cmdargs = CmdArgs()
 
-    params = simulationParamsDean.PreyParams(cmdargs.species, int(cmdargs.scenario))
+    params = simulationParams.PreyParams(cmdargs.species, int(cmdargs.scenario))
     #params = simulationParams.PreyParams("Kea", int(8))
 
     simulationMain.main(params)

@@ -17,13 +17,13 @@ class PreyParams(object):
 
         ### SET YEARS AND BURN IN YEARS
 
-        self.burnin = 5
-        self.years = np.arange(5)
+        self.burnin = 1
+        self.years = np.arange(1)
         # self.burnin = 4
         # self.years = np.arange(6)
 
         ### SET ITERATIONS
-        self.iter = 10
+        self.iter = 2
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
         self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
@@ -58,32 +58,32 @@ class PreyParams(object):
         print('############################')
 
         # ### SET DATA AND PATHS TO DIRECTORIES
-#        self.extentShp = os.path.join(self.inputDataPath, 'fullExtent.shp')
-#        self.AOIShp = os.path.join(self.inputDataPath, 'Kea_Model_Region3.shp')
+        self.extentShp = os.path.join(self.inputDataPath, 'fullExtent.shp')
+        self.AOIShp = os.path.join(self.inputDataPath, 'Kea_Model_Region3.shp')
         ##########################################
         ## TEST CONTROL ##########################
-        # self.extentShp = os.path.join(self.inputDataPath, 'test_fullExtent.shp')
-        # self.AOIShp = os.path.join(self.inputDataPath, 'test_AOI.shp')
-        self.extentShp = os.path.join(self.inputDataPath, 'extentDummy.shp')
-        self.AOIShp = os.path.join(self.inputDataPath, 'AOIDummy.shp')        
+#        # self.extentShp = os.path.join(self.inputDataPath, 'test_fullExtent.shp')
+#        # self.AOIShp = os.path.join(self.inputDataPath, 'test_AOI.shp')
+#        self.extentShp = os.path.join(self.inputDataPath, 'extentDummy.shp')
+#        self.AOIShp = os.path.join(self.inputDataPath, 'AOIDummy.shp')        
         ##########################################
         ##########################################
 
-#        self.kClasses = os.path.join(self.inputDataPath, 'seed_Kea2.img')    
-        self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummy.grd')    
+        self.kClasses = os.path.join(self.inputDataPath, 'seed_KeaTemp.img')    
+#        self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummy.grd')    
 
         ### Area trapped in recent times.
-        # self.islands = os.path.join(self.inputDataPath, 'stoatTrappingRaster.img')
-        # self.DEM = os.path.join(self.inputDataPath, 'dem200_kea.img')
-        # self.preyHabitatShp = os.path.join(self.inputDataPath, 'Kea_Habitat.shp')
-        self.islands = os.path.join(self.inputDataPath, 'trapsDummy.tif')
-        self.DEM = os.path.join(self.inputDataPath, 'DEMDummy.tif')
-        self.preyHabitatShp = os.path.join(self.inputDataPath, 'KeaHabDummy.shp')
+        self.islands = os.path.join(self.inputDataPath, 'stoatTrappingRaster.img')
+        self.DEM = os.path.join(self.inputDataPath, 'dem200_kea.img')
+        self.preyHabitatShp = os.path.join(self.inputDataPath, 'Kea_Habitat.shp')
+#        self.islands = os.path.join(self.inputDataPath, 'trapsDummy.tif')
+#        self.DEM = os.path.join(self.inputDataPath, 'DEMDummy.tif')
+#        self.preyHabitatShp = os.path.join(self.inputDataPath, 'KeaHabDummy.shp')
 
         ##########################################
         ## TEST CONTROL ##########################
 #        self.controlFile = os.path.join(self.inputDataPath, 'testControl.csv') 
-        self.controlFile = os.path.join(self.inputDataPath, 'noCtrlDummy.csv') 
+#        self.controlFile = os.path.join(self.inputDataPath, 'noCtrlDummy.csv') 
         #self.controlFile = os.path.join(self.inputDataPath, 'oneOffCtrlDummy.csv') 
         #self.controlFile = os.path.join(self.inputDataPath, 'dblNovCtrlDummy.csv') 
         #self.controlFile = os.path.join(self.inputDataPath, '3yrlyCtrlDummy.csv') 
@@ -91,11 +91,13 @@ class PreyParams(object):
         # "3yrlyCtrlDummy.csv" or "noCtrlDummy.csv" or "oneOffCtrlDumm.csv"
         ##########################################
         ##########################################
+        self.controlFile = os.path.join(self.inputDataPath, 'reactControl_kea1.csv')
 #        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
 
         ## LEAD POINT DATA
+        self.leadPointData = os.path.join(self.inputDataPath, 'leadPtsRegion3.csv')
         #self.leadPointData = os.path.join(self.inputDataPath, 'test_LeadPoints.csv')
-        self.leadPointData = None
+#        self.leadPointData = None
 
 
         self.seasAdjResFile = os.path.join(self.inputDataPath, 'mastLUpTable.csv')
@@ -187,8 +189,8 @@ class PreyParams(object):
         #make sure dispersal happens after recuritment                        
         self.stoatSeasDisp = np.array([0,0,0,0,0,1,0,0,0,0,0,0], dtype=bool) #disperse Feb
         self.stoatRecDDcoef = 8
-        self.stoatSurv = 0.9475
-        self.stoatSurvDDcoef = 10
+        self.stoatSurv = 0.94
+        self.stoatSurvDDcoef = 9.5
         self.stoatTheta = 1
         #self.stoatRecLag = 3 #calc recruitment based on rat numbers 3 mths before young stoats become in
         self.stoatPopSD = 0.22
@@ -242,7 +244,7 @@ class PreyParams(object):
         self.preyMaxAltitude = 2000.0  # metres
         ## PREY SIGMA FOR HOME RANGE STANDARD DEVIATION OF BIVARIATE NORMAL KERNEL
         self.preySigma = 5000
-        self.pLeadMax = 0.07
+        self.pLeadMax = {'preAdult': 0.10, 'adult' : 0.07}
         
 
         ## IMMIGRATION AND EMIGRATION PARAMETERS

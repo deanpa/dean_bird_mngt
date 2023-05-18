@@ -36,8 +36,6 @@ JOBMGR_TYPE = os.getenv('RIOS_DFLT_JOBMGRTYPE', default='multiprocessing')
 ## TEMP SCRATCH DIRECTORY 
 NESI_TMP_DIR=os.path.join(os.sep, 'nesi', 'nobackup', 'landcare00074')
 
-
-
 def parallelRunModel(data, iteration, results):
     """
     A slight variation on calculation.runModel
@@ -122,7 +120,7 @@ def main(params):
     ## MAKE PARAMS FILE NAME TO COPY TO RESULTS DIRECTORY FOR REFERENCE
     paramsFName = 'params_' + params.species + 'Scen' + str(params.scenario) + '.py'
     paramsFName = os.path.join(params.outputDataPath, paramsFName)
-    shutil.copy('simulationParamsDean.py', paramsFName)
+    shutil.copy('simulationParams.py', paramsFName)
 
     ## IF FIRST RUN, FROM PARAMS SCRIPT, RUN PREPROCESSING, ELSE UNPICKLE
     if params.firstRun:

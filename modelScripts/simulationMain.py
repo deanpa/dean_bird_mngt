@@ -19,6 +19,7 @@ from modelScripts import calculation
 from modelScripts import preProcessing
 from modelScripts import calcresults
 from rios.parallel import jobmanager
+#import rios
 
 # Use the same environment variable as RIOS to define the type of
 # parallel processing.

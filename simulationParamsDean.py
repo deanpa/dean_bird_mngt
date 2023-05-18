@@ -23,7 +23,7 @@ class PreyParams(object):
         # self.years = np.arange(6)
 
         ### SET ITERATIONS
-        self.iter = 1
+        self.iter = 10
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
         self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
@@ -91,7 +91,8 @@ class PreyParams(object):
         # "3yrlyCtrlDummy.csv" or "noCtrlDummy.csv" or "oneOffCtrlDumm.csv"
         ##########################################
         ##########################################
-        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
+        self.controlFile = os.path.join(self.inputDataPath, 'reactControl_kea1.csv') # control3 is effectively no control (st yr set to 100)
+#        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
 
         ## LEAD POINT DATA
         self.leadPointData = os.path.join(self.inputDataPath, 'leadPtsRegion3.csv')
@@ -170,7 +171,7 @@ class PreyParams(object):
         self.rodentBounceMult = 1  #2 how much to multiply resources/Kmap by to drive rat bounce
 
         ######## TRACKING TUNNEL PARAMETERS
-        self.threshold_TT = .2            #(1 = no reac) Thres prop of TT with detections
+        self.threshold_TT = .25            #(1 = no reac) Thres prop of TT with detections
         self.g0_TT = 0.02                   # Tracking tunnel g0
         self.sigma_TT = 22.0                # Rat sigma
         self.nights_TT = 4                  # Tracking tunnel nights
@@ -178,7 +179,7 @@ class PreyParams(object):
 
         ######## STOAT PARAMETERS
         #self.stoatProd = 0.71
-        stoatFec= 9.2  #num offspring recruited per generation
+        stoatFec= 6.2 #9.2   #num offspring recruited per generation
         self.stoatIRR = np.log(1+stoatFec/2) #convert to Instantaneous Rec Rate  
                         #Stoat breeding highly synchronised (daylength dependent) 
                         #so breed in one pulse/time step

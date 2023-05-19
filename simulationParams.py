@@ -18,7 +18,7 @@ class PreyParams(object):
         ### SET YEARS AND BURN IN YEARS
 
         self.burnin = 1
-        self.years = np.arange(1)
+        self.years = np.arange(3)
         # self.burnin = 4
         # self.years = np.arange(6)
 
@@ -40,7 +40,7 @@ class PreyParams(object):
         print('Sum Full ext: ', self.summariseFullExtent)
 
         ## GET BASE DIRECTORY LOCALLY OR ON NESI
-        baseDir = os.getenv('KIWIPROJDIR', default='.')
+        baseDir = os.getenv('BIRDPROJDIR', default='.')
         if baseDir == '.':
             baseDir = Path.cwd()
         # SET PATH TO DATA - SHOULD EXIST ALREADY 

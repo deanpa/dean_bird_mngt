@@ -33,7 +33,7 @@ if __name__ == '__main__':
     print('paramsMod', paramsMod)
 
     ## APPEND SYS DIRECTORY TO IMPORT PARAMS MODULE
-    basepath = os.getenv('KIWIPROJDIR', default = '.')
+    basepath = os.getenv('BIRDPROJDIR', default = '.')
     if basepath == '.':
         pathDir = os.path.join(os.getcwd(), resScenPath)
     else:

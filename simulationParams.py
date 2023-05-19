@@ -70,8 +70,8 @@ class PreyParams(object):
         ##########################################
 
 #        self.kClasses = os.path.join(self.inputDataPath, 'seed_Kea2.img')    
+        #self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummyNewK.grd')    
         self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummy.grd')    
-
         ### Area trapped in recent times.
         # self.islands = os.path.join(self.inputDataPath, 'stoatTrappingRaster.img')
         # self.DEM = os.path.join(self.inputDataPath, 'dem200_kea.img')
@@ -83,10 +83,10 @@ class PreyParams(object):
         ##########################################
         ## TEST CONTROL ##########################
 #        self.controlFile = os.path.join(self.inputDataPath, 'testControl.csv') 
-        self.controlFile = os.path.join(self.inputDataPath, 'noCtrlDummy.csv') 
+        #self.controlFile = os.path.join(self.inputDataPath, 'noCtrlDummy.csv') 
         #self.controlFile = os.path.join(self.inputDataPath, 'oneOffCtrlDummy.csv') 
         #self.controlFile = os.path.join(self.inputDataPath, 'dblNovCtrlDummy.csv') 
-        #self.controlFile = os.path.join(self.inputDataPath, '3yrlyCtrlDummy.csv') 
+        self.controlFile = os.path.join(self.inputDataPath, '3yrlyCtrlDummy.csv') 
 
         # "3yrlyCtrlDummy.csv" or "noCtrlDummy.csv" or "oneOffCtrlDumm.csv"
         ##########################################
@@ -95,7 +95,8 @@ class PreyParams(object):
 
         ## LEAD POINT DATA
         #self.leadPointData = os.path.join(self.inputDataPath, 'test_LeadPoints.csv')
-        self.leadPointData = None
+        self.leadPointData = os.path.join(self.inputDataPath, 'dummyLeadPoints.csv')
+        #self.leadPointData = None
 
 
         self.seasAdjResFile = os.path.join(self.inputDataPath, 'mastLUpTable.csv')
@@ -148,16 +149,16 @@ class PreyParams(object):
         # when indep young recruited into population
         #could also use as a proxy for age structure even if breeding season by setting
         # <1 because proportion of population is still juvenile and not breeding 
-        self.rodentSeasRec = np.array([1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.]) 
+        self.rodentSeasRec = np.array([1.,1.,1.,1.,1.,1.,1.,1.,1.,0.5,0.5,0.5]) 
                         #can potentially breed year round - can reign this in...
         #Dispersl: bodge this for now boolean on or off (in future could have sine function rather than step): 
         #Maybe should just have dispersal in a pulse/only 1 month to save running dispersal algorithm multiple times?
         self.rodentSeasDisp = np.array([1,1,1,1,1,1,1,1,1,0,0,0], dtype=bool) #can disp most months of yr, don't in winter?? 
                             #Juv males tend to make up most of disp. popn. but we don't have age or sex structure so yeah...
-        self.rodentSurv = 0.95 #per month 0.9707
-        self.rodentSurvDDcoef = 1.5
-        self.rodentRecDDcoef = 0.6
-        self.rodentTheta = 0.7  #1 gives Ricker model
+        self.rodentSurv = 0.958 #per month 0.958
+        self.rodentSurvDDcoef = 2
+        self.rodentRecDDcoef = 0.1
+        self.rodentTheta = 1  #1 gives Ricker model
         self.prpGrowRateControl = 1.0  # proportion of rodent growth before control is applied
         self.rodentProbEatBait = 0.7 # pT
         self.pRodentPres = 0.95
@@ -166,7 +167,7 @@ class PreyParams(object):
         
         ##rat bounce parameters###
         self.rodentBouncePeriod = 28  #28 in months - time since control within which K/resources are multiplied to drive rat bounce
-        self.rodentBounceMult = 1  #2 how much to multiply resources/Kmap by to drive rat bounce
+        self.rodentBounceMult = 2  #2 how much to multiply resources/Kmap by to drive rat bounce
 
         ######## TRACKING TUNNEL PARAMETERS
         self.threshold_TT = 1            #(1 = no reac) Thres prop of TT with detections

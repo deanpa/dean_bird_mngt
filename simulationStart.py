@@ -4,7 +4,10 @@ import sys
 import optparse
 from modelScripts import simulationMain
 import simulationParams
-
+#import os
+#import multiprocessing
+#from rios.parallel import jobmanager
+#import rios
 
 class CmdArgs(object):
     def __init__(self):

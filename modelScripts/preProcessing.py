@@ -226,19 +226,29 @@ class PreyData(object):
         if self.doLeadPoisoning:
             fullPreyExt = np.array(fullExtTmp)
 
-            makeProbLeadDeath(self.pLeadDeath2D, self.preyExtentMask, self.monthlyLeadProb, 
-                self.params.preySigma, self.nLeadPts, self.leadPoints, 
+            makeProbLeadDeath(self.pLeadDeath3D, self.preyExtentMask, self.preAdultMonthPLead, 
+                self.adultMonthPLead, self.params.preySigma, self.nLeadPts, self.leadPoints, 
                 fullPreyExt, self.params.resolutions[2], self.preyNcols, self.preyNrows)            
 
         
-#        driver = gdal.GetDriverByName('HFA')
-#        ds = driver.Create('pLeadDieTemp.img', self.preyNcols, self.preyNrows, 
-#                1, gdal.GDT_Float32)
-#        ds.SetProjection(NZTM_WKT)
-#        ds.SetGeoTransform(self.preyGeoTrans)
-#        band = ds.GetRasterBand(1)
-#        band.WriteArray(self.pLeadDeath2D)
-#        del ds
+        driver = gdal.GetDriverByName('HFA')
+        ds = driver.Create('pLeadDiePreAdult.img', self.preyNcols, self.preyNrows, 
+                1, gdal.GDT_Float32)
+        ds.SetProjection(NZTM_WKT)
+        ds.SetGeoTransform(self.preyGeoTrans)
+        band = ds.GetRasterBand(1)
+        band.WriteArray(self.pLeadDeath3D[0])
+        del ds
+
+        
+        driver = gdal.GetDriverByName('HFA')
+        ds = driver.Create('pLeadDieAdult.img', self.preyNcols, self.preyNrows, 
+                1, gdal.GDT_Float32)
+        ds.SetProjection(NZTM_WKT)
+        ds.SetGeoTransform(self.preyGeoTrans)
+        band = ds.GetRasterBand(1)
+        band.WriteArray(self.pLeadDeath3D[1])
+        del ds
 
 
 
@@ -256,11 +266,14 @@ class PreyData(object):
             yy = leadPtsTmp['ycoord']
             self.nLeadPts = len(xx)
             self.leadPoints = np.hstack([np.expand_dims(xx, 1),np.expand_dims(yy, 1)])
-            self.monthlyLeadProb = 1.0 - np.exp(np.log(1.0 - self.params.pLeadMax) / 12.0)
-            self.pLeadDeath2D = np.zeros_like(self.preyKMap, dtype = np.float32)
+            self.preAdultMonthPLead = 1.0 - np.exp(np.log(1.0 - self.params.pLeadMax['preAdult']) / 12.0)
+            self.adultMonthPLead = 1.0 - np.exp(np.log(1.0 - self.params.pLeadMax['adult']) / 12.0)
+#            self.monthlyLeadProb = {'preAdult' : preAdultMonthPLead, 'adult' : adultMonthPLead}
+            shpPreyKMap = np.shape(self.preyKMap)
+            self.pLeadDeath3D = np.zeros((2, shpPreyKMap[0], shpPreyKMap[1]), dtype = np.float32)
         else:
             self.doLeadPoisoning = False
-            self.pLeadDeath2D = None
+            self.pLeadDeath3D = None
 
 
     def getReactCtrlMth(self):
@@ -668,10 +681,11 @@ def getPreyKMap(preyNcols, preyNrows, preyCorrectionK,
 
 
 @jit
-def makeProbLeadDeath(pLeadDeath2D, preyExtentMask, monthlyLeadProb, preySigma, 
-        nLeadPts, leadPoints, fullExtTmp, resol, preyNcols, preyNrows):
+def makeProbLeadDeath(pLeadDeath3D, preyExtentMask, preAdultMonthPLead, adultMonthPLead, 
+        preySigma, nLeadPts, leadPoints, fullExtTmp, resol, preyNcols, preyNrows):
     """
-    ## MAKE 2D ARRAY AT PREY RESOL WITH PROB OF ENC, INT, DEATH
+    ## MAKE 3D ARRAY AT PREY RESOL WITH PROB OF ENC, INT, DEATH
+    ## FIRST LEVEL IS FOR PRE-ADULTS AND SECOND IS FOR ADULTS
     """
     ulx = fullExtTmp[0]
     uly = fullExtTmp[3]
@@ -680,14 +694,20 @@ def makeProbLeadDeath(pLeadDeath2D, preyExtentMask, monthlyLeadProb, preySigma,
         for col in range(preyNcols):
             if ~preyExtentMask[row, col]:
                 continue
-            pNotDie = 1.0
+            pNotDiePreAdult = 1.0
+            pNotDieAdult = 1.0
             xx = ulx + col*resol
             yy = uly - row*resol
             ## LOOP THRU LEAD POINTS TO GET DISTANCE
             for pt in range(nLeadPts):
                 dist = np.sqrt((xx - leadPoints[pt, 0])**2 + (yy - leadPoints[pt, 1])**2) 
-                pDie = monthlyLeadProb * np.exp(-(dist**2) / 2.0 / (preySigma**2))
-                pNotDie = pNotDie * (1.0 - pDie)
-            pLeadDeath2D[row, col] = 1.0 - pNotDie
+                pDiePreAdult = preAdultMonthPLead * np.exp(-(dist**2) / 2.0 / (preySigma**2))
+                pNotDiePreAdult = pNotDiePreAdult * (1.0 - pDiePreAdult)
 
-           
+                pDieAdult = adultMonthPLead * np.exp(-(dist**2) / 2.0 / (preySigma**2))
+                pNotDieAdult = pNotDieAdult * (1.0 - pDieAdult)
+
+            pLeadDeath3D[0, row, col] = 1.0 - pNotDiePreAdult
+            pLeadDeath3D[1, row, col] = 1.0 - pNotDieAdult
+
+

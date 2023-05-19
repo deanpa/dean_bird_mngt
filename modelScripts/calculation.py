@@ -310,13 +310,13 @@ def runModel(rawdata, params=None, loopIter=0):
 
         # Masting affects rodents the same year now
         #but year starts in Sept, spring cos that's when beech flowering starts
-        #mastT = np.random.rand() < params.mastPrEvent
+        mastT = np.random.rand() < params.mastPrEvent
         #have all iterations mast in same year for some sims
-        mastYrarr=np.array([1,7,10,11,15,20,23,27])
-        if (year_all in mastYrarr):
-            mastT=True
-        else:
-            mastT=False   
+###        mastYrarr=np.array([1,7,10,11,15,20,23,27])
+###        if (year_all in mastYrarr):
+###            mastT=True
+###        else:
+###            mastT=False   
             
         if mastT:
             print('Masting Year', year_all)
@@ -440,10 +440,10 @@ def runModel(rawdata, params=None, loopIter=0):
                             ## SCHEDULED CONTROL JUMPS INTO THE NEXT YEAR (T+1)
                             else:
                                 nextYearCtrlSched[count] = rawdata.reactiveCtrlMth
-                        print('TT rate > threshold', np.round(TT_rate, 2),
-                            'year', year, 'assess mth', mth, 'ctrl mth', 
-                            rawdata.reactiveCtrlMth, 'area', count, 
-                            'jumpYear', rawdata.jumpYearCtrl)
+                            print('TT rate > threshold', np.round(TT_rate, 2),
+                                'year', year, 'assess mth', mth, 'ctrl mth', 
+                                rawdata.reactiveCtrlMth, 'area', count, 
+                                'jumpYear', rawdata.jumpYearCtrl)
 
             # Rodent Control. Get the combined control masks for this year
             # It's a bit hard to work out the mask ahead of time with the
@@ -558,7 +558,7 @@ def runModel(rawdata, params=None, loopIter=0):
             prey_raster = doPreyGrowth(prey_raster, stoat_raster, params, 
                     rawdata.preyExtentMask, rodent_raster_stoat, nHectInRodent,
                     preyMastingMask, preyRecDecay_1D, preySurvDecay_1D, mth, 
-                    rawdata.pLeadDeath2D)
+                    rawdata.pLeadDeath3D)
     
     
     
@@ -929,7 +929,7 @@ def doRodentGrowth(rawdata, params, rodent_raster, rodent_kMth, mth):
 
 def doPreyGrowth(prey_raster, stoat_raster, params, mask, 
         rodent_raster_prey, nHectInRodent, mastMsk, preyRecDecay_1D, 
-        preySurvDecay_1D, mth, pLeadDeath2D):
+        preySurvDecay_1D, mth, pLeadDeath3D):
     """
     ## calc prey population growth by pixel
     """
@@ -963,8 +963,8 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
     ## MAKE 1-D ARRAYS FOR POPULATION UPDATE
 
 ## LEAD POISONING EFFECT ON SURVIVAL
-    if pLeadDeath2D is not None:
-        pLead_t = pLeadDeath2D[mask]
+    if pLeadDeath3D is not None:
+        pLead_t = pLeadDeath3D[:, mask]
 
     prey0_t = prey_raster[0,mask]
     prey1_t = prey_raster[1,mask]
@@ -1011,32 +1011,32 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
     pSurv = (params.preySurv[0] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
          * np.exp(-params.preyEtaStoatJuv * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentJuv * rodent_t))
     ## LEAD POISONING EFFECT ON SURVIVAL
-    if pLeadDeath2D is not None:
-        pSurv = pSurv * (1.0 - pLead_t)
+    if pLeadDeath3D is not None:
+        pSurv = pSurv * (1.0 - pLead_t[0])
     prey0_t = rng.binomial(prey0_t, pSurv)
 
     ## YEAR 1-2
     pSurv = (params.preySurv[1] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
          * np.exp(-params.preyEtaStoatAd * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
     ## LEAD POISONING EFFECT ON SURVIVAL
-    if pLeadDeath2D is not None:
-        pSurv = pSurv * (1.0 - pLead_t)
+    if pLeadDeath3D is not None:
+        pSurv = pSurv * (1.0 - pLead_t[0])
     prey1_t = rng.binomial(prey1_t, pSurv)
 
     ## YEAR 2-3
     pSurv = (params.preySurv[2] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
          * np.exp(-params.preyEtaStoatAd * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
     ## LEAD POISONING EFFECT ON SURVIVAL
-    if pLeadDeath2D is not None:
-        pSurv = pSurv * (1.0 - pLead_t)
+    if pLeadDeath3D is not None:
+        pSurv = pSurv * (1.0 - pLead_t[0])
     prey2_t = rng.binomial(prey2_t, pSurv)
 
     ## YEAR > 3
     pSurv = (params.preySurv[3] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
          * np.exp(-params.preyEtaStoatAd * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
     ## LEAD POISONING EFFECT ON SURVIVAL
-    if pLeadDeath2D is not None:
-        pSurv = pSurv * (1.0 - pLead_t)
+    if pLeadDeath3D is not None:
+        pSurv = pSurv * (1.0 - pLead_t[1])
     prey3_t = rng.binomial(prey3_t, pSurv)
 
 #    pSurv = (params.preySurv[4] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))

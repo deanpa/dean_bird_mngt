@@ -17,13 +17,13 @@ class PreyParams(object):
 
         ### SET YEARS AND BURN IN YEARS
 
-        self.burnin = 1
-        self.years = np.arange(1)
+        self.burnin = 5
+        self.years = np.arange(5)
         # self.burnin = 4
         # self.years = np.arange(6)
 
         ### SET ITERATIONS
-        self.iter = 2
+        self.iter = 5
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
         self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
@@ -62,21 +62,15 @@ class PreyParams(object):
         self.AOIShp = os.path.join(self.inputDataPath, 'Kea_Model_Region3.shp')
         ##########################################
         ## TEST CONTROL ##########################
-#        # self.extentShp = os.path.join(self.inputDataPath, 'test_fullExtent.shp')
-#        # self.AOIShp = os.path.join(self.inputDataPath, 'test_AOI.shp')
+###        self.extentShp = os.path.join(self.inputDataPath, 'test_fullExtent.shp')
+###        self.AOIShp = os.path.join(self.inputDataPath, 'test_AOI.shp')
 #        self.extentShp = os.path.join(self.inputDataPath, 'extentDummy.shp')
 #        self.AOIShp = os.path.join(self.inputDataPath, 'AOIDummy.shp')        
         ##########################################
         ##########################################
 
-
-#        self.kClasses = os.path.join(self.inputDataPath, 'seed_Kea2.img')    
-        #self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummyNewK.grd')    
-        #self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummy.grd')    
-
         self.kClasses = os.path.join(self.inputDataPath, 'seed_KeaTemp.img')    
 #        self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummy.grd')    
-
 
         ### Area trapped in recent times.
         self.islands = os.path.join(self.inputDataPath, 'stoatTrappingRaster.img')
@@ -88,24 +82,21 @@ class PreyParams(object):
 
         ##########################################
         ## TEST CONTROL ##########################
-#        self.controlFile = os.path.join(self.inputDataPath, 'testControl.csv') 
-
+###        self.controlFile = os.path.join(self.inputDataPath, 'testControl.csv') 
 #        self.controlFile = os.path.join(self.inputDataPath, 'noCtrlDummy.csv') 
         #self.controlFile = os.path.join(self.inputDataPath, 'oneOffCtrlDummy.csv') 
         #self.controlFile = os.path.join(self.inputDataPath, 'dblNovCtrlDummy.csv') 
-#        self.controlFile = os.path.join(self.inputDataPath, '3yrlyCtrlDummy.csv') 
+        #self.controlFile = os.path.join(self.inputDataPath, '3yrlyCtrlDummy.csv') 
 
         # "3yrlyCtrlDummy.csv" or "noCtrlDummy.csv" or "oneOffCtrlDumm.csv"
         ##########################################
         ##########################################
-        self.controlFile = os.path.join(self.inputDataPath, 'reactControl_kea1.csv')
+        self.controlFile = os.path.join(self.inputDataPath, 'reactControl_kea1.csv') # control3 is effectively no control (st yr set to 100)
 #        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
 
         ## LEAD POINT DATA
         self.leadPointData = os.path.join(self.inputDataPath, 'leadPtsRegion3.csv')
-        #self.leadPointData = os.path.join(self.inputDataPath, 'test_LeadPoints.csv')
-#        self.leadPointData = os.path.join(self.inputDataPath, 'dummyLeadPoints.csv')
-        #self.leadPointData = None
+###        self.leadPointData = os.path.join(self.inputDataPath, 'test_LeadPoints.csv')
 #        self.leadPointData = None
 
 
@@ -151,7 +142,7 @@ class PreyParams(object):
         self.islandK = 2.0
         self.initialRodentN = 10
         #self.rodentProd = 0.3916
-        rodentFec= 5.5  #num offspring recruited per generation
+        rodentFec= 4.5      #5.5  #num offspring recruited per generation
         self.rodentIRR = np.log(1+rodentFec/2)/4 #convert to monthly Instantaneous Rec Rate 
                         #divided by generation time (4 mths to sexual mturity) in this case
         #seasRec describes what proportion of population is breeding in each month
@@ -159,28 +150,28 @@ class PreyParams(object):
         # when indep young recruited into population
         #could also use as a proxy for age structure even if breeding season by setting
         # <1 because proportion of population is still juvenile and not breeding 
-        self.rodentSeasRec = np.array([1.,1.,1.,1.,1.,1.,1.,1.,1.,0.5,0.5,0.5]) 
+        self.rodentSeasRec = np.array([1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.]) 
                         #can potentially breed year round - can reign this in...
         #Dispersl: bodge this for now boolean on or off (in future could have sine function rather than step): 
         #Maybe should just have dispersal in a pulse/only 1 month to save running dispersal algorithm multiple times?
         self.rodentSeasDisp = np.array([1,1,1,1,1,1,1,1,1,0,0,0], dtype=bool) #can disp most months of yr, don't in winter?? 
                             #Juv males tend to make up most of disp. popn. but we don't have age or sex structure so yeah...
-        self.rodentSurv = 0.958 #per month 0.958
-        self.rodentSurvDDcoef = 2
-        self.rodentRecDDcoef = 0.1
-        self.rodentTheta = 1  #1 gives Ricker model
+        self.rodentSurv = 0.97 #per month 0.9707
+        self.rodentSurvDDcoef = 1.5
+        self.rodentRecDDcoef = 0.6
+        self.rodentTheta = 0.7  #1 gives Ricker model
         self.prpGrowRateControl = 1.0  # proportion of rodent growth before control is applied
-        self.rodentProbEatBait = 0.7 # pT
+        self.rodentProbEatBait = 0.9 # pT
         self.pRodentPres = 0.95
         self.rodentInitialMultiplier = 0.8     
         self.rodentMaxAltitude = 1000.0  # metres
         
         ##rat bounce parameters###
         self.rodentBouncePeriod = 28  #28 in months - time since control within which K/resources are multiplied to drive rat bounce
-        self.rodentBounceMult = 2  #2 how much to multiply resources/Kmap by to drive rat bounce
+        self.rodentBounceMult = 1  #2 how much to multiply resources/Kmap by to drive rat bounce
 
         ######## TRACKING TUNNEL PARAMETERS
-        self.threshold_TT = 1            #(1 = no reac) Thres prop of TT with detections
+        self.threshold_TT = .20            #(1 = no reac) Thres prop of TT with detections
         self.g0_TT = 0.02                   # Tracking tunnel g0
         self.sigma_TT = 22.0                # Rat sigma
         self.nights_TT = 4                  # Tracking tunnel nights
@@ -188,7 +179,7 @@ class PreyParams(object):
 
         ######## STOAT PARAMETERS
         #self.stoatProd = 0.71
-        stoatFec= 9.2  #num offspring recruited per generation
+        stoatFec= 6.2 #9.2   #num offspring recruited per generation
         self.stoatIRR = np.log(1+stoatFec/2) #convert to Instantaneous Rec Rate  
                         #Stoat breeding highly synchronised (daylength dependent) 
                         #so breed in one pulse/time step
@@ -198,14 +189,14 @@ class PreyParams(object):
         #make sure dispersal happens after recuritment                        
         self.stoatSeasDisp = np.array([0,0,0,0,0,1,0,0,0,0,0,0], dtype=bool) #disperse Feb
         self.stoatRecDDcoef = 8
-        self.stoatSurv = 0.94
-        self.stoatSurvDDcoef = 9.5
+        self.stoatSurv = 0.94        ###0.9475
+        self.stoatSurvDDcoef = 9.5  ### 10.
         self.stoatTheta = 1
         #self.stoatRecLag = 3 #calc recruitment based on rat numbers 3 mths before young stoats become in
         self.stoatPopSD = 0.22
         self.pEncToxic = 0.004          # operates at stoat scale
         self.pEatEncToxic = 0.8          # operates at stoat scale
-        self.stoatInitialMultiplier = .85
+        self.stoatInitialMultiplier = .75   #.85
         self.pStoatPres = 0.75
         self.initialStoatN = 4.0
         self.stoatMaxAltitude = 1100.0

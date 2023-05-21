@@ -72,8 +72,6 @@ class PreyParams(object):
 
 #        self.kClasses = os.path.join(self.inputDataPath, 'seed_Kea2.img')    
         #self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummyNewK.grd')    
-        #self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummy.grd')    
-
         self.kClasses = os.path.join(self.inputDataPath, 'seed_KeaTemp.img')    
 #        self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummy.grd')    
 
@@ -89,7 +87,6 @@ class PreyParams(object):
         ##########################################
         ## TEST CONTROL ##########################
 #        self.controlFile = os.path.join(self.inputDataPath, 'testControl.csv') 
-
 #        self.controlFile = os.path.join(self.inputDataPath, 'noCtrlDummy.csv') 
         #self.controlFile = os.path.join(self.inputDataPath, 'oneOffCtrlDummy.csv') 
         #self.controlFile = os.path.join(self.inputDataPath, 'dblNovCtrlDummy.csv') 
@@ -105,7 +102,6 @@ class PreyParams(object):
         self.leadPointData = os.path.join(self.inputDataPath, 'leadPtsRegion3.csv')
         #self.leadPointData = os.path.join(self.inputDataPath, 'test_LeadPoints.csv')
 #        self.leadPointData = os.path.join(self.inputDataPath, 'dummyLeadPoints.csv')
-        #self.leadPointData = None
 #        self.leadPointData = None
 
 

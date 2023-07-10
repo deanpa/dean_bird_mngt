@@ -32,7 +32,7 @@ controls.setThematic(True)
 applier.apply(addClass, inputs, outputs, controls=controls)
 
 
-classNames = ["", "NonHabitat", "GrassScrub", "Shrub", "ProdForest", "Broadleaf", "Native"]
+classNames = ["", "NonHabitat", "GrassScrub", "Shrub", "ProdForest", "Broadleaf", "Native", "Podocarp"]
 rat.writeColumn(outputs.newlcdb, "Class_Names", classNames, colUsage=gdal.GFU_Name)
 
 

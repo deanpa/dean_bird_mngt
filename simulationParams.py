@@ -69,7 +69,8 @@ class PreyParams(object):
         ##########################################
         ##########################################
 
-        self.kClasses = os.path.join(self.inputDataPath, 'seed_KeaTemp.img')    
+        self.kClasses = os.path.join(self.inputDataPath, 'resource_Kea.img')    
+#        self.kClasses = os.path.join(self.inputDataPath, 'seed_KeaTemp.img')    
 #        self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummy.grd')    
 
         ### Area trapped in recent times.

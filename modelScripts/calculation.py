@@ -336,9 +336,8 @@ def runModel(rawdata, params=None, loopIter=0):
 #                                / np.count_nonzero(controlMask))
                     if propControlMaskMasting[count] >= params.reactivePropMgmtMasting:                   
                         mthlyCtrlSched[count] = params.mastCtrlMth
-                    print('mast prp > thres', propControlMaskMasting[count] >= 
-                            params.reactivePropMgmtMasting, 'year', year, 
-                            'Area', count)
+                        print('mast prp > thres', np.round(propControlMaskMasting[count], 2),
+                              'year', year,  'Area', count)
 
       
         ##age the prey
@@ -415,7 +414,7 @@ def runModel(rawdata, params=None, loopIter=0):
                             ## SCHEDULE CONTROL IN THIS YEAR (T)
                             if not rawdata.jumpYearCtrl:                      
                                 mthlyCtrlSched[count] = rawdata.reactiveCtrlMth
-                            ## SCHEDULED CONTROL JUMPS INTO THE NEXT YEAR (T+1)
+                            ## else SCHEDULED CONTROL JUMPS INTO THE NEXT YEAR (T+1)
                             else:
                                 nextYearCtrlSched[count] = rawdata.reactiveCtrlMth
                             print('TT rate > threshold', np.round(TT_rate, 2),

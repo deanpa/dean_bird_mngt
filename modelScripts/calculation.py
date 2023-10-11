@@ -101,11 +101,10 @@ def runModel(rawdata, params=None, loopIter=0):
 
  
     ## KEEP THE SEEDS PER M^2 SAME FOR ALL RESOLUTIONS
-    rodent_kMap = rawdata.paramRodentCCLU[rawdata.kClasses] * 1
-    # modify rodent K when mast or crash occurs
-    rodent_kMapMast = rawdata.paramRodentMastCCLU[rawdata.kClasses] * 1
-    rodent_kMapCrash = rawdata.paramRodentCrashCCLU[rawdata.kClasses] * 1
-
+    # rodent_kMap = rawdata.paramRodentCCLU[rawdata.kClasses] * 1
+    # # modify rodent K when mast or crash occurs
+    # rodent_kMapMast = rawdata.paramRodentMastCCLU[rawdata.kClasses] * 1
+    # rodent_kMapCrash = rawdata.paramRodentCrashCCLU[rawdata.kClasses] * 1
     # print('k classes', rawdata.kClasses[1,1:10],'kMap', rodent_kMap[1,1:10], 
     #       'kMapMast', rodent_kMapMast[1,1:10],  'kMapCrash', rodent_kMapCrash[1,1:10] )
    
@@ -113,12 +112,13 @@ def runModel(rawdata, params=None, loopIter=0):
     nHectInRodent = (params.resolutions[0] / 100.0)**2
 
     # update rawdata.rodentExtentMask so we don't include areas where kmap == 0
-    rawdata.rodentExtentMask = rawdata.rodentExtentMask & (rodent_kMap != 0)
+    #already done in preprocessing line#94
+    #rawdata.rodentExtentMask = rawdata.rodentExtentMask & (rodent_kMap != 0)
 
-    # update the rodent kMap to set k = 0 at elevation
-    rodent_kMap[~rawdata.rodentExtentMask] = 0
-    rodent_kMapMast[~rawdata.rodentExtentMask] = 0
-    rodent_kMapCrash[~rawdata.rodentExtentMask] = 0
+    # update the rodent kMap to set k = 0 at elevation should have already been done in pre-proc
+    # rodent_kMap[~rawdata.rodentExtentMask] = 0
+    # rodent_kMapMast[~rawdata.rodentExtentMask] = 0
+    # rodent_kMapCrash[~rawdata.rodentExtentMask] = 0
 
     # convert from window sizes in pixels to metres
     mastWindowSizePxls = round_up_to_odd(params.mastWindowSize / 
@@ -302,21 +302,21 @@ def runModel(rawdata, params=None, loopIter=0):
                         (year > startYear and nYearsSinceControl >= revisit))
                     if controlCondition:
                         ## add control area to schedule
-                        mthlyCtrlSched[count] = rawdata.prescrptCtrlMth
+                        mthlyCtrlSched[count] = params.prescrptCtrlMth
                         print('Prescriptive', 'Area', count, 'year', year,
-                            'month', rawdata.prescrptCtrlMth, 
+                            'month', params.prescrptCtrlMth, 
                             'Yr Since', nYearsSinceControl, 'revisit', revisit,
                             'condit', controlCondition)
 
         # Masting affects rodents the same year now
         #but year starts in Sept, spring cos that's when beech flowering starts
-        mastT = np.random.rand() < params.mastPrEvent
-        #have all iterations mast in same year for some sims
-###        mastYrarr=np.array([1,7,10,11,15,20,23,27])
-###        if (year_all in mastYrarr):
-###            mastT=True
-###        else:
-###            mastT=False   
+        # mastT = np.random.rand() < params.mastPrEvent
+        #for testing purposes: have all iterations mast in same year 
+        mastYrarr=np.array([1,7,10,11,15])
+        if (year_all in mastYrarr):
+            mastT=True
+        else:
+            mastT=False   
             
         if mastT:
             print('Masting Year', year_all)
@@ -334,7 +334,12 @@ def runModel(rawdata, params=None, loopIter=0):
                         controlMask) / np.count_nonzero(controlMask))
 #                    propControlMaskMasting[count,0] = (np.count_nonzero(mastingMask & controlMask)
 #                                / np.count_nonzero(controlMask))
-                print('PropMaskMast', propControlMaskMasting)
+                    if propControlMaskMasting[count] >= params.reactivePropMgmtMasting:                   
+                        mthlyCtrlSched[count] = params.mastCtrlMth
+                    print('mast prp > thres', propControlMaskMasting[count] >= 
+                            params.reactivePropMgmtMasting, 'year', year, 
+                            'Area', count)
+
       
         ##age the prey
         if year_all > 0:
@@ -356,21 +361,22 @@ def runModel(rawdata, params=None, loopIter=0):
             ## DO RODENT GROWTH, first have to do some bodging to get seasonal stuff 
             ## use different kmaps depending on if crash or mast year, needs to be this
             #order so if double mast, the mast overrrides using the crash k map
-            rodent_kMth = rodent_kMap.copy()
-            rodent_kMth[~mastingMask] = rodent_kMth[~mastingMask]*rawdata.seasAdjRes['nonmast'][mth]
+            # rodent_kMap = rawdata.paramRodentCCLU[rawdata.kClasses] * 1
+            # rodent_kMth = rodent_kMap.copy()
+            rodent_kMth = rawdata.seasAdj[rawdata.kClasses,mth]
+             # print('t since:', timeSinceCtrl[1,15:25]) 
+            # print('kvals b4:', rodent_kMth[1,15:25]) 
             #bounce adjustment shifted to before mast and crash adjustments are made so that these override the rat bounce effect
             rodent_kMth = np.where(timeSinceCtrl<params.rodentBouncePeriod,params.rodentBounceMult*rodent_kMth ,rodent_kMth)
-            if mastT_1:
-                rodent_kMth[oldMastingMask] = (rodent_kMapCrash[oldMastingMask] * 
-                    rawdata.seasAdjRes['crash'][mth])
-            if mastT:
-                rodent_kMth[mastingMask] = rodent_kMapMast[mastingMask]*rawdata.seasAdjRes['mast'][mth]
-            # else:
-            #     rodent_kMth = np.where(timeSinceCtrl<params.rodentBouncePeriod,params.rodentBounceMult*rodent_kMth ,rodent_kMth)
-            # print('t since:', timeSinceCtrl[1,15:25]) 
-            # print('kvals b4:', rodent_kMth[1,15:25]) 
-            ###now adjust rodent_kMth for time since ctrl
             # print('kvals after:', rodent_kMth[1,15:25])
+            if mastT_1:
+                rodent_kMth = np.where(oldMastingMask==True,rawdata.crashSeasAdj[rawdata.kClasses,mth],rodent_kMth)
+            # #bounce adjustment shifted to before mast  adjustments are made so that masting overrides the rat bounce effect
+            # rodent_kMth = np.where(timeSinceCtrl<params.rodentBouncePeriod,params.rodentBounceMult*rodent_kMth ,rodent_kMth)
+            if mastT:
+                rodent_kMth = np.where(mastingMask==True,rawdata.mastSeasAdj[rawdata.kClasses,mth],rodent_kMth)
+            # #bounce adjustment shifted to after mast and crash adjustments are made
+            # rodent_kMth = np.where(timeSinceCtrl<params.rodentBouncePeriod,params.rodentBounceMult*rodent_kMth ,rodent_kMth)
             
             rodent_raster = doRodentGrowth(rawdata, params,
                 rodent_raster, rodent_kMth, mth)
@@ -380,36 +386,7 @@ def runModel(rawdata, params=None, loopIter=0):
             #all in the same month for now until figure out how to vary
             #only do assessment and control after burnin (i.e. in a 'keep year')
             if (mth==params.reactiveAssessMth) and keepYear:
-                if (params.reactivePropMgmtMasting > 0) and mastT:
-                    #this is a fudge so if assess in Mar-Aug use prop mast this year
-                    #in earlier months use prop masting in previous year
-###                    if mastT and (mth > params.monthDict['Feb']):                   
-                    for i in range(nControlAreas):
-                        if not rawdata.controlAreaBool[i]:
-                            continue
-                        ## CHECK MASTING EXTENT
-                        if propControlMaskMasting[i] >= params.reactivePropMgmtMasting:
-                            ## SCHEDULE CONTROL IN THIS YEAR (T)
-                            if not rawdata.jumpYearCtrl:                      
-                                mthlyCtrlSched[i] = rawdata.reactiveCtrlMth
-                            ## SCHEDULED CONTROL JUMPS INTO THE NEXT YEAR (T+1)
-                            else:
-                                nextYearCtrlSched[i] = rawdata.reactiveCtrlMth
-    
-                            print('mast prp > thres', propControlMaskMasting[i] >= 
-                                params.reactivePropMgmtMasting, 'year', year, 
-                                'month', mth, 'Area', i, 'jumpYear', rawdata.jumpYearCtrl)
-                                
-                    
-#                    if mastT_1 and (mth <= params.monthDict['Feb']):                   
-#                        for i in range(nControlAreas):
-#                            if propControlMaskMasting[i,1] >= params.reactivePropMgmtMasting:                      
-#                                mthlyCtrlSched[i] = params.reactiveCtrlMth                                
-#                                ## UNLIKELY TO JUMP THE YEAR LINE FOR CONTROL
-#                               ## SO DO NOT ACCOUNT FOR THAT HERE
-
-
-                ## IF NOT REACTING TO MAST BUT COULD REACT TO TT, CHECK TT RATES
+                ## If control reactive to TT rates do a TT assessment:
                 if (params.threshold_TT < 1.0):
                     for count, (controlMask, startYear, revisit, controlIndicator, 
                         shp) in enumerate(rawdata.rodentControlList):
@@ -417,9 +394,10 @@ def runModel(rawdata, params=None, loopIter=0):
                         if not controlIndicator:
                             continue
                         ## TEST IF ALREADY SCHED TO DO CONTROL WITH PRESCRIBE OR MAST
-                        ## ASSESS IF NOTHING SCHED OR IF MONTH IS NOT TT CONTROL
-                        ## TT CONTROL MONTH SHOULD BE PRIORITISED OVER PRESCRIBED.
-                        no_TT_Test = mthlyCtrlSched[count] == rawdata.reactiveCtrlMth
+                        no_TT_Test = mthlyCtrlSched[count] >=0
+                        # ## ASSESS IF NOTHING SCHED OR IF MONTH IS NOT TT CONTROL
+                        # ## TT CONTROL MONTH SHOULD BE PRIORITISED OVER PRESCRIBED.
+                        # no_TT_Test = mthlyCtrlSched[count] == rawdata.reactiveCtrlMth
                         ## NO NEED TO ASSESS RODENTS IF ALREADY DOING CONTROL 
                         if no_TT_Test:
                             continue

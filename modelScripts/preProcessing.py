@@ -28,9 +28,9 @@ class PreyData(object):
     def __init__(self, params):
         self.params = params
         
-        self.seasAdjRes = np.genfromtxt(self.params.seasAdjResFile, delimiter=",",
-            names=True)
-
+        #self.seasAdjRes = np.genfromtxt(self.params.seasAdjResFile, delimiter=",",names=True)
+        (self.seasAdj, self.mastSeasAdj, self.crashSeasAdj) = self.readInSeasResourceArrays()
+          
 
         self.rodentGeoTrans, self.rodentNcols, self.rodentNrows, originalExtent = (
             self.rasterizeShape(self.params.extentShp, self.params.resolutions[0]))
@@ -90,9 +90,10 @@ class PreyData(object):
         preyKCorrMask = preyKCorrMask & tmpExtent
         del (tmpGeoTrans, tmpNcols, tmpNrows, tmpExtent)
 
-        # add the self.rodentMaxAltitude to the self.rodentExtentMask
+        # add the self.rodentMaxAltitude to the self.rodentExtentMask and kClasses
         self.rodentExtentMask[self.DEM > self.params.rodentMaxAltitude] = 0
-
+        self.kClasses[self.DEM > self.params.rodentMaxAltitude] = 0
+        
         ### AREAS TRAPPED IN RECENT TIMES -- at rodent resol
         self.islands = self.resampleRasterRodent(self.params.islands, 
                     self.params.resolutions[0],
@@ -146,9 +147,9 @@ class PreyData(object):
         ### MASK FOR CELLS THAT CAN MAST????
         self.mastingLU = rat.readColumn(kMapDS, "Masts") > 0
         ### 'CC' is the carrying capacity at per ha level.
-        self.paramRodentCCLU = rat.readColumn(kMapDS, "Rodent_CC")
-        self.paramRodentMastCCLU = rat.readColumn(kMapDS, "Rodent_MastCC")
-        self.paramRodentCrashCCLU = rat.readColumn(kMapDS, "Rodent_CrashCC")
+        # self.paramRodentCCLU = rat.readColumn(kMapDS, "Rodent_CC")
+        # self.paramRodentMastCCLU = rat.readColumn(kMapDS, "Rodent_MastCC")
+        # self.paramRodentCrashCCLU = rat.readColumn(kMapDS, "Rodent_CrashCC")
 
 
         # print('self.mastingLU', self.mastingLU, 'rodentCCLU', 
@@ -231,24 +232,24 @@ class PreyData(object):
                 fullPreyExt, self.params.resolutions[2], self.preyNcols, self.preyNrows)            
 
         
-        driver = gdal.GetDriverByName('HFA')
-        ds = driver.Create('pLeadDiePreAdult.img', self.preyNcols, self.preyNrows, 
-                1, gdal.GDT_Float32)
-        ds.SetProjection(NZTM_WKT)
-        ds.SetGeoTransform(self.preyGeoTrans)
-        band = ds.GetRasterBand(1)
-        band.WriteArray(self.pLeadDeath3D[0])
-        del ds
-
-        
-        driver = gdal.GetDriverByName('HFA')
-        ds = driver.Create('pLeadDieAdult.img', self.preyNcols, self.preyNrows, 
-                1, gdal.GDT_Float32)
-        ds.SetProjection(NZTM_WKT)
-        ds.SetGeoTransform(self.preyGeoTrans)
-        band = ds.GetRasterBand(1)
-        band.WriteArray(self.pLeadDeath3D[1])
-        del ds
+            driver = gdal.GetDriverByName('HFA')
+            ds = driver.Create('pLeadDiePreAdult.img', self.preyNcols, self.preyNrows, 
+                    1, gdal.GDT_Float32)
+            ds.SetProjection(NZTM_WKT)
+            ds.SetGeoTransform(self.preyGeoTrans)
+            band = ds.GetRasterBand(1)
+            band.WriteArray(self.pLeadDeath3D[0])
+            del ds
+    
+            
+            driver = gdal.GetDriverByName('HFA')
+            ds = driver.Create('pLeadDieAdult.img', self.preyNcols, self.preyNrows, 
+                    1, gdal.GDT_Float32)
+            ds.SetProjection(NZTM_WKT)
+            ds.SetGeoTransform(self.preyGeoTrans)
+            band = ds.GetRasterBand(1)
+            band.WriteArray(self.pLeadDeath3D[1])
+            del ds
 
 
 
@@ -288,9 +289,39 @@ class PreyData(object):
         else:
             self.reactiveCtrlMth = sumReactMth
             self.jumpYearCtrl = False
-        self.prescrptCtrlMth = self.reactiveCtrlMth
+        #self.prescrptCtrlMth = self.reactiveCtrlMth  now set in params and allowed to be different
 
+    def readInSeasResourceArrays(self):
+        """
+        Reads in resource file returning arrays for each of non mast, mast, crash
+        The arrays are vegtype(0-5) * mths (0-11) shape
+         
+        """
+        mcd={}
+        with open(self.params.seasAdjResFile, 'r', newline='') as csvf:
+            content = csv.reader(csvf, delimiter=",")
+            next(content) #skip header
+            for row in content:
+                if not row[0] in mcd:
+                    mcd[row[0]]=[]
+                for value in row[2:]:
+                    mcd[row[0]].append(value);  
+        #convert values to float          
+        res = {}
+        for key, value in mcd.items():
+            res[key] = [float(item) for item in value]
+        
+        #extract values to array: rows=vegtype, cols=mth
+        seasAdj = np.array(res['nonmast'])
+        seasAdj = np.reshape(seasAdj,(7,12))    
+        mastSeasAdj = np.array(res['mast'])
+        mastSeasAdj = np.reshape(mastSeasAdj,(7,12))    
+        crashSeasAdj = np.array(res['postmast'])
+        crashSeasAdj = np.reshape(crashSeasAdj,(7,12))    
+                
+        return(seasAdj, mastSeasAdj, crashSeasAdj)
 
+    
     def rasterizeShape(self, inshape, resolution, extent=None):
         """
         Rasterize a given shapefile mask at the chosen resolution. 

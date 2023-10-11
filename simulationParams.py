@@ -71,9 +71,11 @@ class PreyParams(object):
 
 
 #        self.kClasses = os.path.join(self.inputDataPath, 'seed_Kea2.img')    
-        self.kClasses = os.path.join(self.inputDataPath, 'test_resource_Kea.grd')    
+#        self.kClasses = os.path.join(self.inputDataPath, 'test_resource_Kea.grd')    
 #        self.kClasses = os.path.join(self.inputDataPath, 'seed_KeaTemp.img')    
-#        self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummyNewK2.grd')    
+        self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummyNewK2.grd')    
+#        self.kClasses = os.path.join(self.inputDataPath, 'resource_Kea.img')    
+#        self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummy.grd')    
 
 
         ### Area trapped in recent times.

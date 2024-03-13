@@ -366,7 +366,9 @@ def runModel(rawdata, params=None, loopIter=0):
              # print('t since:', timeSinceCtrl[1,15:25]) 
             # print('kvals b4:', rodent_kMth[1,15:25]) 
             #bounce adjustment shifted to before mast and crash adjustments are made so that these override the rat bounce effect
-            rodent_kMth = np.where(timeSinceCtrl<params.rodentBouncePeriod,params.rodentBounceMult*rodent_kMth ,rodent_kMth)
+            rodent_kMth = np.where(timeSinceCtrl<params.rodentBouncePeriod,
+                                   rodent_kMth*params.rodentBounceMult*np.exp(params.rodentBounceDecay*timeSinceCtrl),
+                                   rodent_kMth)
             # print('kvals after:', rodent_kMth[1,15:25])
             if mastT_1:
                 rodent_kMth = np.where(oldMastingMask==True,rawdata.crashSeasAdj[rawdata.kClasses,mth],rodent_kMth)
@@ -965,6 +967,7 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
     #     print('num <=0.5', np.sum(rodentSwitchMult_t==3), 'num >0.5', np.sum(rodentSwitchMult_t==1))
     mastEff_t = mastMsk[mask]
     mastEff_t = np.where(mastEff_t>0,mastEff_t*params.preyMastMultFec,1)
+    mastInd = np.where(mastMsk[mask]>0,1,0)
     
     ## PREY POPN DYNAMICS        
     # pSurv = params.preySurv[0] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
@@ -1027,7 +1030,6 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
 
     prey0_t = prey0_t + rng.poisson(prey3_t * recRate) #fledglings get added to zero age class 
     preyN_t = prey0_t + prey1_t + prey2_t + prey3_t   #sum to get total popn
-#    preyN_t = prey0_t + prey1_t + prey2_t + prey3_t + prey4_t  #sum to get total popn
 
     #shouldn't need to do this if drawing from binomial and poisson??
     ## ADD STOCHASTICITY GAUSSIAN PROCESS
@@ -1043,7 +1045,6 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
     prey_raster[1,mask]=prey1_t
     prey_raster[2,mask]=prey2_t
     prey_raster[3,mask]=prey3_t
-#    prey_raster[4,mask]=prey4_t
     prey_raster[4,mask]=preyN_t
     prey_raster[:,~mask]=0
     

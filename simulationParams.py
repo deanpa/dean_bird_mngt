@@ -23,7 +23,7 @@ class PreyParams(object):
         # self.years = np.arange(6)
 
         ### SET ITERATIONS
-        self.iter = 50
+        self.iter = 100
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
         self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
@@ -62,44 +62,44 @@ class PreyParams(object):
         # self.AOIShp = os.path.join(self.inputDataPath, 'Kea_Model_Region3.shp')
         ##########################################
         ## TEST CONTROL ##########################
-        self.extentShp = os.path.join(self.inputDataPath, 'test_fullExtent.shp')
-        self.AOIShp = os.path.join(self.inputDataPath, 'test_AOI.shp')
-        # self.extentShp = os.path.join(self.inputDataPath, 'extentDummy.shp')
-        # self.AOIShp = os.path.join(self.inputDataPath, 'AOIDummy.shp')        
-        ##########################################
+        # self.extentShp = os.path.join(self.inputDataPath, 'test_fullExtent.shp')
+        # self.AOIShp = os.path.join(self.inputDataPath, 'test_AOI.shp')
+        self.extentShp = os.path.join(self.inputDataPath, 'extentDummy.shp')
+        self.AOIShp = os.path.join(self.inputDataPath, 'AOIDummy.shp')        
+        #########################################
         ##########################################
 
 
 #        self.kClasses = os.path.join(self.inputDataPath, 'seed_Kea2.img')    
-        self.kClasses = os.path.join(self.inputDataPath, 'test_resource_Kea.grd')    
+        # self.kClasses = os.path.join(self.inputDataPath, 'test_resource_Kea.grd')    
 #        self.kClasses = os.path.join(self.inputDataPath, 'seed_KeaTemp.img')    
-#        self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummyNewK2.grd')    
+        # self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummyNewK.grd')    
 #        self.kClasses = os.path.join(self.inputDataPath, 'resource_Kea.img')    
-#        self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummy.grd')    
+        self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummy.grd')    
 
 
         ### Area trapped in recent times.
-        self.islands = os.path.join(self.inputDataPath, 'stoatTrappingRaster.img')
-        self.DEM = os.path.join(self.inputDataPath, 'dem200_kea.img')
-        self.preyHabitatShp = os.path.join(self.inputDataPath, 'Kea_Habitat.shp')
-        # self.islands = os.path.join(self.inputDataPath, 'trapsDummy.tif')
-        # self.DEM = os.path.join(self.inputDataPath, 'DEMDummy.tif')
-        # self.preyHabitatShp = os.path.join(self.inputDataPath, 'KeaHabDummy.shp')
+        # self.islands = os.path.join(self.inputDataPath, 'stoatTrappingRaster.img')
+        # self.DEM = os.path.join(self.inputDataPath, 'dem200_kea.img')
+        # self.preyHabitatShp = os.path.join(self.inputDataPath, 'Kea_Habitat.shp')
+        self.islands = os.path.join(self.inputDataPath, 'trapsDummy.tif')
+        self.DEM = os.path.join(self.inputDataPath, 'DEMDummy.tif')
+        self.preyHabitatShp = os.path.join(self.inputDataPath, 'KeaHabDummy.shp')
 
         ##########################################
         ## TEST CONTROL ##########################
 #        self.controlFile = os.path.join(self.inputDataPath, 'testControl.csv') 
-        self.controlFile = os.path.join(self.inputDataPath, 'noCtrlTestControl.csv') 
-#        self.controlFile = os.path.join(self.inputDataPath, 'noCtrlAllMZsControl.csv') 
-#        self.controlFile = os.path.join(self.inputDataPath, 'oneoffTestControl.csv') 
+        # self.controlFile = os.path.join(self.inputDataPath, 'noCtrlTestControl.csv') 
+        # self.controlFile = os.path.join(self.inputDataPath, 'noCtrlAllMZsControl.csv') 
+        # self.controlFile = os.path.join(self.inputDataPath, 'oneoffTestControl.csv') 
 #        self.controlFile = os.path.join(self.inputDataPath, '3yrlyTestControl.csv') 
 #        self.controlFile = os.path.join(self.inputDataPath, '3yrlyMZ3Control.csv') 
 #        self.controlFile = os.path.join(self.inputDataPath, '3yrlyMZ4Control.csv') 
 #        self.controlFile = os.path.join(self.inputDataPath, 'reactiveTestControl.csv') 
 #        self.controlFile = os.path.join(self.inputDataPath, 'reactiveMZ3Control.csv') 
 #        self.controlFile = os.path.join(self.inputDataPath, 'reactiveMZ4Control.csv') 
-#        self.controlFile = os.path.join(self.inputDataPath, 'noCtrlDummy.csv') 
-#        self.controlFile = os.path.join(self.inputDataPath, 'oneOffCtrlDummy.csv') 
+        self.controlFile = os.path.join(self.inputDataPath, 'noCtrlDummy.csv') 
+        # self.controlFile = os.path.join(self.inputDataPath, 'oneOffCtrlDummy.csv') 
         #self.controlFile = os.path.join(self.inputDataPath, 'dblNovCtrlDummy.csv') 
         # self.controlFile = os.path.join(self.inputDataPath, '3yrlyCtrlDummy.csv') 
 
@@ -111,9 +111,9 @@ class PreyParams(object):
 
         ## LEAD POINT DATA
         # self.leadPointData = os.path.join(self.inputDataPath, 'leadPtsRegion3.csv')
-        self.leadPointData = os.path.join(self.inputDataPath, 'test_LeadPoints.csv')
+        #self.leadPointData = os.path.join(self.inputDataPath, 'test_LeadPoints.csv')
         # self.leadPointData = os.path.join(self.inputDataPath, 'dummyLeadPoints.csv')
-#        self.leadPointData = None
+        self.leadPointData = None
 
 
         self.seasAdjResFile = os.path.join(self.inputDataPath, 'testRes2.csv')
@@ -133,10 +133,10 @@ class PreyParams(object):
 
         ##Control parameters
         ##Mast-reactive control: proportion of zone in mast required for reactive control and mth control applied
-        self.reactivePropMgmtMasting = 0.4   #0.5 # set > 0 to enable
-        self.mastCtrlMth = self.monthDict['Nov']   
+        self.reactivePropMgmtMasting = 0.5   #0.5 # set > 0 to enable
+        self.mastCtrlMth = self.monthDict['Jul']   
         ##Tracking Tunnel reactive control:
-        self.threshold_TT = 0.25              #(1 = no reac) Thres prop of TT with detections
+        self.threshold_TT = 1              #(1 = no reac) Thres prop of TT with detections
         self.reactiveAssessMth = self.monthDict['Jan']  #what month to do a mast prop or tracking tunnel assessment, mth7=Apr
         self.reactiveCtrlDelay = 2  #delay in months from TT assessment to implementation of control
         #in preProcessing, getReactCtrlMth fn calcs reactiveCtrlMth and if jumps year line (Sept) due to delay
@@ -182,9 +182,10 @@ class PreyParams(object):
         self.rodentMaxAltitude = 1000.0  # metres
         
         ##rat bounce parameters###
-        self.rodentBouncePeriod = 28  #28 in months - time since control within which K/resources are multiplied to drive rat bounce
-        self.rodentBounceMult = 1.5  #1.5 how much to multiply resources/Kmap by to drive rat bounce
-
+        self.rodentBouncePeriod = 48  #28 in months - time since control within which K/resources are multiplied to drive rat bounce
+        self.rodentBounceMult = 2.0  #1.5 how much to multiply resources/Kmap by to drive rat bounce, set to 1 to turn off rat bounce
+        self.rodentBounceDecay = np.log(1/self.rodentBounceMult)/self.rodentBouncePeriod  #decay rate of bounce effect > mult goes to 1 at end of bounce period
+        
         ######## TRACKING TUNNEL PARAMETERS
         self.g0_TT = 0.02                   # Tracking tunnel g0
         self.sigma_TT = 22.0                # Rat sigma

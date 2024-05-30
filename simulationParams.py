@@ -224,43 +224,64 @@ class PreyParams(object):
                                           #used to initialise kea densities (@t=0)
         #self.preyPsi = 0.7  # Eqn 32
         self.preyPsiStoat = 0.05  #  Effect of stoats on kea recruitment
-        self.preyEtaStoatJuv = 0.08  #Effect of stoats on juvenile (age class 0) on kea survival
-        self.preyEtaStoatAd = 0.02  #Effect of stoats on adult (age class 1-4) on kea survival
+        self.preyEtaStoat = np.array([0.1, 0.08, 0.06, 0.02]) #Effect of stoats on kea survival in each age class (0-3)
+        # self.preyEtaStoatJuv = 0.08  #Effect of stoats on juvenile (age class 0) on kea survival
+        # self.preyEtaStoatAd = 0.02  #Effect of stoats on adult (age class 1-4) on kea survival
         self.preyPsiRodent = 0.0  #Effect of rodents on kea recruitment
-        self.preyEtaRodentJuv = 0.0  #Effect of rodents on juvenile (age class 0) on kea survival
-        self.preyEtaRodentAd = 0.0  #Effect of rodents on adult (age class 1-4) on kea survival
-        self.competEffect = 0.0  #not used anymore?
-        self.preyPopSD = .12     #not used anymore? 
+        self.preyEtaRodent = np.array([0.0, 0.0, 0.0, 0.0]) #Effect of rodents on kea survival in each age class (0-3), none here
+        # self.preyEtaRodentJuv = 0.0  #Effect of rodents on juvenile (age class 0) on kea survival
+        # self.preyEtaRodentAd = 0.0  #Effect of rodents on adult (age class 1-4) on kea survival
+        # self.competEffect = 0.0  #not used anymore?
+        # self.preyPopSD = .12     #not used anymore? 
         
         self.rodentThresh = 0.5 #0.5 Threshold rat density per ha at which stoat prey switching kicks in
         self.stoatMult = 3 #3 Multiplier for stoat offtake of prey once prey switch kicks in
 
-        self.preySurv = np.array([0.982, 0.992, 0.994, 0.998]) #mthly max surv rats for age class 0-4
-#        self.preySurv = np.array([0.982,0.992,0.994,0.997,0.998]) #mthly max surv rats for age class 0-4
+        #self.preySurv = np.array([0.982, 0.992, 0.994, 0.998]) #mthly max surv prey for age class 0-4
+        self.preySurv = np.array([[0.982, 0.982],  #annual survival for each age class
+                                 [0.992,  0.992],  #dim 0 = age class 0-3, dim 1 = nonmast, mast Surv
+                                 [0.994,  0.994],  #here no difference between nonmast and mast years
+                                 [0.998,  0.998]]) #adults potentially very high survival
         self.preySurvDDcoef = 110.0 #this is effectively a carrying capacity (per 1km2) for Kea survival, 
                                     #since so large here effectively no density dependence in surv
         #self.preyProd = 0.1067
-        preyFec= 2  #num chicks fledged per clutch
-        self.preyIRR = np.log(1+preyFec/2) #convert to annual Instantaneous Rec Rate  
-                        #only have one clutch per season will try again later if lose first clutch 
-                        #this prod is spread out across season by preySeasRec param                 
-        self.preySeasRec = np.array([0,0,0,0.3,0.4,0.3,0,0,0,0,0,0]) 
-                        #egg laying pks Aug-Oct theefore recruitment peaks (+4mths=
-                        #incubation 22-24 days + 13 weeks in nest b4 fledge)in Dec-Feb
-        self.preySeasDisp = np.array([0,0,0,0,0,0,1,0,0,0,0,0], dtype=bool) 
-                        #dispersasl in autumn Mar after recruit.
-                        #oh what age class does dispersal act on? <<<<chk this - should be juvs[0]
-        self.preyMastMultFec = 1 #multiplies up recruitment rate if masting is occuring #not needed for kea but will be for kaka
+        # preyFec= 2  #num chicks fledged per clutch
+        # self.preyIRR = np.log(1+preyFec/2) #convert to annual Instantaneous Rec Rate  
+        #                 #only have one clutch per season will try again later if lose first clutch 
+        #                 #this prod is spread out across season by preySeasRec param                 
+        self.preyFec = np.array([[0.0, 0.0],   #number of chicks fledged per breeding female per annum =2*0.5 (assumed even sex ratio)
+                                 [0.0,  0.0],  #dim 0 = age class 0-3, dim 1 = nonmast, mast Fec 
+                                 [0.0,  0.0],  #here no difference between nonmast and mast years
+                                 [1.0, 1.0]])  #only adults >3 years breed with 1 female chicks per female per annum
+        #self.preySeasRec = np.array([0,0,0,0.3,0.4,0.3,0,0,0,0,0,0]) 
+        SeasRec = np.array([[0,   0.0], #how recruitment is spread out across season here peaks in Jan
+                            [0.0, 0.0], #dim 0 = mth 0-11, dim 1 = nonmast, mast rec
+                            [0.0, 0.0], #here no difference between nonmast and mast years
+                            [0.3, 0.3], #egg laying pks Aug-Oct theefore recruitment peaks (+4mths=Dec-Feb)
+                            [0.4, 0.4],
+                            [0.3, 0.3],
+                            [0,   0.0],
+                            [0,   0],
+                            [0,   0],
+                            [0,   0],
+                            [0,   0],
+                            [0,   0]])         
+        self.preySeasRec = SeasRec/np.sum(SeasRec,0)  #normalise to make sure adds to 1  
+        self.preyPropBreedpa = np.array([1.0, 1.0])   #added in to account for higher prop breeding in mast year (here no diff)  
+        #self.preyMastMultFec = 1 #multiplies up recruitment rate if masting is occuring #not needed for kea but will be for kaka
         self.preyRecDDcoef = 10.00  #this is effectively a carrying capacity (per 1km2) for Kea recruitment
         self.preyTheta = 2          #theta is how density dependence scales if <1 dd kicks in early, 
                                     #if >1 rate inc remains close to rm until K nearly reached
+        self.preySeasDisp = np.array([0,0,0,0,0,0,1,0,0,0,0,0], dtype=bool) 
+                        #dispersasl in autumn Mar after last recruitment 
+                        #oh what age class does dispersal act on? <<<<chk this - should be juvs[0]
         self.preyInitAgeStr = np.array([0.3, 0.15, 0.15, 0.4], dtype=float)
 #        self.preyInitAgeStr = np.array([0.3,0.1,0.1,0.1,0.4], dtype=float)
         self.preyMaxAltitude = 2000.0  # metres
         ## PREY SIGMA FOR HOME RANGE STANDARD DEVIATION OF BIVARIATE NORMAL KERNEL
         self.preySigma = 5000
         self.pLeadMax = {'preAdult': 0.10, 'adult' : 0.07}
-        
+        np.array([1.0, 1.0])
 
         ## IMMIGRATION AND EMIGRATION PARAMETERS
         self.gammaProbEmigrate = np.array([0.1, 0.2, 0.4])   # gamma for rodent, stoats, 

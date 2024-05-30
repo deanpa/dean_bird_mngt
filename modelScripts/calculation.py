@@ -944,109 +944,136 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
 ## LEAD POISONING EFFECT ON SURVIVAL
     if pLeadDeath3D is not None:
         pLead_t = pLeadDeath3D[:, mask]
-
-    prey0_t = prey_raster[0,mask]
-    prey1_t = prey_raster[1,mask]
-    prey2_t = prey_raster[2,mask]
-    prey3_t = prey_raster[3,mask]
-#    prey4_t = prey_raster[4,mask]
-    preyN_t = prey_raster[4,mask]
-#    preyN_t = prey_raster[5,mask]
+    
+    prey_t = prey_raster[:,mask]
     stoat_t = stoat_raster[mask]
-#   stoat_t = stoat_raster_prey[mask]
     rodent_t = rodent_raster_prey[mask]
     rodentSwitchMult_t = np.where(rodent_t<=params.rodentThresh,params.stoatMult,1)
-    #not sure why so many 3s in print output yet summary file "monthlyDensities.csv" doesn't show this???
-    #oh is prob cos monthlyDensities are not per ha - yes they are - maybe something to chk... 
-    #rodent raster is all integers?! understandable when at rodent resolution but thought 
-    #would be diff for stoat or pre resol rodent_raster_stoat cos averages???
-    # if (mth==1):
-    #     print(np.array2string(rodent_t[100:115], precision=2))
-    #     print(np.array2string(rodentSwitchMult_t[100:115], precision=2))
-    #     print('num <=0.5', np.sum(rodent_t <=0.5), 'num >0.5', np.sum(rodent_t >0.5))
-    #     print('num <=0.5', np.sum(rodentSwitchMult_t==3), 'num >0.5', np.sum(rodentSwitchMult_t==1))
-    mastEff_t = mastMsk[mask]
-    mastEff_t = np.where(mastEff_t>0,mastEff_t*params.preyMastMultFec,1)
     mastInd = np.where(mastMsk[mask]>0,1,0)
     
-    ## PREY POPN DYNAMICS        
-    # pSurv = params.preySurv[0] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-    # prey0_t = rng.binomial(prey0_t, pSurv)
-    # pSurv = params.preySurv[1] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-    # prey1_t = rng.binomial(prey1_t, pSurv)
-    # pSurv = params.preySurv[2] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-    # prey2_t = rng.binomial(prey2_t, pSurv)
-    # pSurv = params.preySurv[3] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-    # prey3_t = rng.binomial(prey3_t, pSurv)
-    # pSurv = params.preySurv[4] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-    # prey4_t = rng.binomial(prey4_t, pSurv)
-    # seasRec = params.preySeasRec[mth]
-    # recRate = (seasRec * params.preyProd *np.exp(-((preyN_t/(preyRecDecay_1D))**params.preyTheta))
-    #            * np.exp(-params.preyPsi * stoat_t))
-    # prey0_t = prey0_t + rng.poisson(prey4_t * recRate) #fledglings get added to zero age class 
-    # preyN_t = prey0_t + prey1_t + prey2_t + prey3_t + prey4_t  #sum to get total popn
+    for x in range(4):
+          pSurv = (params.preySurv[x,mastInd] * np.exp(-((prey_t[4,:,:]/(preySurvDecay_1D))**params.preyTheta)) * 
+                   np.exp(-params.preyEtaStoat[x] * stoat_t * rodentSwitchMult_t) * 
+                   np.exp(-params.preyEtaRodent[x] * rodent_t)) 
+          if pLeadDeath3D is not None:
+              if x<3:
+                  pSurv = pSurv * (1.0 - pLead_t[0])
+              else:
+                  pSurv = pSurv * (1.0 - pLead_t[1])
+          prey_t[x,:,:]=rng.binomial(prey_t[x,:,:],pSurv)
+          
+    
+    for x in range(1,4):
+          recRate =  (params.preySeasRec[mth,mastInd]*params.preyPropBreedpa[mastInd]*params.preyFec[x,mastInd] * 
+                      np.exp(-((prey_t[4,:,:]/(preyRecDecay_1D))**params.preyTheta)) * 
+                      np.exp(-params.preyPsiStoat * stoat_t) *
+                      np.exp(-params.preyPsiRodent * rodent_t))         
+          prey_t[0,:,:]=prey_t[0,:,:]+rng.poisson(prey_t[x,:,:]*recRate)  #new recruits added to zero age class            
+    
+    prey_t[4,:,:]=np.sum(prey_t[:4,:,:],axis=0)  #update total pop size
+    
+#     prey0_t = prey_raster[0,mask]
+#     prey1_t = prey_raster[1,mask]
+#     prey2_t = prey_raster[2,mask]
+#     prey3_t = prey_raster[3,mask]
+# #    prey4_t = prey_raster[4,mask]
+#     preyN_t = prey_raster[4,mask]
+# #    preyN_t = prey_raster[5,mask]
+#     stoat_t = stoat_raster[mask]
+# #   stoat_t = stoat_raster_prey[mask]
+#     rodent_t = rodent_raster_prey[mask]
+#     rodentSwitchMult_t = np.where(rodent_t<=params.rodentThresh,params.stoatMult,1)
+#     #not sure why so many 3s in print output yet summary file "monthlyDensities.csv" doesn't show this???
+#     #oh is prob cos monthlyDensities are not per ha - yes they are - maybe something to chk... 
+#     #rodent raster is all integers?! understandable when at rodent resolution but thought 
+#     #would be diff for stoat or pre resol rodent_raster_stoat cos averages???
+#     # if (mth==1):
+#     #     print(np.array2string(rodent_t[100:115], precision=2))
+#     #     print(np.array2string(rodentSwitchMult_t[100:115], precision=2))
+#     #     print('num <=0.5', np.sum(rodent_t <=0.5), 'num >0.5', np.sum(rodent_t >0.5))
+#     #     print('num <=0.5', np.sum(rodentSwitchMult_t==3), 'num >0.5', np.sum(rodentSwitchMult_t==1))
+#     mastEff_t = mastMsk[mask]
+#     mastEff_t = np.where(mastEff_t>0,mastEff_t*params.preyMastMultFec,1)
+    
+    
+#     ## PREY POPN DYNAMICS        
+#     # pSurv = params.preySurv[0] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+#     # prey0_t = rng.binomial(prey0_t, pSurv)
+#     # pSurv = params.preySurv[1] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+#     # prey1_t = rng.binomial(prey1_t, pSurv)
+#     # pSurv = params.preySurv[2] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+#     # prey2_t = rng.binomial(prey2_t, pSurv)
+#     # pSurv = params.preySurv[3] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+#     # prey3_t = rng.binomial(prey3_t, pSurv)
+#     # pSurv = params.preySurv[4] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+#     # prey4_t = rng.binomial(prey4_t, pSurv)
+#     # seasRec = params.preySeasRec[mth]
+#     # recRate = (seasRec * params.preyProd *np.exp(-((preyN_t/(preyRecDecay_1D))**params.preyTheta))
+#     #            * np.exp(-params.preyPsi * stoat_t))
+#     # prey0_t = prey0_t + rng.poisson(prey4_t * recRate) #fledglings get added to zero age class 
+#     # preyN_t = prey0_t + prey1_t + prey2_t + prey3_t + prey4_t  #sum to get total popn
  
 
-    ## YEAR 0-1
-    pSurv = (params.preySurv[0] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-         * np.exp(-params.preyEtaStoatJuv * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentJuv * rodent_t))
-    ## LEAD POISONING EFFECT ON SURVIVAL
-    if pLeadDeath3D is not None:
-        pSurv = pSurv * (1.0 - pLead_t[0])
-    prey0_t = rng.binomial(prey0_t, pSurv)
+#     ## YEAR 0-1
+#     pSurv = (params.preySurv[0] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+#          * np.exp(-params.preyEtaStoatJuv * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentJuv * rodent_t))
+#     ## LEAD POISONING EFFECT ON SURVIVAL
+#     if pLeadDeath3D is not None:
+#         pSurv = pSurv * (1.0 - pLead_t[0])
+#     prey0_t = rng.binomial(prey0_t, pSurv)
 
-    ## YEAR 1-2
-    pSurv = (params.preySurv[1] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-         * np.exp(-params.preyEtaStoatAd * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
-    ## LEAD POISONING EFFECT ON SURVIVAL
-    if pLeadDeath3D is not None:
-        pSurv = pSurv * (1.0 - pLead_t[0])
-    prey1_t = rng.binomial(prey1_t, pSurv)
+#     ## YEAR 1-2
+#     pSurv = (params.preySurv[1] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+#          * np.exp(-params.preyEtaStoatAd * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
+#     ## LEAD POISONING EFFECT ON SURVIVAL
+#     if pLeadDeath3D is not None:
+#         pSurv = pSurv * (1.0 - pLead_t[0])
+#     prey1_t = rng.binomial(prey1_t, pSurv)
 
-    ## YEAR 2-3
-    pSurv = (params.preySurv[2] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-         * np.exp(-params.preyEtaStoatAd * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
-    ## LEAD POISONING EFFECT ON SURVIVAL
-    if pLeadDeath3D is not None:
-        pSurv = pSurv * (1.0 - pLead_t[0])
-    prey2_t = rng.binomial(prey2_t, pSurv)
+#     ## YEAR 2-3
+#     pSurv = (params.preySurv[2] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+#          * np.exp(-params.preyEtaStoatAd * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
+#     ## LEAD POISONING EFFECT ON SURVIVAL
+#     if pLeadDeath3D is not None:
+#         pSurv = pSurv * (1.0 - pLead_t[0])
+#     prey2_t = rng.binomial(prey2_t, pSurv)
 
-    ## YEAR > 3
-    pSurv = (params.preySurv[3] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-         * np.exp(-params.preyEtaStoatAd * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
-    ## LEAD POISONING EFFECT ON SURVIVAL
-    if pLeadDeath3D is not None:
-        pSurv = pSurv * (1.0 - pLead_t[1])
-    prey3_t = rng.binomial(prey3_t, pSurv)
+#     ## YEAR > 3
+#     pSurv = (params.preySurv[3] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+#          * np.exp(-params.preyEtaStoatAd * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
+#     ## LEAD POISONING EFFECT ON SURVIVAL
+#     if pLeadDeath3D is not None:
+#         pSurv = pSurv * (1.0 - pLead_t[1])
+#     prey3_t = rng.binomial(prey3_t, pSurv)
 
-#    pSurv = (params.preySurv[4] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
-#         * np.exp(-params.preyEtaStoatAd * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
-#    prey4_t = rng.binomial(prey4_t, pSurv)
-    seasRec = params.preySeasRec[mth]
-    recRate = ((np.exp(seasRec * params.preyIRR * mastEff_t)-1) *
-               np.exp(-((preyN_t/(preyRecDecay_1D))**params.preyTheta)) * 
-               np.exp(-params.preyPsiStoat * stoat_t) *
-               np.exp(-params.preyPsiRodent * rodent_t))
+# #    pSurv = (params.preySurv[4] * np.exp(-((preyN_t/(preySurvDecay_1D))**params.preyTheta))
+# #         * np.exp(-params.preyEtaStoatAd * stoat_t * rodentSwitchMult_t)* np.exp(-params.preyEtaRodentAd * rodent_t))    
+# #    prey4_t = rng.binomial(prey4_t, pSurv)
+#     seasRec = params.preySeasRec[mth]
+#     recRate = ((np.exp(seasRec * params.preyIRR * mastEff_t)-1) *
+#                np.exp(-((preyN_t/(preyRecDecay_1D))**params.preyTheta)) * 
+#                np.exp(-params.preyPsiStoat * stoat_t) *
+#                np.exp(-params.preyPsiRodent * rodent_t))
 
-    prey0_t = prey0_t + rng.poisson(prey3_t * recRate) #fledglings get added to zero age class 
-    preyN_t = prey0_t + prey1_t + prey2_t + prey3_t   #sum to get total popn
+#     prey0_t = prey0_t + rng.poisson(prey3_t * recRate) #fledglings get added to zero age class 
+#     preyN_t = prey0_t + prey1_t + prey2_t + prey3_t   #sum to get total popn
 
-    #shouldn't need to do this if drawing from binomial and poisson??
-    ## ADD STOCHASTICITY GAUSSIAN PROCESS
-    # # Eqn. 38
-    # prey_t = np.exp(rng.normal(np.log(prey_t + 1.0), 
-    #             params.preyPopSD)) - 1.0
-    # ## FIX UP INAPPROPRIATE VALUES
-    # prey_raster[mask] = np.round(prey_t, 0).astype(int)
-    # prey_raster = np.where(prey_raster < 0, 0, prey_raster)
-    # prey_raster[~mask] = 0
+#     #shouldn't need to do this if drawing from binomial and poisson??
+#     ## ADD STOCHASTICITY GAUSSIAN PROCESS
+#     # # Eqn. 38
+#     # prey_t = np.exp(rng.normal(np.log(prey_t + 1.0), 
+#     #             params.preyPopSD)) - 1.0
+#     # ## FIX UP INAPPROPRIATE VALUES
+#     # prey_raster[mask] = np.round(prey_t, 0).astype(int)
+#     # prey_raster = np.where(prey_raster < 0, 0, prey_raster)
+#     # prey_raster[~mask] = 0
     
-    prey_raster[0,mask]=prey0_t
-    prey_raster[1,mask]=prey1_t
-    prey_raster[2,mask]=prey2_t
-    prey_raster[3,mask]=prey3_t
-    prey_raster[4,mask]=preyN_t
-    prey_raster[:,~mask]=0
+#     prey_raster[0,mask]=prey0_t
+#     prey_raster[1,mask]=prey1_t
+#     prey_raster[2,mask]=prey2_t
+#     prey_raster[3,mask]=prey3_t
+#     prey_raster[4,mask]=preyN_t
+#     prey_raster[:,~mask]=0
     
     # ## RETURN PREY RASTER
     return(prey_raster)

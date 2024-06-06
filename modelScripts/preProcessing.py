@@ -262,7 +262,8 @@ class PreyData(object):
         if self.params.leadPointData is not None:
             self.doLeadPoisoning = True        
             leadPtsTmp = np.genfromtxt(self.params.leadPointData, delimiter=",", names=True,
-                dtype=['S10', 'f8', 'f8'])
+                dtype=['f8', 'f8'])
+#                dtype=['S10', 'f8', 'f8'])
             xx = leadPtsTmp['xcoord']
             yy = leadPtsTmp['ycoord']
             self.nLeadPts = len(xx)

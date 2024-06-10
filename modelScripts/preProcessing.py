@@ -9,7 +9,7 @@ ogr.UseExceptions()
 from osgeo import gdal
 gdal.UseExceptions()
 from rios import rat
-from numba import jit
+from numba import njit
 
 COMPRESSED_HFA = ['COMPRESSED=YES']
 
@@ -263,7 +263,8 @@ class PreyData(object):
         if self.params.leadPointData is not None:
             self.doLeadPoisoning = True        
             leadPtsTmp = np.genfromtxt(self.params.leadPointData, delimiter=",", names=True,
-                dtype=['S10', 'f8', 'f8'])
+                dtype=['f8', 'f8'])
+#                dtype=['S10', 'f8', 'f8'])
             xx = leadPtsTmp['xcoord']
             yy = leadPtsTmp['ycoord']
             self.nLeadPts = len(xx)
@@ -624,7 +625,7 @@ class PreyData(object):
         fileobj.close()
         return data
 
-@jit
+@njit
 def scalePreyMask(finestResol, preyResol, preyNcols, preyNrows,
         DEM, preyKCorrMask, preyMaxElev):
     """
@@ -688,7 +689,7 @@ def scaleStoatMask(rodentResol, stoatResol, stoatNcols, stoatNrows,
     return(stoatExtentMask, stoatPercentArea)
 
 
-@jit(nopython=True)
+@njit
 def getPreyKMap(preyNcols, preyNrows, preyCorrectionK,
         preyExtentMask, preySurv, preySurvDDcoef, preyRecDDcoef, preyMaxFec, preyTheta):
     """
@@ -712,7 +713,7 @@ def getPreyKMap(preyNcols, preyNrows, preyCorrectionK,
     return(prey_KMap)
 
 
-@jit
+@njit
 def makeProbLeadDeath(pLeadDeath3D, preyExtentMask, preAdultMonthPLead, adultMonthPLead, 
         preySigma, nLeadPts, leadPoints, fullExtTmp, resol, preyNcols, preyNrows):
     """

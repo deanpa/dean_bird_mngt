@@ -76,9 +76,9 @@ def runModel(rawdata, params=None, loopIter=0):
     if loopIter == 0:
         rodentShp = np.shape(rawdata.rodentExtentMask)
         results.popAllYears_3D = {'MastT': np.zeros((nYears, rodentShp[0], rodentShp[1]), 
-                                        dtype = np.bool),
+                                        dtype = bool),
                       'ControlT': np.zeros((nYears, rodentShp[0], rodentShp[1]), 
-                                        dtype = np.bool),     
+                                        dtype = bool),     
                       'rodentDensity': np.zeros((nYears, rodentShp[0], rodentShp[1]), 
                                         dtype = float),
                       'stoatDensity': np.zeros((nYears, stoatShp[0], stoatShp[1]), 
@@ -259,7 +259,7 @@ def runModel(rawdata, params=None, loopIter=0):
 
     # set initial no mast in year t-1
     mastT_1 = False
-    oldMastingMask = np.zeros_like(beechMask, dtype=np.bool) 
+    oldMastingMask = np.zeros_like(beechMask, dtype=bool) 
     ## COLUMN 0 IS FOR CURRENT YEAR, COLUMN 1 IS FOR T-1
     propControlMaskMasting = np.zeros(nControlAreas, dtype=float) 
 #    propControlMaskMasting = np.zeros((nControlAreas,2), dtype=float) 
@@ -279,7 +279,7 @@ def runModel(rawdata, params=None, loopIter=0):
 
         #reactiveControlMask = None # nothing by default
 
-        mastingMask  = np.zeros_like(beechMask, dtype=np.bool)
+        mastingMask  = np.zeros_like(beechMask, dtype=bool)
         preyMastingMask = np.zeros_like(prey_raster[0,0:,0:], dtype=float)
 
         ## EMPTY OBJECT FOR STORING CONTROL MASK FOR ALL YEARS FOR RESULTS IN LOOP 0

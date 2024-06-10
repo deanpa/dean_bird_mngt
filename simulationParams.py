@@ -122,10 +122,11 @@ class PreyParams(object):
         self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
 
         ## LEAD POINT DATA
+        self.leadPointData = os.path.join(self.inputDataPath, 'leadHutsVillages.csv')
 #        self.leadPointData = os.path.join(self.inputDataPath, 'leadPtsRegion3.csv')
         #self.leadPointData = os.path.join(self.inputDataPath, 'test_LeadPoints.csv')
         # self.leadPointData = os.path.join(self.inputDataPath, 'dummyLeadPoints.csv')
-        self.leadPointData = None
+#        self.leadPointData = None
 
         ##Table for monthly resource/reodent K-values
         # self.seasAdjResFile = os.path.join(self.inputDataPath, 'testRes5.csv')

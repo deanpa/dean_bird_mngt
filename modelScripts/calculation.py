@@ -1,6 +1,6 @@
 from osgeo import gdal
 import numpy as np
-from numba import jit
+from numba import njit
 from scipy.stats.mstats import mquantiles
 from scipy.special import logit
 
@@ -759,7 +759,7 @@ def doStoatDispersal(rawdata, params, stoat_raster, rodent_raster_stoat,
 
 
 
-@jit
+@njit
 def calcImmigration(emigrant_raster, winsize, 
             deltaImmigrate, mask, resolution, raster, gammaPara,
             areaCorrection, tauPara, kMap):
@@ -1147,7 +1147,7 @@ def doMasting(rawdata, params, distArray, halfwinsize, beechMask):
 
     return mastingMask
 
-@jit
+@njit
 def makeDistArray(winsize, rho, halfwinsize, resolution):
     """
     Pre calculate this so we don't have to do it each time
@@ -1165,7 +1165,7 @@ def makeDistArray(winsize, rho, halfwinsize, resolution):
     return distWt
 
 
-@jit
+@njit
 def spatialRandMast(randRisk, maxRisk, absolRisk, mask, halfwinsize, 
         mastSpatialSD, distWt):
     """
@@ -1249,7 +1249,7 @@ def spatialRandMast(randRisk, maxRisk, absolRisk, mask, halfwinsize,
     return absolRisk
 
 
-@jit
+@njit
 def resampleRasterDown(inarray, outSize, statMethod, pixelRescale):
     """
     Resamples an input array down to the given resolution 
@@ -1430,7 +1430,7 @@ def initialPopWrapper(sppProd, sppSurv, sppSurvDecay,
     return(spp_raster)
 
 
-@jit
+@njit
 def growthLoop(mu, sppRasterShape, growthRate, 
         sppSurv, sppSurvDecay, sppRecDecay,
         initialN, sppT, sppKMap, sppPresence):

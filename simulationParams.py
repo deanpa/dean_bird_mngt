@@ -128,6 +128,7 @@ class PreyParams(object):
 #        self.leadPointData = None
 
         ##Table for monthly resource/reodent K-values
+        # self.seasAdjResFile = os.path.join(self.inputDataPath, 'testRes5.csv')
         self.seasAdjResFile = os.path.join(self.inputDataPath, 'testRes4.csv')
 
         ## SET PICKLE FILE NAMES FOR PRE-PROCESSING AND RESULTS

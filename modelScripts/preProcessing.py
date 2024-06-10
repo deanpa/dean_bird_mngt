@@ -315,11 +315,11 @@ class PreyData(object):
         
         #extract values to array: rows=vegtype, cols=mth
         seasAdj = np.array(res['nonmast'])
-        seasAdj = np.reshape(seasAdj,(6,12))    
+        seasAdj = np.reshape(seasAdj,(-1,12))    
         mastSeasAdj = np.array(res['mast'])
-        mastSeasAdj = np.reshape(mastSeasAdj,(6,12))    
+        mastSeasAdj = np.reshape(mastSeasAdj,(-1,12))    
         crashSeasAdj = np.array(res['postmast'])
-        crashSeasAdj = np.reshape(crashSeasAdj,(6,12))    
+        crashSeasAdj = np.reshape(crashSeasAdj,(-1,12))    
                 
         return(seasAdj, mastSeasAdj, crashSeasAdj)
 

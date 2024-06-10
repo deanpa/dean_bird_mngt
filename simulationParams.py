@@ -117,11 +117,7 @@ class PreyParams(object):
         # self.controlFile = os.path.join(self.inputDataPath, 'noCtrlEglinton.csv') 
         # self.controlFile = os.path.join(self.inputDataPath, 'oneOffCtrlEglinton.csv') 
         # self.controlFile = os.path.join(self.inputDataPath, 'reactiveCtrlEglinton.csv') 
-        
-
-        # "3yrlyCtrlDummy.csv" or "noCtrlDummy.csv" or "oneOffCtrlDumm.csv"
-        ##########################################
-        ##########################################
+        ## "3yrlyCtrlDummy.csv" or "noCtrlDummy.csv" or "oneOffCtrlDumm.csv"
         # self.controlFile = os.path.join(self.inputDataPath, 'reactControl_kea1.csv')
         self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
 
@@ -131,7 +127,7 @@ class PreyParams(object):
         # self.leadPointData = os.path.join(self.inputDataPath, 'dummyLeadPoints.csv')
 #        self.leadPointData = None
 
-
+        ##Table for monthly resource/reodent K-values
         self.seasAdjResFile = os.path.join(self.inputDataPath, 'testRes4.csv')
 
         ## SET PICKLE FILE NAMES FOR PRE-PROCESSING AND RESULTS

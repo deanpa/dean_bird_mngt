@@ -12,8 +12,8 @@ from osgeo import osr
 from osgeo import ogr
 from scipy.stats.mstats import mquantiles
 import pylab
-#from wand.image import Image
-#from wand.drawing import Drawing
+from wand.image import Image
+from wand.drawing import Drawing
 from modelScripts import calcresults
 from modelScripts import preProcessing
 
@@ -186,16 +186,16 @@ def makeMovie(results, movieFName, outputDataPath):
 
         # make the frame with all the inputs
         frameDataPath = os.path.join(outputDataPath, thisFramePNG)
-        subprocess.check_call(['montage', mastingPNG, controlPNG, 
-                  rodentPNG, stoatPNG, preyPNG,'-geometry', 
-                  '+2+2', frameDataPath])
-#        filesList =  [mastingPNG, controlPNG, rodentPNG, stoatPNG, preyPNG]
-#        newfig = Image()
-#        for fname in filesList:        
-#            with Image(filename=fname) as img:
-#                newfig.sequence.append(img)
-#                newfig.smush(False, 0)
-#            newfig.save(filename=frameDataPath)        
+        # subprocess.check_call(['montage', mastingPNG, controlPNG, 
+        #           rodentPNG, stoatPNG, preyPNG,'-geometry', 
+        #           '+2+2', frameDataPath])
+        filesList =  [mastingPNG, controlPNG, rodentPNG, stoatPNG, preyPNG]
+        newfig = Image()
+        for fname in filesList:        
+            with Image(filename=fname) as img:
+                newfig.sequence.append(img)
+                newfig.smush(False, 0)
+            newfig.save(filename=frameDataPath)        
 
         
         #now make the movie
@@ -436,13 +436,13 @@ def makeMaskPNG(tempDir, mask, fname, title, resizePercent):
     # subprocess.check_call(['mogrify', '-fill', 'yellow', '-pointsize', '10', 
     #     '-draw', 'text %d, %d "%s"' % (TEXT_LOCATION[0], TEXT_LOCATION[1], title), 
     #     fname])
-#    with Image(filename=fname) as img:
-#        with Drawing() as ctx:
-#            ctx.fill_color = 'yellow'   
-#            ctx.font_size = 10
-#            ctx.text(TEXT_LOCATION[0], TEXT_LOCATION[1], title)
-#            ctx(img)
-#        img.save(filename=fname)
+    with Image(filename=fname) as img:
+        with Drawing() as ctx:
+            ctx.fill_color = 'yellow'   
+            ctx.font_size = 10
+            ctx.text(TEXT_LOCATION[0], TEXT_LOCATION[1], title)
+            ctx(img)
+        img.save(filename=fname)
 
 def makeColourMapPNG(tempDir, density, fname, title, resizePercent, densityRange):
     """
@@ -508,35 +508,35 @@ def makeColourMapPNG(tempDir, density, fname, title, resizePercent, densityRange
     subprocess.check_call(['gdal_translate', '-of', 'PNG', rampIMG, rampPNG])
     os.remove(rampIMG)
 
-    # write labels on ramp first as montage writes text on all input images
-    subprocess.check_call(['mogrify', '-fill', 'black', '-pointsize', '8',
-        '-draw', 'text %d, %d "%.1f"' % (0, 8, densityRange[1]),
-        '-draw', 'text %d, %d "%.1f"' % (0, int(nrows/2), (densityRange[1] - densityRange[0]) / 2),
-        '-draw', 'text %d, %d "%.1f"' % (0, nrows-2, densityRange[0]),
-        rampPNG])
-#    with Image(filename=rampPNG) as img:
-#        with Drawing() as ctx:
-#            ctx.fill_color = 'black'   
-#            ctx.font_size = 8
-#            ctx.text(0, 8, f'{densityRange[1]}')
-#            ctx.text(0, int(nrows/2), f'{(densityRange[1] - densityRange[0]) / 2}')
-#            ctx.text(0, nrows-2, f'{densityRange[0]}')
-#            ctx(img)
-#        img.save(filename=rampPNG)  
+    # # write labels on ramp first as montage writes text on all input images
+    # subprocess.check_call(['mogrify', '-fill', 'black', '-pointsize', '8',
+    #     '-draw', 'text %d, %d "%.1f"' % (0, 8, densityRange[1]),
+    #     '-draw', 'text %d, %d "%.1f"' % (0, int(nrows/2), (densityRange[1] - densityRange[0]) / 2),
+    #     '-draw', 'text %d, %d "%.1f"' % (0, nrows-2, densityRange[0]),
+    #     rampPNG])
+    with Image(filename=rampPNG) as img:
+        with Drawing() as ctx:
+            ctx.fill_color = 'black'   
+            ctx.font_size = 8
+            ctx.text(0, 8, f'{densityRange[1]}')
+            ctx.text(0, int(nrows/2), f'{(densityRange[1] - densityRange[0]) / 2}')
+            ctx.text(0, nrows-2, f'{densityRange[0]}')
+            ctx(img)
+        img.save(filename=rampPNG)  
 
     # do mosaic and write text - thankfully the title is far enough over that 
     # it doesn't appear in the ramp image also
-    subprocess.check_call(['montage', rampPNG, densityPNG, '-geometry', 
-        '+0+0', '-fill', 'yellow', '-pointsize', '10',
-        '-draw', 'text %d, %d "%s"' % (TEXT_LOCATION[0] + rampWidth, TEXT_LOCATION[1], title), fname])
-#    fg = Image(filename = densityPNG)
-#    with Drawing() as ctx:
-#        ctx.fill_color = 'yellow'   
-#        ctx.font_size = 10
-#        ctx.text(TEXT_LOCATION[0] + rampWidth, TEXT_LOCATION[1], title)
-#        ctx(fg)
-#    fg.composite(image=Image(filename = rampPNG), left = 0, top = 0)    
-#    fg.save(filename = fname)
+    # subprocess.check_call(['montage', rampPNG, densityPNG, '-geometry', 
+    #     '+0+0', '-fill', 'yellow', '-pointsize', '10',
+    #     '-draw', 'text %d, %d "%s"' % (TEXT_LOCATION[0] + rampWidth, TEXT_LOCATION[1], title), fname])
+    fg = Image(filename = densityPNG)
+    with Drawing() as ctx:
+        ctx.fill_color = 'yellow'   
+        ctx.font_size = 10
+        ctx.text(TEXT_LOCATION[0] + rampWidth, TEXT_LOCATION[1], title)
+        ctx(fg)
+    fg.composite(image=Image(filename = rampPNG), left = 0, top = 0)    
+    fg.save(filename = fname)
     os.remove(densityPNG)
     os.remove(rampPNG)
 

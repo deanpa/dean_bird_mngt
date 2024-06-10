@@ -19,7 +19,7 @@ from modelScripts import calculation
 from modelScripts import preProcessing
 from modelScripts import calcresults
 from rios.parallel import jobmanager
-#import rios
+import resource
 
 # Use the same environment variable as RIOS to define the type of
 # parallel processing.
@@ -130,6 +130,7 @@ def main(params):
         data = preProcessing.PreyData.unpickleFromFile(preProcFName)
 
     runMultipleJobs(data, resultsFName)
+
 
 
 if __name__ == '__main__':

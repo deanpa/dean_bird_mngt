@@ -311,8 +311,9 @@ def runModel(rawdata, params=None, loopIter=0):
         # Masting affects rodents the same year now
         #but year starts in Sept, spring cos that's when beech flowering starts
         # mastT = np.random.rand() < params.mastPrEvent
+        # mastT = False
         #for testing purposes: have all iterations mast in same year 
-        mastYrarr=np.array([1,7,10,11,15])
+        mastYrarr=np.array([1,7,10,11,15,19,23,26,30])
         if (year_all in mastYrarr):
             mastT=True
         else:
@@ -331,7 +332,9 @@ def runModel(rawdata, params=None, loopIter=0):
                     if not controlIndicator:
                         continue
                     propControlMaskMasting[count] = (np.count_nonzero(mastingMask & 
-                        controlMask) / np.count_nonzero(controlMask))
+                        controlMask & rawdata.rodentExtentMask) / np.count_nonzero(controlMask & rawdata.rodentExtentMask))
+                    # propControlMaskMasting[count] = (np.count_nonzero(mastingMask & 
+                    #     controlMask) / np.count_nonzero(controlMask))
 #                    propControlMaskMasting[count,0] = (np.count_nonzero(mastingMask & controlMask)
 #                                / np.count_nonzero(controlMask))
                     if propControlMaskMasting[count] >= params.reactivePropMgmtMasting:                   
@@ -603,9 +606,13 @@ def calcStoatPopulation(stoat_raster, rodent_raster, nToxicRodents, stoatMask, p
     """
     # get rodent population and toxic rodents at stoat resolution
     # it is rodents per ha -> sum and divid by 100 
+    # rodent_raster_stoat = resampleRasterDown(rodent_raster, 
+    #             stoatMask.shape, statMethod = RESAMPLE_SUM, 
+    #             pixelRescale = haPixelRescale)
+    #lets try that per stoat home range so don't just get zero rodents all the time
     rodent_raster_stoat = resampleRasterDown(rodent_raster, 
                 stoatMask.shape, statMethod = RESAMPLE_SUM, 
-                pixelRescale = haPixelRescale)
+                pixelRescale = 1)
 ####    ## ASSIGN NOTIONAL RODENT DENSITY TO ISLANDS - PRE-CALCULATED
 ####    rodent_raster_stoat[stoatIslandMask] = stoatIslandKArray
 
@@ -899,6 +906,7 @@ def doRodentGrowth(rawdata, params, rodent_raster, rodent_kMth, mth):
     mu[rawdata.rodentExtentMask] = rodent_t * pSurv * (1 + recRate) 
     # Eqn 12: Add stochasticity
     rodent_raster = rng.poisson(mu, rodent_raster.shape)
+    # rodent_raster = np.round(mu).astype(int)
     ## RETURN RASTER
     return rodent_raster
 
@@ -952,7 +960,7 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
     mastInd = np.where(mastMsk[mask]>0,1,0)
     
     for x in range(4):
-          pSurv = (params.preySurv[x,mastInd] * np.exp(-((prey_t[4,:,:]/(preySurvDecay_1D))**params.preyTheta)) * 
+          pSurv = (params.preySurv[x,mastInd] * np.exp(-((prey_t[4,:]/(preySurvDecay_1D))**params.preyTheta)) * 
                    np.exp(-params.preyEtaStoat[x] * stoat_t * rodentSwitchMult_t) * 
                    np.exp(-params.preyEtaRodent[x] * rodent_t)) 
           if pLeadDeath3D is not None:
@@ -960,17 +968,29 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
                   pSurv = pSurv * (1.0 - pLead_t[0])
               else:
                   pSurv = pSurv * (1.0 - pLead_t[1])
-          prey_t[x,:,:]=rng.binomial(prey_t[x,:,:],pSurv)
+          prey_t[x,:]=rng.binomial(prey_t[x,:],pSurv)
           
-    
+    ###  nb: total popn (prey_t[4,:]) is not updated b4 calculating dd-recruitment -
+    #### this is cos clutch size/propn breeding is determined months earlier c.f. here
+    #### which is when fledging/recruitment occurs
     for x in range(1,4):
           recRate =  (params.preySeasRec[mth,mastInd]*params.preyPropBreedpa[mastInd]*params.preyFec[x,mastInd] * 
-                      np.exp(-((prey_t[4,:,:]/(preyRecDecay_1D))**params.preyTheta)) * 
+                      np.exp(-((prey_t[4,:]/(preyRecDecay_1D))**params.preyTheta)) * 
                       np.exp(-params.preyPsiStoat * stoat_t) *
                       np.exp(-params.preyPsiRodent * rodent_t))         
-          prey_t[0,:,:]=prey_t[0,:,:]+rng.poisson(prey_t[x,:,:]*recRate)  #new recruits added to zero age class            
+          prey_t[0,:]=prey_t[0,:]+rng.poisson(prey_t[x,:]*recRate)  #new recruits added to zero age class            
     
-    prey_t[4,:,:]=np.sum(prey_t[:4,:,:],axis=0)  #update total pop size
+    prey_t[4,:]=np.sum(prey_t[:4,:],axis=0)  #update total pop size
+    
+    # ## FIX UP INAPPROPRIATE VALUES
+    # prey_raster[mask] = np.round(prey_t, 0).astype(int)
+    # prey_raster = np.where(prey_raster < 0, 0, prey_raster)
+    # prey_raster[~mask] = 0
+    
+    prey_raster[:,mask]=prey_t[:,:]
+    prey_raster[:,~mask]=0
+        
+        # ## RETURN PREY RASTER
     
 #     prey0_t = prey_raster[0,mask]
 #     prey1_t = prey_raster[1,mask]

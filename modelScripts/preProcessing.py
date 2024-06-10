@@ -137,11 +137,12 @@ class PreyData(object):
 
         self.preyKDummy = np.where(self.preyExtentMask > 0, 1.0, 0)
 
+        maxPreyFec = self.params.preyPropBreedpa[1]*self.params.preyFec[3,1]
         ## PREY K MAP FOR SENSITIVITY TEST
         self.preyKMap = getPreyKMap(self.preyNcols, self.preyNrows,  
             self.preyCorrectionK, self.preyExtentMask, self.params.preySurv, 
             self.params.preySurvDDcoef, self.params.preyRecDDcoef,
-            self.params.preyIRR, self.params.preyTheta)
+            maxPreyFec, self.params.preyTheta)
 
         kMapDS = gdal.Open(self.params.kClasses)
         ### MASK FOR CELLS THAT CAN MAST????
@@ -313,11 +314,11 @@ class PreyData(object):
         
         #extract values to array: rows=vegtype, cols=mth
         seasAdj = np.array(res['nonmast'])
-        seasAdj = np.reshape(seasAdj,(7,12))    
+        seasAdj = np.reshape(seasAdj,(6,12))    
         mastSeasAdj = np.array(res['mast'])
-        mastSeasAdj = np.reshape(mastSeasAdj,(7,12))    
+        mastSeasAdj = np.reshape(mastSeasAdj,(6,12))    
         crashSeasAdj = np.array(res['postmast'])
-        crashSeasAdj = np.reshape(crashSeasAdj,(7,12))    
+        crashSeasAdj = np.reshape(crashSeasAdj,(6,12))    
                 
         return(seasAdj, mastSeasAdj, crashSeasAdj)
 
@@ -689,7 +690,7 @@ def scaleStoatMask(rodentResol, stoatResol, stoatNcols, stoatNrows,
 
 @jit(nopython=True)
 def getPreyKMap(preyNcols, preyNrows, preyCorrectionK,
-        preyExtentMask, preySurv, preySurvDDcoef, preyRecDDcoef, preyMIRR, preyTheta):
+        preyExtentMask, preySurv, preySurvDDcoef, preyRecDDcoef, preyMaxFec, preyTheta):
     """
     ## MAKE PREY EQUILIBRIUM POP DENSITY BY PIXEL FOR SENSITIVITY TEST
     """
@@ -703,9 +704,9 @@ def getPreyKMap(preyNcols, preyNrows, preyCorrectionK,
             N = n0
             prp = preyCorrectionK[row, col]
             for i in range(15):
-                surv_i= preySurv[3] * np.exp(-((N/(preySurvDDcoef*prp))**preyTheta))
-                NStar = N * surv_i
-                recRate = (np.exp(preyMIRR*4)-1) *np.exp(-(N/(preyRecDDcoef*prp))**preyTheta)
+                surv_i= preySurv[3,1] * np.exp(-((N/(preySurvDDcoef*prp))**preyTheta))
+                NStar = N * surv_i                
+                recRate = preyMaxFec * np.exp(-(N/(preyRecDDcoef*prp))**preyTheta)
                 N = (1 + recRate) * NStar
             prey_KMap[row, col] = N
     return(prey_KMap)

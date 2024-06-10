@@ -66,16 +66,18 @@ class PreyParams(object):
         # self.AOIShp = os.path.join(self.inputDataPath, 'test_AOI.shp')
         self.extentShp = os.path.join(self.inputDataPath, 'extentDummy.shp')
         self.AOIShp = os.path.join(self.inputDataPath, 'AOIDummy.shp')        
-        #########################################
+        # self.extentShp = os.path.join(self.inputDataPath, 'EglintonExtent.shp')
+        # self.AOIShp = os.path.join(self.inputDataPath, 'EglintonAOI.shp')        
+        # #########################################
         ##########################################
 
 
 #        self.kClasses = os.path.join(self.inputDataPath, 'seed_Kea2.img')    
         # self.kClasses = os.path.join(self.inputDataPath, 'test_resource_Kea.grd')    
 #        self.kClasses = os.path.join(self.inputDataPath, 'seed_KeaTemp.img')    
-        # self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummyNewK.grd')    
 #        self.kClasses = os.path.join(self.inputDataPath, 'resource_Kea.img')    
-        self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummy.grd')    
+        self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummyPureBeech.grd')    
+        # self.kClasses = os.path.join(self.inputDataPath, 'resourceEglinton.tif')    
 
 
         ### Area trapped in recent times.
@@ -85,6 +87,9 @@ class PreyParams(object):
         self.islands = os.path.join(self.inputDataPath, 'trapsDummy.tif')
         self.DEM = os.path.join(self.inputDataPath, 'DEMDummy.tif')
         self.preyHabitatShp = os.path.join(self.inputDataPath, 'KeaHabDummy.shp')
+        # self.islands = os.path.join(self.inputDataPath, 'EglintonTraps.tif')
+        # self.DEM = os.path.join(self.inputDataPath, 'EglintonDEM.tif')
+        # self.preyHabitatShp = os.path.join(self.inputDataPath, 'EglintonKeaHabitat.shp')
 
         ##########################################
         ## TEST CONTROL ##########################
@@ -102,6 +107,10 @@ class PreyParams(object):
         # self.controlFile = os.path.join(self.inputDataPath, 'oneOffCtrlDummy.csv') 
         #self.controlFile = os.path.join(self.inputDataPath, 'dblNovCtrlDummy.csv') 
         # self.controlFile = os.path.join(self.inputDataPath, '3yrlyCtrlDummy.csv') 
+        # self.controlFile = os.path.join(self.inputDataPath, 'noCtrlEglinton.csv') 
+        # self.controlFile = os.path.join(self.inputDataPath, 'oneOffCtrlEglinton.csv') 
+        # self.controlFile = os.path.join(self.inputDataPath, 'reactiveCtrlEglinton.csv') 
+        
 
         # "3yrlyCtrlDummy.csv" or "noCtrlDummy.csv" or "oneOffCtrlDumm.csv"
         ##########################################
@@ -116,7 +125,7 @@ class PreyParams(object):
         self.leadPointData = None
 
 
-        self.seasAdjResFile = os.path.join(self.inputDataPath, 'testRes2.csv')
+        self.seasAdjResFile = os.path.join(self.inputDataPath, 'testRes4.csv')
 
         ## SET PICKLE FILE NAMES FOR PRE-PROCESSING AND RESULTS
         preProcFName = 'preProc_' + scenDir + '.pkl'
@@ -133,8 +142,8 @@ class PreyParams(object):
 
         ##Control parameters
         ##Mast-reactive control: proportion of zone in mast required for reactive control and mth control applied
-        self.reactivePropMgmtMasting = 0.5   #0.5 # set > 0 to enable
-        self.mastCtrlMth = self.monthDict['Jul']   
+        self.reactivePropMgmtMasting = 0   #0.5 # set > 0 to enable
+        self.mastCtrlMth = self.monthDict['Nov']   
         ##Tracking Tunnel reactive control:
         self.threshold_TT = 1              #(1 = no reac) Thres prop of TT with detections
         self.reactiveAssessMth = self.monthDict['Jan']  #what month to do a mast prop or tracking tunnel assessment, mth7=Apr
@@ -171,19 +180,19 @@ class PreyParams(object):
         #Maybe should just have dispersal in a pulse/only 1 month to save running dispersal algorithm multiple times?
         self.rodentSeasDisp = np.array([1,1,1,1,1,1,1,1,1,0,0,0], dtype=bool) #can disp most months of yr, don't in winter?? 
                             #Juv males tend to make up most of disp. popn. but we don't have age or sex structure so yeah...
+        self.rodentRecDDcoef = 1 #0.2
         self.rodentSurv = 0.958 #per month 0.958
-        self.rodentSurvDDcoef = 2
-        self.rodentRecDDcoef = 0.2
+        self.rodentSurvDDcoef = 2 #2
         self.rodentTheta = 0.8  #1 gives Ricker model
         self.prpGrowRateControl = 1.0  # proportion of rodent growth before control is applied
         self.rodentProbEatBait = 0.7 # pT
         self.pRodentPres = 0.95
         self.rodentInitialMultiplier = 0.8     
-        self.rodentMaxAltitude = 1000.0  # metres
+        self.rodentMaxAltitude = 1100.0  # metres based on Christie Mt Misery paper (inc slightly from orig 1000m)
         
         ##rat bounce parameters###
-        self.rodentBouncePeriod = 48  #28 in months - time since control within which K/resources are multiplied to drive rat bounce
-        self.rodentBounceMult = 2.0  #1.5 how much to multiply resources/Kmap by to drive rat bounce, set to 1 to turn off rat bounce
+        self.rodentBouncePeriod = 36  #36 in months - time since control within which K/resources are multiplied to drive rat bounce
+        self.rodentBounceMult = 2.0  #2 how much to multiply resources/Kmap by to drive rat bounce, set to 1 to turn off rat bounce
         self.rodentBounceDecay = np.log(1/self.rodentBounceMult)/self.rodentBouncePeriod  #decay rate of bounce effect > mult goes to 1 at end of bounce period
         
         ######## TRACKING TUNNEL PARAMETERS
@@ -203,9 +212,9 @@ class PreyParams(object):
                         #break up when young are 12-14 wks so say Jan recruitment
         #make sure dispersal happens after recuritment                        
         self.stoatSeasDisp = np.array([0,0,0,0,0,1,0,0,0,0,0,0], dtype=bool) #disperse Feb
-        self.stoatRecDDcoef = 8
+        self.stoatRecDDcoef = 0.08 #8
         self.stoatSurv = 0.94
-        self.stoatSurvDDcoef = 9.5
+        self.stoatSurvDDcoef = 0.095 #9.5
         self.stoatTheta = 1
         #self.stoatRecLag = 3 #calc recruitment based on rat numbers 3 mths before young stoats become in
         self.stoatPopSD = 0.22
@@ -214,7 +223,9 @@ class PreyParams(object):
         self.stoatInitialMultiplier = .85
         self.pStoatPres = 0.75
         self.initialStoatN = 4.0
-        self.stoatMaxAltitude = 1100.0
+        self.stoatMaxAltitude = 2000.0 #changed from 1100 to 2000 based on Foster paper but is moot point in this model
+                                        #cos rats are limited to <1100 m so can't get stoats at high elev 
+                                        #like do in reality (stoats in alpine due to mice)
         
         ## PREY SPECIES PARAMETERS
         self.preyK = 20.0
@@ -223,8 +234,8 @@ class PreyParams(object):
         self.preyInitialMultiplier = 0.3  #Binomial(pPreyPres)*preyK*preyInitialMultiplier 
                                           #used to initialise kea densities (@t=0)
         #self.preyPsi = 0.7  # Eqn 32
-        self.preyPsiStoat = 0.05  #  Effect of stoats on kea recruitment
-        self.preyEtaStoat = np.array([0.1, 0.08, 0.06, 0.02]) #Effect of stoats on kea survival in each age class (0-3)
+        self.preyPsiStoat = 0.18  #  Effect of stoats on kea recruitment
+        self.preyEtaStoat = np.array([0.11, 0.04, 0.04, 0.04]) #Effect of stoats on kea survival in each age class (0-3)
         # self.preyEtaStoatJuv = 0.08  #Effect of stoats on juvenile (age class 0) on kea survival
         # self.preyEtaStoatAd = 0.02  #Effect of stoats on adult (age class 1-4) on kea survival
         self.preyPsiRodent = 0.0  #Effect of rodents on kea recruitment
@@ -252,7 +263,7 @@ class PreyParams(object):
         self.preyFec = np.array([[0.0, 0.0],   #number of chicks fledged per breeding female per annum =2*0.5 (assumed even sex ratio)
                                  [0.0,  0.0],  #dim 0 = age class 0-3, dim 1 = nonmast, mast Fec 
                                  [0.0,  0.0],  #here no difference between nonmast and mast years
-                                 [1.0, 1.0]])  #only adults >3 years breed with 1 female chicks per female per annum
+                                 [1.0, 1.0]])  #only adults >3 years breed with 2 female chicks per female per annum /2 to get per capita fec
         #self.preySeasRec = np.array([0,0,0,0.3,0.4,0.3,0,0,0,0,0,0]) 
         SeasRec = np.array([[0,   0.0], #how recruitment is spread out across season here peaks in Jan
                             [0.0, 0.0], #dim 0 = mth 0-11, dim 1 = nonmast, mast rec
@@ -277,11 +288,13 @@ class PreyParams(object):
                         #oh what age class does dispersal act on? <<<<chk this - should be juvs[0]
         self.preyInitAgeStr = np.array([0.3, 0.15, 0.15, 0.4], dtype=float)
 #        self.preyInitAgeStr = np.array([0.3,0.1,0.1,0.1,0.4], dtype=float)
-        self.preyMaxAltitude = 2000.0  # metres
+        self.preyMaxAltitude = 1400.0  # metres  dec from 2000 cos Kemp et al max elev breeding=1350m
+                                #I guess that means creating an artificial refuge since kea above 1100
+                                #are not exposed to predation (cos no rats above 1100m =>no stoats)
         ## PREY SIGMA FOR HOME RANGE STANDARD DEVIATION OF BIVARIATE NORMAL KERNEL
         self.preySigma = 5000
         self.pLeadMax = {'preAdult': 0.10, 'adult' : 0.07}
-        np.array([1.0, 1.0])
+        
 
         ## IMMIGRATION AND EMIGRATION PARAMETERS
         self.gammaProbEmigrate = np.array([0.1, 0.2, 0.4])   # gamma for rodent, stoats, 
@@ -297,7 +310,7 @@ class PreyParams(object):
 
 
         ## NUMBER OF YEARS OVER WHICH CALC PREY ANN GROWTH RATE
-        self.annGrowthYears = 10
+        self.annGrowthYears = 5
 
 
 ### data = preProcessing.preyData(pars)

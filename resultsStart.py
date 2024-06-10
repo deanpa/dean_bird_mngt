@@ -25,6 +25,8 @@ if __name__ == '__main__':
     scen = cmdargs.scenario      #'1'
     species = cmdargs.species                      #'Cats'
     ######################
+    # scen = '11'      #'1'
+    # species = "Kea"                     #'Cats'
     #####################################################
 
     ## MAKE PATH TO RESULTS
@@ -45,6 +47,7 @@ if __name__ == '__main__':
     ##  IMPORT PARAMS MODULE   -   USER MODIFY MODULE NAME
     scenParams = importlib.import_module(paramsMod)
     params = scenParams.PreyParams(cmdargs.species, int(cmdargs.scenario))
+    # params = scenParams.PreyParams("Kea", int(11))
 
     resultsMain.main(params)
 

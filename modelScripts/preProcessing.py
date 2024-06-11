@@ -93,7 +93,7 @@ class PreyData(object):
         # add the self.rodentMaxAltitude to the self.rodentExtentMask and kClasses
         self.rodentExtentMask[self.DEM > self.params.rodentMaxAltitude] = 0
         self.kClasses[self.DEM > self.params.rodentMaxAltitude] = 0
-        
+
         ### AREAS TRAPPED IN RECENT TIMES -- at rodent resol
         self.islands = self.resampleRasterRodent(self.params.islands, 
                     self.params.resolutions[0],
@@ -104,8 +104,16 @@ class PreyData(object):
         # Use to get stoat areas per zone -- still at rodent resolution 
         self.rodentExtentForStoats = self.rodentExtentMask.copy()
 
+
+        kMapDS = gdal.Open(self.params.kClasses)
+        ### MASK FOR CELLS THAT CAN MAST????
+        rodentHabLU = rat.readColumn(kMapDS, "RodentHab") == 1
+        rodentHabMask = rodentHabLU[self.kClasses]
+
+
         # remove non-habitat from rodentExtentMask -- at rodent resolution
-        self.rodentExtentMask[self.kClasses == 0] = 0
+        self.rodentExtentMask[~rodentHabMask] = 0
+                             [self.kClasses == 0] = 0
 
         # get preyCorrectionK to scale pixels near water or high elevation
         self.preyCorrectionK = scalePreyMask(self.finestResol, self.params.resolutions[2], 
@@ -144,7 +152,7 @@ class PreyData(object):
             self.params.preySurvDDcoef, self.params.preyRecDDcoef,
             maxPreyFec, self.params.preyTheta)
 
-        kMapDS = gdal.Open(self.params.kClasses)
+#        kMapDS = gdal.Open(self.params.kClasses)
         ### MASK FOR CELLS THAT CAN MAST????
         self.mastingLU = rat.readColumn(kMapDS, "Masts") > 0
         ### 'CC' is the carrying capacity at per ha level.
@@ -153,7 +161,7 @@ class PreyData(object):
         # self.paramRodentCrashCCLU = rat.readColumn(kMapDS, "Rodent_CrashCC")
 
 
-        # print('self.mastingLU', self.mastingLU, 'rodentCCLU', 
+#        print('self.mastingLU', self.mastingLU)
         #       self.paramRodentCCLU,'rodentMastCCLU', self.paramRodentMastCCLU,
         #       'rodentCrashCCLU', self.paramRodentCrashCCLU)
         # print('self.kClasses',self.kClasses)
@@ -320,7 +328,9 @@ class PreyData(object):
         mastSeasAdj = np.reshape(mastSeasAdj,(-1,12))    
         crashSeasAdj = np.array(res['postmast'])
         crashSeasAdj = np.reshape(crashSeasAdj,(-1,12))    
-                
+        
+        print('preProcessing seasAdj', seasAdj[:,0])
+        
         return(seasAdj, mastSeasAdj, crashSeasAdj)
 
     

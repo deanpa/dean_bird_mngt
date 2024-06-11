@@ -12,8 +12,8 @@ from osgeo import osr
 from osgeo import ogr
 from scipy.stats.mstats import mquantiles
 import pylab
-from wand.image import Image
-from wand.drawing import Drawing
+#from wand.image import Image
+#from wand.drawing import Drawing
 from modelScripts import calcresults
 from modelScripts import preProcessing
 

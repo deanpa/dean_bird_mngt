@@ -113,7 +113,6 @@ class PreyData(object):
 
         # remove non-habitat from rodentExtentMask -- at rodent resolution
         self.rodentExtentMask[~rodentHabMask] = 0
-                             [self.kClasses == 0] = 0
 
         # get preyCorrectionK to scale pixels near water or high elevation
         self.preyCorrectionK = scalePreyMask(self.finestResol, self.params.resolutions[2], 

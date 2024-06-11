@@ -17,13 +17,13 @@ class PreyParams(object):
 
         ### SET YEARS AND BURN IN YEARS
 
-        self.burnin = 3
-        self.years = np.arange(4)
+        self.burnin = 20
+        self.years = np.arange(30)
         # self.burnin = 4
         # self.years = np.arange(6)
 
         ### SET ITERATIONS
-        self.iter = 3
+        self.iter = 50
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
         self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
@@ -147,10 +147,10 @@ class PreyParams(object):
 
         ##Control parameters
         ##Mast-reactive control: proportion of zone in mast required for reactive control and mth control applied
-        self.reactivePropMgmtMasting = 0   #0.5 # set > 0 to enable
+        self.reactivePropMgmtMasting = .5  #0.5 # set > 0 to enable
         self.mastCtrlMth = self.monthDict['Nov']   ## 'Nov' is default
         ##Tracking Tunnel reactive control:
-        self.threshold_TT = 1              #(1 = no reac) Thres prop of TT with detections
+        self.threshold_TT = .2              #(1 = no reac) Thres prop of TT with detections
         self.reactiveAssessMth = self.monthDict['Jan']  #what month to do a mast prop or tracking tunnel assessment, mth7=Apr
                                                         ## DEFAULT IS 'Jan'
         self.reactiveCtrlDelay = 2  #delay in months from TT assessment to implementation of control

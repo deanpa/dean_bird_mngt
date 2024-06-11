@@ -131,7 +131,7 @@ def main(params):
     runMultipleJobs(data, resultsFName)
 
     maxMem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    print('Max Mem Usage', maxMem)
+    print('Max Mem Usage in kilobytes', maxMem)
 
 if __name__ == '__main__':
     main()    

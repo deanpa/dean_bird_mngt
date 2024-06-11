@@ -13,8 +13,7 @@ import os
 import multiprocessing
 import pickle
 import shutil
-#import calculation
-#import preProcessing
+import resource
 from modelScripts import calculation
 from modelScripts import preProcessing
 from modelScripts import calcresults
@@ -131,6 +130,8 @@ def main(params):
 
     runMultipleJobs(data, resultsFName)
 
+    maxMem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    print('Max Mem Usage', maxMem)
 
 if __name__ == '__main__':
     main()    

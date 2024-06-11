@@ -148,14 +148,15 @@ class PreyParams(object):
         ##Control parameters
         ##Mast-reactive control: proportion of zone in mast required for reactive control and mth control applied
         self.reactivePropMgmtMasting = 0   #0.5 # set > 0 to enable
-        self.mastCtrlMth = self.monthDict['Nov']   
+        self.mastCtrlMth = self.monthDict['Nov']   ## 'Nov' is default
         ##Tracking Tunnel reactive control:
         self.threshold_TT = 1              #(1 = no reac) Thres prop of TT with detections
         self.reactiveAssessMth = self.monthDict['Jan']  #what month to do a mast prop or tracking tunnel assessment, mth7=Apr
+                                                        ## DEFAULT IS 'Jan'
         self.reactiveCtrlDelay = 2  #delay in months from TT assessment to implementation of control
         #in preProcessing, getReactCtrlMth fn calcs reactiveCtrlMth and if jumps year line (Sept) due to delay
         ## Prescriptive Control: month prescriptive control is applied (can now be different to mast and TT- reactive control)
-        self.prescrptCtrlMth = self.monthDict['Jul']    
+        self.prescrptCtrlMth = self.monthDict['Jul']    ## DEFAULT IS 'Jan'
         
         ### Masting parameters
         self.mastCellParams = (0.001, 1000.0)

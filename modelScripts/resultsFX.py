@@ -12,8 +12,8 @@ from osgeo import osr
 from osgeo import ogr
 from scipy.stats.mstats import mquantiles
 import pylab
-from wand.image import Image
-from wand.drawing import Drawing
+#from wand.image import Image
+#from wand.drawing import Drawing
 from modelScripts import calcresults
 from modelScripts import preProcessing
 
@@ -29,11 +29,10 @@ NZTM_WKT = sr.ExportToWkt()
 #
 #########################################
 
-x =1
 
 # resize to this percent for each rodent image
 # stoat and prey resizes are calculated from this
-RODENT_RESIZE_PERCENT = 175  #30
+RODENT_RESIZE_PERCENT = 20 #175  #30
 
 # these may need tweaking
 RODENT_DENSITY_RANGE = (0.0, 80.0)
@@ -44,17 +43,17 @@ PREY_DENSITY_RANGE = (0.0, 18.0)
 COLOUR_TABLE = 'colourtable.npy'
 
 # labels
-TEXT_LOCATION = (25, 10)
+TEXT_LOCATION = (50, 30)
 
 # output 
 #OUTPUT_MOVIE = 'results.wmv'
 
-FRAMERATE = 0.5
+FRAMERATE = 0.2
 
-COLOUR_RAMP_FRACTION = 0.1 # of the image width
+COLOUR_RAMP_FRACTION = 0.05     # .1 # of the image width
 
 ## NUMBER OF YEARS OVER WHICH CALC PREY ANN GROWTH RATE
-annGrowthYears = 5 #5      ## CHANGE TO 5
+ANNGROWTHYEARS = 3 #5      ## CHANGE TO 5
 
 
 def writeTmpArray(params, data, results):
@@ -186,23 +185,27 @@ def makeMovie(results, movieFName, outputDataPath):
 
         # make the frame with all the inputs
         frameDataPath = os.path.join(outputDataPath, thisFramePNG)
-        # subprocess.check_call(['montage', mastingPNG, controlPNG, 
-        #           rodentPNG, stoatPNG, preyPNG,'-geometry', 
-        #           '+2+2', frameDataPath])
-        filesList =  [mastingPNG, controlPNG, rodentPNG, stoatPNG, preyPNG]
-        newfig = Image()
-        for fname in filesList:        
-            with Image(filename=fname) as img:
-                newfig.sequence.append(img)
-                newfig.smush(False, 0)
-            newfig.save(filename=frameDataPath)        
+        subprocess.check_call(['montage', mastingPNG, controlPNG, 
+            rodentPNG, stoatPNG, preyPNG,'-geometry', '+2+2', frameDataPath])
+
+#        filesList =  [mastingPNG, controlPNG, rodentPNG, stoatPNG, preyPNG]
+#        newfig = Image()
+#        for fname in filesList:        
+#            with Image(filename=fname) as img:
+#                newfig.sequence.append(img)
+#                newfig.smush(False, 0)
+#            newfig.save(filename=frameDataPath)        
 
         
         #now make the movie
-#    subprocess.check_call(['ffmpeg', '-framerate', str(FRAMERATE), '-i', 
-#        os.path.join(params.outputDataPath, 'frame_%02d.png'),
-#        '-vcodec', 'mpeg4', '-q:v', '1', '-y', 
-#        '-loglevel', 'error', movieFName])
+    subprocess.check_call(['ffmpeg', 
+        '-framerate', str(FRAMERATE), 
+        '-i', os.path.join(params.outputDataPath, 'frame_%02d.png'),
+        '-vf', 'scale=1920:1080',  # Scale the resolution to 1920x1080
+        '-vcodec', 'mpeg4', 
+        '-q:v', '1', '-y', 
+        '-loglevel', 'error', 
+        movieFName])
 
     # tidy up
     shutil.rmtree(tempDir)
@@ -240,8 +243,8 @@ def doTimeSeriesPlots(results, controlKeys, outputDataPath):
     nHectInRodent = (rodentResol / 100.0)**2
     nAreas, nYears = results[0].preyDensity_2D.shape
     mngtYears = nYears - burnin
-    annGrowYearsStop = burnin + annGrowthYears - 1
-    annGrowYears = np.min([annGrowthYears, mngtYears])
+    annGrowYearsStop = burnin + ANNGROWTHYEARS - 1
+    annGrowYears = np.min([ANNGROWTHYEARS, mngtYears])
     nIterations = len(results)
     print('nIterations', nIterations, nYears, mngtYears)
     popChangeArray = np.empty((nAreas, ), dtype=[('Area', 'U32'), ('TotalMean', float), 
@@ -433,16 +436,16 @@ def makeMaskPNG(tempDir, mask, fname, title, resizePercent):
     os.remove(maskIMG)
 
     # write text
-    # subprocess.check_call(['mogrify', '-fill', 'yellow', '-pointsize', '10', 
-    #     '-draw', 'text %d, %d "%s"' % (TEXT_LOCATION[0], TEXT_LOCATION[1], title), 
-    #     fname])
-    with Image(filename=fname) as img:
-        with Drawing() as ctx:
-            ctx.fill_color = 'yellow'   
-            ctx.font_size = 10
-            ctx.text(TEXT_LOCATION[0], TEXT_LOCATION[1], title)
-            ctx(img)
-        img.save(filename=fname)
+    subprocess.check_call(['mogrify', '-fill', 'yellow', '-pointsize', '10', 
+        '-draw', 'text %d, %d "%s"' % (TEXT_LOCATION[0], TEXT_LOCATION[1], title), 
+        fname])
+#    with Image(filename=fname) as img:
+#        with Drawing() as ctx:
+#            ctx.fill_color = 'yellow'   
+#            ctx.font_size = 10
+#            ctx.text(TEXT_LOCATION[0], TEXT_LOCATION[1], title)
+#            ctx(img)
+#        img.save(filename=fname)
 
 def makeColourMapPNG(tempDir, density, fname, title, resizePercent, densityRange):
     """
@@ -508,37 +511,38 @@ def makeColourMapPNG(tempDir, density, fname, title, resizePercent, densityRange
     subprocess.check_call(['gdal_translate', '-of', 'PNG', rampIMG, rampPNG])
     os.remove(rampIMG)
 
-    # # write labels on ramp first as montage writes text on all input images
-    # subprocess.check_call(['mogrify', '-fill', 'black', '-pointsize', '8',
-    #     '-draw', 'text %d, %d "%.1f"' % (0, 8, densityRange[1]),
-    #     '-draw', 'text %d, %d "%.1f"' % (0, int(nrows/2), (densityRange[1] - densityRange[0]) / 2),
-    #     '-draw', 'text %d, %d "%.1f"' % (0, nrows-2, densityRange[0]),
-    #     rampPNG])
-    with Image(filename=rampPNG) as img:
-        with Drawing() as ctx:
-            ctx.fill_color = 'black'   
-            ctx.font_size = 8
-            ctx.text(0, 8, f'{densityRange[1]}')
-            ctx.text(0, int(nrows/2), f'{(densityRange[1] - densityRange[0]) / 2}')
-            ctx.text(0, nrows-2, f'{densityRange[0]}')
-            ctx(img)
-        img.save(filename=rampPNG)  
+    # write labels on ramp first as montage writes text on all input images
+    subprocess.check_call(['mogrify', '-fill', 'black', '-pointsize', '8',
+        '-draw', 'text %d, %d "%.1f"' % (0, 8, densityRange[1]),
+        '-draw', 'text %d, %d "%.1f"' % (0, int(nrows/2), (densityRange[1] - densityRange[0]) / 2),
+        '-draw', 'text %d, %d "%.1f"' % (0, nrows-2, densityRange[0]),
+        rampPNG])
+#    with Image(filename=rampPNG) as img:
+#        with Drawing() as ctx:
+#            ctx.fill_color = 'black'   
+#            ctx.font_size = 8
+#            ctx.text(0, 8, f'{densityRange[1]}')
+#            ctx.text(0, int(nrows/2), f'{(densityRange[1] - densityRange[0]) / 2}')
+#            ctx.text(0, nrows-2, f'{densityRange[0]}')
+#            ctx(img)
+#        img.save(filename=rampPNG)  
 
     # do mosaic and write text - thankfully the title is far enough over that 
     # it doesn't appear in the ramp image also
-    # subprocess.check_call(['montage', rampPNG, densityPNG, '-geometry', 
-    #     '+0+0', '-fill', 'yellow', '-pointsize', '10',
-    #     '-draw', 'text %d, %d "%s"' % (TEXT_LOCATION[0] + rampWidth, TEXT_LOCATION[1], title), fname])
-    fg = Image(filename = densityPNG)
-    with Drawing() as ctx:
-        ctx.fill_color = 'yellow'   
-        ctx.font_size = 10
-        ctx.text(TEXT_LOCATION[0] + rampWidth, TEXT_LOCATION[1], title)
-        ctx(fg)
-    fg.composite(image=Image(filename = rampPNG), left = 0, top = 0)    
-    fg.save(filename = fname)
-    os.remove(densityPNG)
-    os.remove(rampPNG)
+    subprocess.check_call(['montage', rampPNG, densityPNG, '-geometry', 
+        '+0+0', '-fill', 'yellow', '-pointsize', '10',
+        '-draw', 'text %d, %d "%s"' % (TEXT_LOCATION[0] + rampWidth, TEXT_LOCATION[1], title), fname])
+
+#    fg = Image(filename = densityPNG)
+#    with Drawing() as ctx:
+#        ctx.fill_color = 'yellow'   
+#        ctx.font_size = 10
+#        ctx.text(TEXT_LOCATION[0] + rampWidth, TEXT_LOCATION[1], title)
+#        ctx(fg)
+#    fg.composite(image=Image(filename = rampPNG), left = 0, top = 0)    
+#    fg.save(filename = fname)
+#    os.remove(densityPNG)
+#    os.remove(rampPNG)
 
 def doAreaPlot(i, key, preyMeansAllYears, preyQuantsAllYears, 
                 stoatMeansAllYears, stoatQuantsAllYears, 

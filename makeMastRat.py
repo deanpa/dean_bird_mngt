@@ -30,6 +30,7 @@ def mastRAT(infile, outfile):
     classNames = ["noData", "nonForest", "otherForest", "podocarpBroad", "pureBeech", 
         "mixedBeech", "shrub"] 
     rat.writeColumn(outputs.newlcdb, "Class_Names", classNames, colUsage=gdal.GFU_Name)
+    rat.writeColumn(outputs.newlcdb, "RodentHab", [0, 0, 1, 1, 1, 1, 1])
     rat.writeColumn(outputs.newlcdb, "Masts", [0, 0, 0, 1, 1, 1, 0])
 
 

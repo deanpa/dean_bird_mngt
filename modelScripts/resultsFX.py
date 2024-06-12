@@ -119,7 +119,7 @@ def processResults(params, data, results):
 
 
     # then the movie
-    makeMovie(results, movieFName, params.outputDataPath)
+#    makeMovie(results, movieFName, params.outputDataPath)
 
 
     #########

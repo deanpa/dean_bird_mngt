@@ -18,7 +18,7 @@ class PreyParams(object):
         ### SET YEARS AND BURN IN YEARS
 
         self.burnin = 5
-        self.years = np.arange(5)
+        self.years = np.arange(10)
 
         ### SET ITERATIONS
         self.iter = 5
@@ -122,11 +122,11 @@ class PreyParams(object):
         self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
 
         ## LEAD POINT DATA
-        self.leadPointData = os.path.join(self.inputDataPath, 'leadHutsVillages.csv')
+###        self.leadPointData = os.path.join(self.inputDataPath, 'leadHutsVillages.csv')
 #        self.leadPointData = os.path.join(self.inputDataPath, 'leadPtsRegion3.csv')
         #self.leadPointData = os.path.join(self.inputDataPath, 'test_LeadPoints.csv')
         # self.leadPointData = os.path.join(self.inputDataPath, 'dummyLeadPoints.csv')
-#        self.leadPointData = None
+        self.leadPointData = None
 
         ##Table for monthly resource/reodent K-values
         # self.seasAdjResFile = os.path.join(self.inputDataPath, 'testRes5.csv')
@@ -191,7 +191,7 @@ class PreyParams(object):
         self.rodentSurvDDcoef = 2 #2
         self.rodentTheta = 0.8  #1 gives Ricker model
         self.prpGrowRateControl = 1.0  # proportion of rodent growth before control is applied
-        self.rodentProbEatBait = 0.7 # pT
+        self.rodentProbEatBait = 0.85  # 0.7 # pT
         self.pRodentPres = 0.95
         self.rodentInitialMultiplier = 0.8     
         self.rodentMaxAltitude = 1100.0  # metres based on Christie Mt Misery paper (inc slightly from orig 1000m)
@@ -209,7 +209,7 @@ class PreyParams(object):
 
         ######## STOAT PARAMETERS
         #self.stoatProd = 0.71
-        stoatFec= 9.2  #num offspring recruited per generation
+        stoatFec= 8.5   # 9.2  #num offspring recruited per generation
         self.stoatIRR = np.log(1+stoatFec/2) #convert to Instantaneous Rec Rate  
                         #Stoat breeding highly synchronised (daylength dependent) 
                         #so breed in one pulse/time step
@@ -219,7 +219,7 @@ class PreyParams(object):
         #make sure dispersal happens after recuritment                        
         self.stoatSeasDisp = np.array([0,0,0,0,0,1,0,0,0,0,0,0], dtype=bool) #disperse Feb
         self.stoatRecDDcoef = 0.08 #8
-        self.stoatSurv = 0.94
+        self.stoatSurv = 0.5    #0.94
         self.stoatSurvDDcoef = 0.095 #9.5
         self.stoatTheta = 1
         #self.stoatRecLag = 3 #calc recruitment based on rat numbers 3 mths before young stoats become in
@@ -228,16 +228,16 @@ class PreyParams(object):
         self.pEatEncToxic = 0.9          # operates at stoat scale
         self.stoatInitialMultiplier = .85
         self.pStoatPres = 0.75
-        self.initialStoatN = 2.0 #4
+        self.initialStoatN = 2.2 #4
         self.stoatMaxAltitude = 1100.0 #changed from 1100 to 2000 based on Foster paper but is moot point in this model
                                         #cos rats are limited to <1100 m so can't get stoats at high elev 
                                         #like do in reality (stoats in alpine due to mice)
         
         ## PREY SPECIES PARAMETERS
         self.preyK = 20.0
-        self.pPreyPres = 0.68
+        self.pPreyPres = 0.75
         self.initialpreyN = 5.0    #not used anymore?
-        self.preyInitialMultiplier = 0.3  #Binomial(pPreyPres)*preyK*preyInitialMultiplier 
+        self.preyInitialMultiplier = 0.5  #Binomial(pPreyPres)*preyK*preyInitialMultiplier 
                                           #used to initialise kea densities (@t=0)
         #self.preyPsi = 0.7  # Eqn 32
         self.preyPsiStoat = 0.18  #  Effect of stoats on kea recruitment
@@ -269,7 +269,7 @@ class PreyParams(object):
         self.preyFec = np.array([[0.0, 0.0],   #number of chicks fledged per breeding female per annum =2*0.5 (assumed even sex ratio)
                                  [0.0,  0.0],  #dim 0 = age class 0-3, dim 1 = nonmast, mast Fec 
                                  [0.0,  0.0],  #here no difference between nonmast and mast years
-                                 [1.0, 1.0]])  #only adults >3 years breed with 2 female chicks per female per annum /2 to get per capita fec
+                                 [3.0, 3.0]])  #only adults >3 years breed with 2 female chicks per female per annum /2 to get per capita fec
         #self.preySeasRec = np.array([0,0,0,0.3,0.4,0.3,0,0,0,0,0,0]) 
         SeasRec = np.array([[0,   0.0], #how recruitment is spread out across season here peaks in Jan
                             [0.0, 0.0], #dim 0 = mth 0-11, dim 1 = nonmast, mast rec

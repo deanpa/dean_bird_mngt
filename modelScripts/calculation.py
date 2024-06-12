@@ -310,14 +310,14 @@ def runModel(rawdata, params=None, loopIter=0):
 
         # Masting affects rodents the same year now
         #but year starts in Sept, spring cos that's when beech flowering starts
-        # mastT = np.random.rand() < params.mastPrEvent
+        mastT = np.random.rand() < params.mastPrEvent
         # mastT = False
         #for testing purposes: have all iterations mast in same year 
-        mastYrarr=np.array([1,7,10,11,15,19,23,26,30])
-        if (year_all in mastYrarr):
-            mastT=True
-        else:
-            mastT=False   
+#        mastYrarr=np.array([1,7,10,11,15,19,23,26,30])
+#        if (year_all in mastYrarr):
+#            mastT=True
+#        else:
+#            mastT=False   
             
         if mastT:
             print('Masting Year', year_all)
@@ -657,7 +657,7 @@ def calcStoatPopulation(stoat_raster, rodent_raster, nToxicRodents, stoatMask, p
 
 
     ## WHERE HAVE ZERO RODENTS IN A KM CELL, SET TO 0.5 RODENT SO DON'T DIVIDE BY 0
-    rodent_t = np.where(rodent_t < 0.25, 0.25, rodent_t)
+    rodent_t = np.where(rodent_t < 0.25, 0.025, rodent_t)
     
 
     ## Stoat popn growth

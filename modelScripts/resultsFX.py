@@ -24,14 +24,16 @@ from modelScripts import preProcessing
 from PyQt5.QtWidgets import QApplication
 from tuiview import geolinkedviewers
 from tuiview.viewerstretch import ViewerStretch
-
-VIEWER_XSIZE = 100
-VIEWER_YSIZE = 100
+from tuiview_plugins.scalebar_nth_arrow import scalebar_north_arrow
 
 
+VIEWER_XSIZE = 500
+VIEWER_YSIZE = 500
 
 
-COMPRESSED_HFA = ['COMPRESSED=YES']
+
+
+#COMPRESSED_KEA = ['COMPRESSED=YES']
 sr = osr.SpatialReference()
 sr.ImportFromEPSG(2193) # always nztm?
 NZTM_WKT = sr.ExportToWkt()
@@ -69,13 +71,13 @@ FRAMERATE = 0.2
 COLOUR_RAMP_FRACTION = 0.05     # .1 # of the image width
 
 ## NUMBER OF YEARS OVER WHICH CALC PREY ANN GROWTH RATE
-ANNGROWTHYEARS = 3 #5      ## CHANGE TO 5
+ANNGROWTHYEARS = 5      ## CHANGE TO 5
 
 
 def writeTmpArray(params, data, results):
     # 'MastT', 'preyDensity', 'rodentDensity'
-    driver = gdal.GetDriverByName('HFA')
-    ds = driver.Create('mastTmp.img', data.rodentNcols, data.rodentNrows, 
+    driver = gdal.GetDriverByName('KEA')
+    ds = driver.Create('mastTmp.kea', data.rodentNcols, data.rodentNrows, 
          1, gdal.GDT_Byte)
     ds.SetProjection(NZTM_WKT)
     ds.SetGeoTransform(data.rodentGeoTrans)
@@ -155,6 +157,8 @@ def makeMovie(results, movieFName, outputDataPath):
     viewers = geolinkedviewers.GeolinkedViewers()
     viewer = viewers.newViewer()
     viewer.resizeForWidgetSize(VIEWER_XSIZE, VIEWER_YSIZE)
+    sbnth = scalebar_north_arrow.registerScaleBarNorthArrow(viewer, True, True) 
+
 
 
 
@@ -232,8 +236,8 @@ def makeMovie(results, movieFName, outputDataPath):
         vecLayer.getImage()
         viewer.viewwidget.update()
         
-#        sbnth.citation = "Year {}".format(idx)
-#        sbnth.getImage()
+        sbnth.citation = "Year {}".format(idx)
+        sbnth.getImage()
         viewer.saveCurrentViewInternal(frameDataPath)
         viewer.removeLayer()
         viewer.removeLayer()
@@ -474,13 +478,20 @@ def makeMaskPNG(tempDir, mask, fname, title, resizePercent):
     """
     nrows, ncols = mask.shape
 
-    # write to a .img file as we can't directly 
+    # write to a .kea file as we can't directly 
     # create a .png file
-    maskIMG = os.path.join(tempDir, 'mask.img')
+    maskIMG = os.path.join(tempDir, 'mask.kea')
 
-    driver = gdal.GetDriverByName('HFA')
-    ds = driver.Create(maskIMG, ncols, nrows, 3, gdal.GDT_Byte, 
-        ['COMPRESSED=YES'])
+    driver = gdal.GetDriverByName('KEA')
+    ds = driver.Create(maskIMG, ncols, nrows, 3, gdal.GDT_Byte)
+#    srs = osr.SpatialReference()
+#    srs.ImportFromEPSG(2193)
+#    ds.SetProjection(srs.ExportToWkt())
+
+    ds.SetProjection(NZTM_WKT)
+#    ds.SetGeoTransform(data.rodentGeoTrans)
+#    band = ds.GetRasterBand(1)
+
 
     for n in range(3):
         band = ds.GetRasterBand(n+1)
@@ -514,16 +525,15 @@ def makeColourMapPNG(tempDir, density, fname, title, resizePercent, densityRange
     # read the map
     colourTable = np.load(COLOUR_TABLE)
 
-    # write to a .img file as we can't directly 
+    # write to a .kea file as we can't directly 
     # create a .png file with GDAL
-    densityIMG = os.path.join(tempDir, 'density.img')
+    densityIMG = os.path.join(tempDir, 'density.kea')
     densityPNG = os.path.join(tempDir, 'density.png')
-    rampIMG = os.path.join(tempDir, 'ramp.img')
+    rampIMG = os.path.join(tempDir, 'ramp.kea')
     rampPNG = os.path.join(tempDir, 'ramp.png')
 
-    driver = gdal.GetDriverByName('HFA')
-    ds = driver.Create(densityIMG, ncols, nrows, 3, gdal.GDT_Byte, 
-        ['COMPRESSED=YES'])
+    driver = gdal.GetDriverByName('KEA')
+    ds = driver.Create(densityIMG, ncols, nrows, 3, gdal.GDT_Byte)
 
     # rescale density so the range is 0-75
     density = (density / (densityRange[1] - densityRange[0])) * 75
@@ -554,9 +564,8 @@ def makeColourMapPNG(tempDir, density, fname, title, resizePercent, densityRange
     ramp = np.vstack([ramp] * rampWidth)
     ramp = np.rot90(ramp)
 
-    # write to .img
-    ds = driver.Create(rampIMG, rampWidth, nrows, 3, gdal.GDT_Byte, 
-        ['COMPRESSED=YES'])
+    # write to .kea
+    ds = driver.Create(rampIMG, rampWidth, nrows, 3, gdal.GDT_Byte)
 
     for n in range(3):
         band = ds.GetRasterBand(n+1)

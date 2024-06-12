@@ -103,9 +103,10 @@ def processResults(params, data, results):
     ## MAKE TABLE OF CONTROL COUNTS; MEANS AND 95% CI
     controlCountTable(results, params.outputDataPath)
 
+    rodentGeoTrans = data.rodentGeoTrans
 
     # then the movie
-    makeMovie(results, movieFName, params.outputDataPath, data)
+    makeMovie(results, movieFName, params.outputDataPath, rodentGeoTrans)
 
 
     #########
@@ -127,7 +128,7 @@ def processResults(params, data, results):
 
 
 
-def makeMovie(results, movieFName, outputDataPath, data):
+def makeMovie(results, movieFName, outputDataPath, rodentGeoTrans):
     # create temp dir to work in
     # TODO: do we need to be able to specify the dir this 
     # happens in?
@@ -167,11 +168,11 @@ def makeMovie(results, movieFName, outputDataPath, data):
         mastingMask = popMovie['MastT'][yearn]
         makeMaskPNG(tempDir, mastingMask, mastingPNG, 
                 'Masting Year %d' % yearName, 
-                RODENT_RESIZE_PERCENT, data)
+                RODENT_RESIZE_PERCENT, rodentGeoTrans)
 
         controlMask = popMovie['ControlT'][yearn]
         makeMaskPNG(tempDir, controlMask, controlPNG, 'Control',
-                RODENT_RESIZE_PERCENT, data)
+                RODENT_RESIZE_PERCENT, rodentGeoTrans)
 
 
         rodentDensity = popMovie['rodentDensity'][yearn]
@@ -222,10 +223,6 @@ def makeMovie(results, movieFName, outputDataPath, data):
         viewer.removeLayer()
         #################################################################
     
-
-
-
-
         subprocess.check_call(['montage', mastingPNG, controlPNG, 
             rodentPNG, stoatPNG, preyPNG,'-geometry', '+2+2', frameDataPath])
 
@@ -451,7 +448,7 @@ def controlCountTable(results, outputDataPath):
                     comments = '', delimiter=',', header='Mean, Low_CI, High_CI')
 
 
-def makeMaskPNG(tempDir, mask, fname, title, resizePercent, data):
+def makeMaskPNG(tempDir, mask, fname, title, resizePercent, rodentGeoTrans):
     """
     Create a rgb PNG for the mask
     """
@@ -463,14 +460,9 @@ def makeMaskPNG(tempDir, mask, fname, title, resizePercent, data):
 
     driver = gdal.GetDriverByName('KEA')
     ds = driver.Create(maskIMG, ncols, nrows, 3, gdal.GDT_Byte)
-#    srs = osr.SpatialReference()
-#    srs.ImportFromEPSG(2193)
-#    ds.SetProjection(srs.ExportToWkt())
 
     ds.SetProjection(NZTM_WKT)
-    ds.SetGeoTransform(data.rodentGeoTrans)
-#    band = ds.GetRasterBand(1)
-
+    ds.SetGeoTransform(rodentGeoTrans)
 
     for n in range(3):
         band = ds.GetRasterBand(n+1)

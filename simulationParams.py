@@ -17,7 +17,7 @@ class PreyParams(object):
 
         ### SET YEARS AND BURN IN YEARS
 
-        self.burnin = 5
+        self.burnin = 10
         self.years = np.arange(10)
 
         ### SET ITERATIONS

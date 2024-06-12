@@ -24,7 +24,7 @@ from modelScripts import preProcessing
 from PyQt5.QtWidgets import QApplication
 from tuiview import geolinkedviewers
 from tuiview.viewerstretch import ViewerStretch
-from tuiview_plugins.scalebar_nth_arrow import scalebar_north_arrow
+#from tuiview_plugins.scalebar_nth_arrow import scalebar_north_arrow
 
 
 VIEWER_XSIZE = 500
@@ -32,13 +32,9 @@ VIEWER_YSIZE = 500
 
 
 
-
-#COMPRESSED_KEA = ['COMPRESSED=YES']
 sr = osr.SpatialReference()
 sr.ImportFromEPSG(2193) # always nztm?
 NZTM_WKT = sr.ExportToWkt()
-
-## export TUIVIEW_ALLOW_NOGEO=YES
 
 
 #########################################
@@ -157,7 +153,7 @@ def makeMovie(results, movieFName, outputDataPath):
     viewers = geolinkedviewers.GeolinkedViewers()
     viewer = viewers.newViewer()
     viewer.resizeForWidgetSize(VIEWER_XSIZE, VIEWER_YSIZE)
-    sbnth = scalebar_north_arrow.registerScaleBarNorthArrow(viewer, True, True) 
+#    sbnth = scalebar_north_arrow.registerScaleBarNorthArrow(viewer, True, True) 
 
 
 
@@ -236,8 +232,8 @@ def makeMovie(results, movieFName, outputDataPath):
         vecLayer.getImage()
         viewer.viewwidget.update()
         
-        sbnth.citation = "Year {}".format(idx)
-        sbnth.getImage()
+#        sbnth.citation = "Year {}".format(idx)
+#        sbnth.getImage()
         viewer.saveCurrentViewInternal(frameDataPath)
         viewer.removeLayer()
         viewer.removeLayer()

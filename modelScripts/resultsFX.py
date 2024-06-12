@@ -84,27 +84,13 @@ def writeTmpArray(params, data, results):
 
 
 def processResults(params, data, results):
-    ### Output data path to write graphs, imagees and movies
-#    outputDataPath = os.path.join(os.getenv('PREYPROJDIR', default='.'), 
-#            'modelResults', 'modC_Results')
     ## movie file path name
     movieFName = os.path.join(params.outputDataPath, 'results.wmv')
-
-#    resultsDataPath = os.path.join(outputDataPath, 'results.pkl')
-#    results = calcresults.PreyResults.unpickleFromFile(resultsDataPath)
-
-
 
     # if results isn't already a list it came from testcalc.py (rather than testcalmulti.py)
     # so turn it into a list
     if not isinstance(results, list):
         results = [results]
-
-    # TODO: we only need the preProcessing at present to 
-    # get the names of the control areas. Maybe they should be
-    # in the results so we don't have to??
-###    preProcessDataPath = os.path.join(outputDataPath, 'preProcData.pkl')
-###    data = preProcessing.PreyData.unpickleFromFile(preProcessDataPath)
 
     # first, do the plots
     doTimeSeriesPlots(results, sorted(data.preySpatialDictByMgmt.keys()), params.outputDataPath)
@@ -119,7 +105,7 @@ def processResults(params, data, results):
 
 
     # then the movie
-#    makeMovie(results, movieFName, params.outputDataPath)
+    makeMovie(results, movieFName, params.outputDataPath, data)
 
 
     #########
@@ -141,7 +127,7 @@ def processResults(params, data, results):
 
 
 
-def makeMovie(results, movieFName, outputDataPath):
+def makeMovie(results, movieFName, outputDataPath, data):
     # create temp dir to work in
     # TODO: do we need to be able to specify the dir this 
     # happens in?
@@ -154,9 +140,6 @@ def makeMovie(results, movieFName, outputDataPath):
     viewer = viewers.newViewer()
     viewer.resizeForWidgetSize(VIEWER_XSIZE, VIEWER_YSIZE)
 #    sbnth = scalebar_north_arrow.registerScaleBarNorthArrow(viewer, True, True) 
-
-
-
 
 
 
@@ -184,11 +167,11 @@ def makeMovie(results, movieFName, outputDataPath):
         mastingMask = popMovie['MastT'][yearn]
         makeMaskPNG(tempDir, mastingMask, mastingPNG, 
                 'Masting Year %d' % yearName, 
-                RODENT_RESIZE_PERCENT)
+                RODENT_RESIZE_PERCENT, data)
 
         controlMask = popMovie['ControlT'][yearn]
         makeMaskPNG(tempDir, controlMask, controlPNG, 'Control',
-                RODENT_RESIZE_PERCENT)
+                RODENT_RESIZE_PERCENT, data)
 
 
         rodentDensity = popMovie['rodentDensity'][yearn]
@@ -468,7 +451,7 @@ def controlCountTable(results, outputDataPath):
                     comments = '', delimiter=',', header='Mean, Low_CI, High_CI')
 
 
-def makeMaskPNG(tempDir, mask, fname, title, resizePercent):
+def makeMaskPNG(tempDir, mask, fname, title, resizePercent, data):
     """
     Create a rgb PNG for the mask
     """
@@ -485,7 +468,7 @@ def makeMaskPNG(tempDir, mask, fname, title, resizePercent):
 #    ds.SetProjection(srs.ExportToWkt())
 
     ds.SetProjection(NZTM_WKT)
-#    ds.SetGeoTransform(data.rodentGeoTrans)
+    ds.SetGeoTransform(data.rodentGeoTrans)
 #    band = ds.GetRasterBand(1)
 
 

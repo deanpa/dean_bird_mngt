@@ -18,7 +18,7 @@ from modelScripts import calculation
 from modelScripts import preProcessing
 from modelScripts import calcresults
 from rios.parallel import jobmanager
-#import rios
+import getpass
 
 # Use the same environment variable as RIOS to define the type of
 # parallel processing.
@@ -130,8 +130,11 @@ def main(params):
 
     runMultipleJobs(data, resultsFName)
 
-    maxMem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    print('Max Mem Usage in kilobytes', maxMem)
+    ## GET USER
+    userName = getpass.getuser()
+    if userName == 'dean.anderson' or userName == 'dean':
+        maxMem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        print('Max Mem Usage in kilobytes', maxMem)
 
 if __name__ == '__main__':
     main()    

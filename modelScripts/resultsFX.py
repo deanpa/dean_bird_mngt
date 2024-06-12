@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import sys
 import shutil
 import tempfile
 import subprocess
@@ -18,10 +19,25 @@ from modelScripts import calcresults
 from modelScripts import preProcessing
 
 
+
+
+from PyQt5.QtWidgets import QApplication
+from tuiview import geolinkedviewers
+from tuiview.viewerstretch import ViewerStretch
+
+VIEWER_XSIZE = 100
+VIEWER_YSIZE = 100
+
+
+
+
 COMPRESSED_HFA = ['COMPRESSED=YES']
 sr = osr.SpatialReference()
 sr.ImportFromEPSG(2193) # always nztm?
 NZTM_WKT = sr.ExportToWkt()
+
+## export TUIVIEW_ALLOW_NOGEO=YES
+
 
 #########################################
 #
@@ -35,9 +51,9 @@ NZTM_WKT = sr.ExportToWkt()
 RODENT_RESIZE_PERCENT = 20 #175  #30
 
 # these may need tweaking
-RODENT_DENSITY_RANGE = (0.0, 80.0)
-STOAT_DENSITY_RANGE = (0.0, 8.0)
-PREY_DENSITY_RANGE = (0.0, 18.0)
+RODENT_DENSITY_RANGE = (0.0, 50.0)      # 80
+STOAT_DENSITY_RANGE = (0.0, 8.0)        # 8
+PREY_DENSITY_RANGE = (0.0, 6.0)         # 18
 
 # used for creating colour images of the densities
 COLOUR_TABLE = 'colourtable.npy'
@@ -104,8 +120,6 @@ def processResults(params, data, results):
     controlCountTable(results, params.outputDataPath)
 
 
-
-
     # then the movie
     makeMovie(results, movieFName, params.outputDataPath)
 
@@ -133,6 +147,19 @@ def makeMovie(results, movieFName, outputDataPath):
     # create temp dir to work in
     # TODO: do we need to be able to specify the dir this 
     # happens in?
+
+
+    app = QApplication(sys.argv)
+    app.setApplicationName('tuiview')
+    app.setOrganizationName('TuiView')
+    viewers = geolinkedviewers.GeolinkedViewers()
+    viewer = viewers.newViewer()
+    viewer.resizeForWidgetSize(VIEWER_XSIZE, VIEWER_YSIZE)
+
+
+
+
+
 
     tempDir = tempfile.mkdtemp()
 
@@ -185,6 +212,37 @@ def makeMovie(results, movieFName, outputDataPath):
 
         # make the frame with all the inputs
         frameDataPath = os.path.join(outputDataPath, thisFramePNG)
+
+
+
+
+
+        ###############################################################
+        # Add area of interest vector image
+        stretch = ViewerStretch()
+        stretch.setBands((1,))
+        stretch.setColorTable()
+        viewer.addRasterInternal(frameDataPath, stretch)
+        viewer.addVectorInternal(params.AOIShp)
+        # Retrieve the 'layer' that represents the vector
+        vecLayer = viewer.viewwidget.layers.getTopVectorLayer()
+        # set management zone outline colour
+        vecLayer.setColor([255, 255, 255, 255]) # red, green, blue, alpha
+        # Update window
+        vecLayer.getImage()
+        viewer.viewwidget.update()
+        
+#        sbnth.citation = "Year {}".format(idx)
+#        sbnth.getImage()
+        viewer.saveCurrentViewInternal(frameDataPath)
+        viewer.removeLayer()
+        viewer.removeLayer()
+        #################################################################
+    
+
+
+
+
         subprocess.check_call(['montage', mastingPNG, controlPNG, 
             rodentPNG, stoatPNG, preyPNG,'-geometry', '+2+2', frameDataPath])
 

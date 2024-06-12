@@ -30,4 +30,4 @@ if __name__ == '__main__':
 
 
 ## ON COMMAND LINE, RUN SCRIPT LIKE THIS FOR KEA AND SCENARIO 1:
-### ./simulationStart.py --species Kea --scenario 1
+### ./simulationStart.py --species Kea --scenario 2

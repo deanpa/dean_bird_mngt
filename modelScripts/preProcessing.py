@@ -240,8 +240,8 @@ class PreyData(object):
                 fullPreyExt, self.params.resolutions[2], self.preyNcols, self.preyNrows)            
 
         
-            driver = gdal.GetDriverByName('HFA')
-            ds = driver.Create('pLeadDiePreAdult.img', self.preyNcols, self.preyNrows, 
+            driver = gdal.GetDriverByName('KEA')
+            ds = driver.Create('pLeadDiePreAdult.kea', self.preyNcols, self.preyNrows, 
                     1, gdal.GDT_Float32)
             ds.SetProjection(NZTM_WKT)
             ds.SetGeoTransform(self.preyGeoTrans)
@@ -250,8 +250,8 @@ class PreyData(object):
             del ds
     
             
-            driver = gdal.GetDriverByName('HFA')
-            ds = driver.Create('pLeadDieAdult.img', self.preyNcols, self.preyNrows, 
+            driver = gdal.GetDriverByName('KEA')
+            ds = driver.Create('pLeadDieAdult.kea', self.preyNcols, self.preyNrows, 
                     1, gdal.GDT_Float32)
             ds.SetProjection(NZTM_WKT)
             ds.SetGeoTransform(self.preyGeoTrans)

@@ -17,13 +17,11 @@ class PreyParams(object):
 
         ### SET YEARS AND BURN IN YEARS
 
-        self.burnin = 20
-        self.years = np.arange(30)
-        # self.burnin = 4
-        # self.years = np.arange(6)
+        self.burnin = 5
+        self.years = np.arange(5)
 
         ### SET ITERATIONS
-        self.iter = 50
+        self.iter = 5
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
         self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
@@ -52,7 +50,9 @@ class PreyParams(object):
         self.outputDataPath = os.path.join(baseDir, resultsPath)
         ## MAKE NEW RESULTS DIRECTORY IF DOESN'T EXIST
         if not os.path.isdir(self.outputDataPath):
-            (baseDir / resultsPath).mkdir(parents = True)
+            os.makedirs(self.outputDataPath)
+#        if not os.path.isdir(self.outputDataPath):
+#            (baseDir / resultsPath).mkdir(parents = True)
 
         print('Results directory:', self.outputDataPath)
         print('############################')
@@ -224,12 +224,12 @@ class PreyParams(object):
         self.stoatTheta = 1
         #self.stoatRecLag = 3 #calc recruitment based on rat numbers 3 mths before young stoats become in
         self.stoatPopSD = 0.22
-        self.pEncToxic = 0.004          # operates at stoat scale
-        self.pEatEncToxic = 0.8          # operates at stoat scale
+        self.pEncToxic = 0.006          # operates at stoat scale
+        self.pEatEncToxic = 0.9          # operates at stoat scale
         self.stoatInitialMultiplier = .85
         self.pStoatPres = 0.75
-        self.initialStoatN = 4.0
-        self.stoatMaxAltitude = 2000.0 #changed from 1100 to 2000 based on Foster paper but is moot point in this model
+        self.initialStoatN = 2.0 #4
+        self.stoatMaxAltitude = 1100.0 #changed from 1100 to 2000 based on Foster paper but is moot point in this model
                                         #cos rats are limited to <1100 m so can't get stoats at high elev 
                                         #like do in reality (stoats in alpine due to mice)
         

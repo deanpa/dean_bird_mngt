@@ -17,11 +17,11 @@ class PreyParams(object):
 
         ### SET YEARS AND BURN IN YEARS
 
-        self.burnin = 20
-        self.years = np.arange(30)
+        self.burnin = 5
+        self.years = np.arange(5)
 
         ### SET ITERATIONS
-        self.iter = 200
+        self.iter = 10
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
         self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE

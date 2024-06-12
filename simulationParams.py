@@ -17,11 +17,11 @@ class PreyParams(object):
 
         ### SET YEARS AND BURN IN YEARS
 
-        self.burnin = 4
-        self.years = np.arange(4)
+        self.burnin = 20
+        self.years = np.arange(30)
 
         ### SET ITERATIONS
-        self.iter = 5
+        self.iter = 200
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
         self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
@@ -191,7 +191,7 @@ class PreyParams(object):
         self.rodentSurvDDcoef = 2 #2
         self.rodentTheta = 0.8  #1 gives Ricker model
         self.prpGrowRateControl = 1.0  # proportion of rodent growth before control is applied
-        self.rodentProbEatBait = 0.85  # 0.7 # pT
+        self.rodentProbEatBait = 0.88  # 0.7 # pT
         self.pRodentPres = 0.95
         self.rodentInitialMultiplier = 0.8     
         self.rodentMaxAltitude = 1100.0  # metres based on Christie Mt Misery paper (inc slightly from orig 1000m)
@@ -209,7 +209,7 @@ class PreyParams(object):
 
         ######## STOAT PARAMETERS
         #self.stoatProd = 0.71
-        stoatFec= 8.5   # 9.2  #num offspring recruited per generation
+        stoatFec= 8.2   # 9.2  #num offspring recruited per generation
         self.stoatIRR = np.log(1+stoatFec/2) #convert to Instantaneous Rec Rate  
                         #Stoat breeding highly synchronised (daylength dependent) 
                         #so breed in one pulse/time step
@@ -228,8 +228,8 @@ class PreyParams(object):
         self.pEatEncToxic = 0.9          # operates at stoat scale
         self.stoatInitialMultiplier = .85
         self.pStoatPres = 0.75
-        self.initialStoatN = 2.2 #4
-        self.stoatMaxAltitude = 1100.0 #changed from 1100 to 2000 based on Foster paper but is moot point in this model
+        self.initialStoatN = 2.0 #4
+        self.stoatMaxAltitude = 1200.0 #changed from 1100 to 2000 based on Foster paper but is moot point in this model
                                         #cos rats are limited to <1100 m so can't get stoats at high elev 
                                         #like do in reality (stoats in alpine due to mice)
         
@@ -240,8 +240,10 @@ class PreyParams(object):
         self.preyInitialMultiplier = 0.5  #Binomial(pPreyPres)*preyK*preyInitialMultiplier 
                                           #used to initialise kea densities (@t=0)
         #self.preyPsi = 0.7  # Eqn 32
-        self.preyPsiStoat = 0.18  #  Effect of stoats on kea recruitment
-        self.preyEtaStoat = np.array([0.11, 0.04, 0.04, 0.04]) #Effect of stoats on kea survival in each age class (0-3)
+        self.preyPsiStoat = 0.20  #  Effect of stoats on kea recruitment
+###        self.preyPsiStoat = 0.18  #  Effect of stoats on kea recruitment
+        self.preyEtaStoat = np.array([0.12, 0.05, 0.05, 0.04]) #Effect of stoats on kea survival in each age class (0-3)
+###        self.preyEtaStoat = np.array([0.11, 0.04, 0.04, 0.04]) #Effect of stoats on kea survival in each age class (0-3)
         # self.preyEtaStoatJuv = 0.08  #Effect of stoats on juvenile (age class 0) on kea survival
         # self.preyEtaStoatAd = 0.02  #Effect of stoats on adult (age class 1-4) on kea survival
         self.preyPsiRodent = 0.0  #Effect of rodents on kea recruitment
@@ -269,7 +271,7 @@ class PreyParams(object):
         self.preyFec = np.array([[0.0, 0.0],   #number of chicks fledged per breeding female per annum =2*0.5 (assumed even sex ratio)
                                  [0.0,  0.0],  #dim 0 = age class 0-3, dim 1 = nonmast, mast Fec 
                                  [0.0,  0.0],  #here no difference between nonmast and mast years
-                                 [3.0, 3.0]])  #only adults >3 years breed with 2 female chicks per female per annum /2 to get per capita fec
+                                 [2.5, 2.5]])  #only adults >3 years breed with 2 female chicks per female per annum /2 to get per capita fec
         #self.preySeasRec = np.array([0,0,0,0.3,0.4,0.3,0,0,0,0,0,0]) 
         SeasRec = np.array([[0,   0.0], #how recruitment is spread out across season here peaks in Jan
                             [0.0, 0.0], #dim 0 = mth 0-11, dim 1 = nonmast, mast rec
@@ -299,7 +301,7 @@ class PreyParams(object):
                                 #are not exposed to predation (cos no rats above 1100m =>no stoats)
         ## PREY SIGMA FOR HOME RANGE STANDARD DEVIATION OF BIVARIATE NORMAL KERNEL
         self.preySigma = 5000
-        self.pLeadMax = {'preAdult': 0.10, 'adult' : 0.07}
+        self.pLeadMax = {'preAdult': 0.15, 'adult' : 0.10}  # .10 and 0.07
         
 
         ## IMMIGRATION AND EMIGRATION PARAMETERS

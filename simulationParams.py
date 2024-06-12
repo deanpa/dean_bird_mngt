@@ -17,8 +17,8 @@ class PreyParams(object):
 
         ### SET YEARS AND BURN IN YEARS
 
-        self.burnin = 10
-        self.years = np.arange(10)
+        self.burnin = 4
+        self.years = np.arange(4)
 
         ### SET ITERATIONS
         self.iter = 5
@@ -122,11 +122,11 @@ class PreyParams(object):
         self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
 
         ## LEAD POINT DATA
-###        self.leadPointData = os.path.join(self.inputDataPath, 'leadHutsVillages.csv')
+        self.leadPointData = os.path.join(self.inputDataPath, 'leadHutsVillages.csv')
 #        self.leadPointData = os.path.join(self.inputDataPath, 'leadPtsRegion3.csv')
         #self.leadPointData = os.path.join(self.inputDataPath, 'test_LeadPoints.csv')
         # self.leadPointData = os.path.join(self.inputDataPath, 'dummyLeadPoints.csv')
-        self.leadPointData = None
+###        self.leadPointData = None
 
         ##Table for monthly resource/reodent K-values
         # self.seasAdjResFile = os.path.join(self.inputDataPath, 'testRes5.csv')
@@ -147,10 +147,10 @@ class PreyParams(object):
 
         ##Control parameters
         ##Mast-reactive control: proportion of zone in mast required for reactive control and mth control applied
-        self.reactivePropMgmtMasting = .5  #0.5 # set > 0 to enable
+        self.reactivePropMgmtMasting = 0    # .5  #0.5 # set > 0 to enable
         self.mastCtrlMth = self.monthDict['Nov']   ## 'Nov' is default
         ##Tracking Tunnel reactive control:
-        self.threshold_TT = .2              #(1 = no reac) Thres prop of TT with detections
+        self.threshold_TT = 1       #.2              #(1 = no reac) Thres prop of TT with detections
         self.reactiveAssessMth = self.monthDict['Jan']  #what month to do a mast prop or tracking tunnel assessment, mth7=Apr
                                                         ## DEFAULT IS 'Jan'
         self.reactiveCtrlDelay = 2  #delay in months from TT assessment to implementation of control
@@ -219,7 +219,7 @@ class PreyParams(object):
         #make sure dispersal happens after recuritment                        
         self.stoatSeasDisp = np.array([0,0,0,0,0,1,0,0,0,0,0,0], dtype=bool) #disperse Feb
         self.stoatRecDDcoef = 0.08 #8
-        self.stoatSurv = 0.5    #0.94
+        self.stoatSurv = 0.94
         self.stoatSurvDDcoef = 0.095 #9.5
         self.stoatTheta = 1
         #self.stoatRecLag = 3 #calc recruitment based on rat numbers 3 mths before young stoats become in

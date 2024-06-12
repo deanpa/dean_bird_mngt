@@ -67,7 +67,7 @@ FRAMERATE = 0.2
 COLOUR_RAMP_FRACTION = 0.05     # .1 # of the image width
 
 ## NUMBER OF YEARS OVER WHICH CALC PREY ANN GROWTH RATE
-ANNGROWTHYEARS = 5      ## CHANGE TO 5
+ANNGROWTHYEARS = 3      ## CHANGE TO 5
 
 
 def writeTmpArray(params, data, results):

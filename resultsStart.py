@@ -49,6 +49,9 @@ if __name__ == '__main__':
     params = scenParams.PreyParams(cmdargs.species, int(cmdargs.scenario))
     # params = scenParams.PreyParams("Kea", int(11))
 
+    print('params.outputDataPath', params.outputDataPath)
+    print('params.inputDataPath', params.inputDataPath)
+
     resultsMain.main(params)
 
 ##########  COMMAND LINE:

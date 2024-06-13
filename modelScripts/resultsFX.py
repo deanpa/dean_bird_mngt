@@ -21,10 +21,10 @@ from modelScripts import preProcessing
 
 
 
-from PyQt5.QtWidgets import QApplication
-from tuiview import geolinkedviewers
-from tuiview.viewerstretch import ViewerStretch
-from tuiview_plugins.scalebar_nth_arrow import scalebar_north_arrow
+#from PyQt5.QtWidgets import QApplication
+#from tuiview import geolinkedviewers
+#from tuiview.viewerstretch import ViewerStretch
+#from tuiview_plugins.scalebar_nth_arrow import scalebar_north_arrow
 
 
 VIEWER_XSIZE = 500

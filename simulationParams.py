@@ -17,11 +17,11 @@ class PreyParams(object):
 
         ### SET YEARS AND BURN IN YEARS
 
-        self.burnin = 5
-        self.years = np.arange(5)
+        self.burnin = 10
+        self.years = np.arange(10)
 
         ### SET ITERATIONS
-        self.iter = 10
+        self.iter = 20
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
         self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
@@ -119,7 +119,10 @@ class PreyParams(object):
         # self.controlFile = os.path.join(self.inputDataPath, 'reactiveCtrlEglinton.csv') 
         ## "3yrlyCtrlDummy.csv" or "noCtrlDummy.csv" or "oneOffCtrlDumm.csv"
         # self.controlFile = os.path.join(self.inputDataPath, 'reactControl_kea1.csv')
-        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
+    
+        ### DEAN KEA SCENARIOS
+#        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
+        self.controlFile = os.path.join(self.inputDataPath, 'control_keaSc2_3.csv') # control3 is effectively no control (st yr set to 100)
 
         ## LEAD POINT DATA
         self.leadPointData = os.path.join(self.inputDataPath, 'leadHutsVillages.csv')
@@ -147,10 +150,10 @@ class PreyParams(object):
 
         ##Control parameters
         ##Mast-reactive control: proportion of zone in mast required for reactive control and mth control applied
-        self.reactivePropMgmtMasting = 0    # .5  #0.5 # set > 0 to enable
+        self.reactivePropMgmtMasting = 0.5  #0.5 # set > 0 to enable
         self.mastCtrlMth = self.monthDict['Nov']   ## 'Nov' is default
         ##Tracking Tunnel reactive control:
-        self.threshold_TT = 1       #.2              #(1 = no reac) Thres prop of TT with detections
+        self.threshold_TT = 0.2   #(1 = no reac) Thres prop of TT with detections
         self.reactiveAssessMth = self.monthDict['Jan']  #what month to do a mast prop or tracking tunnel assessment, mth7=Apr
                                                         ## DEFAULT IS 'Jan'
         self.reactiveCtrlDelay = 2  #delay in months from TT assessment to implementation of control
@@ -165,8 +168,6 @@ class PreyParams(object):
         self.mastPrEvent = 1.0 / 5.1  # p(mast) = 1 out of 5.1 years
         self.mastProportionParams = findBeta(0.5, 0.4)  # ALPHA AND BETA PARAMETERS
         self.mastSpatialSD = 2.1 
-
-
 
         ## RODENT PARAMETERS
         self.islandK = 2.0
@@ -209,7 +210,7 @@ class PreyParams(object):
 
         ######## STOAT PARAMETERS
         #self.stoatProd = 0.71
-        stoatFec= 8.   # 9.2  #num offspring recruited per generation
+        stoatFec= 7.0   # 9.2  #num offspring recruited per generation
         self.stoatIRR = np.log(1+stoatFec/2) #convert to Instantaneous Rec Rate  
                         #Stoat breeding highly synchronised (daylength dependent) 
                         #so breed in one pulse/time step
@@ -218,13 +219,13 @@ class PreyParams(object):
                         #break up when young are 12-14 wks so say Jan recruitment
         #make sure dispersal happens after recuritment                        
         self.stoatSeasDisp = np.array([0,0,0,0,0,1,0,0,0,0,0,0], dtype=bool) #disperse Feb
-        self.stoatRecDDcoef = 0.07  #0.08 #8
+        self.stoatRecDDcoef = 0.06  #0.08 #8
         self.stoatSurv = 0.94
         self.stoatSurvDDcoef = 0.095 #9.5
         self.stoatTheta = 1
         #self.stoatRecLag = 3 #calc recruitment based on rat numbers 3 mths before young stoats become in
         self.stoatPopSD = 0.22
-        self.pEncToxic = 0.0065          # operates at stoat scale
+        self.pEncToxic = 0.007          # operates at stoat scale
         self.pEatEncToxic = 0.92          # operates at stoat scale
         self.stoatInitialMultiplier = .85
         self.pStoatPres = 0.75

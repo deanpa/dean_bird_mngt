@@ -21,9 +21,9 @@ from modelScripts import preProcessing
 
 
 
-from PyQt5.QtWidgets import QApplication
-from tuiview import geolinkedviewers
-from tuiview.viewerstretch import ViewerStretch
+#from PyQt5.QtWidgets import QApplication
+#from tuiview import geolinkedviewers
+#from tuiview.viewerstretch import ViewerStretch
 #from tuiview_plugins.scalebar_nth_arrow import scalebar_north_arrow
 
 
@@ -85,7 +85,10 @@ def writeTmpArray(params, data, results):
 
 def processResults(params, data, results):
     ## movie file path name
-    movieFName = os.path.join(params.outputDataPath, 'results.wmv')
+    outputDataResults = params.outputDataPath
+    inputDataResults = params.inputDataPath
+    AOI_FName = params.AOIShp
+    movieFName = os.path.join(outputDataResults, 'results.wmv')
 
     # if results isn't already a list it came from testcalc.py (rather than testcalmulti.py)
     # so turn it into a list
@@ -93,26 +96,21 @@ def processResults(params, data, results):
         results = [results]
 
     # first, do the plots
-    doTimeSeriesPlots(results, sorted(data.preySpatialDictByMgmt.keys()), params.outputDataPath)
-    doMthlyTimeSeriesPlots(results, sorted(data.preySpatialDictByMgmt.keys()), params.outputDataPath)
-
-
-###    # first, do the plots
-###    doPreyPlots(results, sorted(data.preyControlDictByMgmt.keys()), params.outputDataPath)
+    doTimeSeriesPlots(results, sorted(data.preySpatialDictByMgmt.keys()), outputDataResults)
+    doMthlyTimeSeriesPlots(results, sorted(data.preySpatialDictByMgmt.keys()), outputDataResults)
 
     ## MAKE TABLE OF CONTROL COUNTS; MEANS AND 95% CI
-    controlCountTable(results, params.outputDataPath)
+    controlCountTable(results, outputDataResults)
 
     rodentGeoTrans = data.rodentGeoTrans
 
     # then the movie
-    makeMovie(results, movieFName, params.outputDataPath, rodentGeoTrans)
-
+    makeMovie(results, movieFName, AOI_FName, outputDataResults, rodentGeoTrans)
 
     #########
     ###############################################################
     # OPTIONAL: MAKE 3-D TIFF OF DENSITIES OVER TIME
-###    tempTifName = os.path.join(params.outputDataPath, 'stoatDensity.tif')
+###    tempTifName = os.path.join(outputDataResults, 'stoatDensity.tif')
 ###    gdt_type = gdalconst.GDT_Float32
 
 #    rasterS = results[0].popAllYears_3D['stoatDensity']
@@ -123,32 +121,24 @@ def processResults(params, data, results):
     ##############################################################
     #########
 
-
-
-
-
-
-def makeMovie(results, movieFName, outputDataPath, rodentGeoTrans):
+def makeMovie(results, movieFName, AOI_FName, outputDataResults, rodentGeoTrans):
     # create temp dir to work in
     # TODO: do we need to be able to specify the dir this 
     # happens in?
 
-
-    app = QApplication(sys.argv)
-    app.setApplicationName('tuiview')
-    app.setOrganizationName('TuiView')
-    viewers = geolinkedviewers.GeolinkedViewers()
-    viewer = viewers.newViewer()
-    viewer.resizeForWidgetSize(VIEWER_XSIZE, VIEWER_YSIZE)
-#    sbnth = scalebar_north_arrow.registerScaleBarNorthArrow(viewer, True, True) 
-
-
-
+#    app = QApplication(sys.argv)
+#    app.setApplicationName('tuiview')
+#    app.setOrganizationName('TuiView')
+#    viewers = geolinkedviewers.GeolinkedViewers()
+#    viewer = viewers.newViewer()
+#    viewer.resizeForWidgetSize(VIEWER_XSIZE, VIEWER_YSIZE)
+###    sbnth = scalebar_north_arrow.registerScaleBarNorthArrow(viewer, True, True) 
 
     tempDir = tempfile.mkdtemp()
 
     # get the iteration for the movie info
     params = results[0].params
+
     popMovie = results[0].popAllYears_3D
 
     mastingPNG = os.path.join(tempDir, 'mastingMask.png')
@@ -163,8 +153,6 @@ def makeMovie(results, movieFName, outputDataPath, rodentGeoTrans):
         # Note: Current directory
         thisFramePNG = 'frame_%02d.png' % yearn
 
-        print('thisFramePNG', thisFramePNG)
-
         mastingMask = popMovie['MastT'][yearn]
         makeMaskPNG(tempDir, mastingMask, mastingPNG, 
                 'Masting Year %d' % yearName, 
@@ -177,14 +165,14 @@ def makeMovie(results, movieFName, outputDataPath, rodentGeoTrans):
 
         rodentDensity = popMovie['rodentDensity'][yearn]
         makeColourMapPNG(tempDir, rodentDensity, rodentPNG, 'Rats', 
-                RODENT_RESIZE_PERCENT, RODENT_DENSITY_RANGE)
+                RODENT_RESIZE_PERCENT, RODENT_DENSITY_RANGE, rodentGeoTrans)
 
         stoatDensity = popMovie['stoatDensity'][yearn]
         # fudge
         stoatResizePercent = ((rodentDensity.shape[0] / stoatDensity.shape[0]) 
                     * RODENT_RESIZE_PERCENT)
         makeColourMapPNG(tempDir, stoatDensity, stoatPNG, 'Stoats', 
-            stoatResizePercent, STOAT_DENSITY_RANGE)
+            stoatResizePercent, STOAT_DENSITY_RANGE, rodentGeoTrans)
 
         preyDensity = popMovie['preyDensity'][yearn]
 
@@ -192,35 +180,30 @@ def makeMovie(results, movieFName, outputDataPath, rodentGeoTrans):
         preyResizePercent = ((rodentDensity.shape[0] / preyDensity.shape[0]) 
                     * RODENT_RESIZE_PERCENT)
         makeColourMapPNG(tempDir, preyDensity, preyPNG, 'Prey', 
-                preyResizePercent, PREY_DENSITY_RANGE)
+                preyResizePercent, PREY_DENSITY_RANGE, rodentGeoTrans)
 
         # make the frame with all the inputs
-        frameDataPath = os.path.join(outputDataPath, thisFramePNG)
-
-
-
-
+        frameDataPath = os.path.join(outputDataResults, thisFramePNG)
 
         ###############################################################
         # Add area of interest vector image
-        stretch = ViewerStretch()
-        stretch.setBands((1,))
-        stretch.setColorTable()
-        viewer.addRasterInternal(frameDataPath, stretch)
-        viewer.addVectorInternal(params.AOIShp)
+#        stretch = ViewerStretch()
+#        stretch.setBands((1,))
+#        stretch.setColorTable()
+#        viewer.addRasterInternal(frameDataPath, stretch)
+#        viewer.addVectorInternal(AOI_FName)
         # Retrieve the 'layer' that represents the vector
-        vecLayer = viewer.viewwidget.layers.getTopVectorLayer()
+#        vecLayer = viewer.viewwidget.layers.getTopVectorLayer()
         # set management zone outline colour
-        vecLayer.setColor([255, 255, 255, 255]) # red, green, blue, alpha
+#        vecLayer.setColor([255, 255, 255, 255]) # red, green, blue, alpha
         # Update window
-        vecLayer.getImage()
-        viewer.viewwidget.update()
+#        vecLayer.getImage()
+#        viewer.viewwidget.update()
         
-#        sbnth.citation = "Year {}".format(idx)
-#        sbnth.getImage()
-        viewer.saveCurrentViewInternal(frameDataPath)
-        viewer.removeLayer()
-        viewer.removeLayer()
+###        sbnth.citation = "Year {}".format(idx)
+###        sbnth.getImage()
+#        viewer.saveCurrentViewInternal(frameDataPath)
+#        viewer.removeLayer()
         #################################################################
     
         subprocess.check_call(['montage', mastingPNG, controlPNG, 
@@ -234,11 +217,10 @@ def makeMovie(results, movieFName, outputDataPath, rodentGeoTrans):
 #                newfig.smush(False, 0)
 #            newfig.save(filename=frameDataPath)        
 
-        
         #now make the movie
     subprocess.check_call(['ffmpeg', 
         '-framerate', str(FRAMERATE), 
-        '-i', os.path.join(params.outputDataPath, 'frame_%02d.png'),
+        '-i', os.path.join(outputDataResults, 'frame_%02d.png'),
         '-vf', 'scale=1920:1080',  # Scale the resolution to 1920x1080
         '-vcodec', 'mpeg4', 
         '-q:v', '1', '-y', 
@@ -248,11 +230,10 @@ def makeMovie(results, movieFName, outputDataPath, rodentGeoTrans):
     # tidy up
     shutil.rmtree(tempDir)
 
-def doPreyPlots(results, controlKeys, outputDataPath):
+def doPreyPlots(results, controlKeys, outputDataResults):
 
     nAreas, nYears = results[0].preyPropKMap_2D.shape
     nIterations = len(results)
-    print('nIterations', nIterations)
     # go through the management zones and plot
     for i, key in enumerate(controlKeys):
 
@@ -271,10 +252,10 @@ def doPreyPlots(results, controlKeys, outputDataPath):
             quants = mquantiles(dataThisYear, prob=[0.025, 0.975])
             quantsAllYears.append(quants)
 
-        doPlot(i, key, meansAllYears, quantsAllYears, outputDataPath)
+        doPlot(i, key, meansAllYears, quantsAllYears, outputDataResults)
 
 
-def doTimeSeriesPlots(results, controlKeys, outputDataPath):
+def doTimeSeriesPlots(results, controlKeys, outputDataResults):
     burnin = results[0].params.burnin    
     rodentResol = results[0].params.resolutions[0]
     # number of hectares in a rodent pixel
@@ -284,7 +265,6 @@ def doTimeSeriesPlots(results, controlKeys, outputDataPath):
     annGrowYearsStop = burnin + ANNGROWTHYEARS - 1
     annGrowYears = np.min([ANNGROWTHYEARS, mngtYears])
     nIterations = len(results)
-    print('nIterations', nIterations, nYears, mngtYears)
     popChangeArray = np.empty((nAreas, ), dtype=[('Area', 'U32'), ('TotalMean', float), 
             ('TotalLow_CI', float), ('TotalHigh_CI', float),
             ('AnnualMean', float), ('AnnualLow_CI', float), 
@@ -346,15 +326,14 @@ def doTimeSeriesPlots(results, controlKeys, outputDataPath):
         popChangeArray[i][7] = probIncrease
         doAreaPlot(i, key, preyMeansAllYears, preyQuantsAllYears, 
                 stoatMeansAllYears, stoatQuantsAllYears, 
-                rodentMeansAllYears, rodentQuantsAllYears, outputDataPath, burnin)
-#    print('popChange', popChangeArray)
-    tableFilePathName = os.path.join(outputDataPath, 'percentPreyChange.csv')
+                rodentMeansAllYears, rodentQuantsAllYears, outputDataResults, burnin)
+    tableFilePathName = os.path.join(outputDataResults, 'percentPreyChange.csv')
     np.savetxt(tableFilePathName, popChangeArray, 
         fmt=['%s', '%.4f', '%.4f', '%.4f', '%.4f', '%.4f', '%.4f', '%.4f'],
         comments = '', delimiter=',', 
         header='Area, TotalMean, TotalLow_CI, TotalHigh_CI, AnnualMean, AnnualLow_CI, AnnualHigh_CI, ProbIncrease')
 
-def doMthlyTimeSeriesPlots(results, controlKeys, outputDataPath):   
+def doMthlyTimeSeriesPlots(results, controlKeys, outputDataResults):   
     rodentResol = results[0].params.resolutions[0]
     # number of hectares in a rodent pixel
     nHectInRodent = (rodentResol / 100.0)**2
@@ -405,7 +384,7 @@ def doMthlyTimeSeriesPlots(results, controlKeys, outputDataPath):
     
         doMthlyAreaPlot(i, key, preyMeansAllMths, preyQuantsAllMths, 
                 stoatMeansAllMths, stoatQuantsAllMths, 
-                rodentMeansAllMths, rodentQuantsAllMths, outputDataPath)
+                rodentMeansAllMths, rodentQuantsAllMths, outputDataResults)
         
         area[(i*nMths):(i*nMths+nMths-1)]=np.repeat(os.path.basename(key), nMths)
         decimYear=np.append(decimYear,decYrs,axis=0)
@@ -418,7 +397,7 @@ def doMthlyTimeSeriesPlots(results, controlKeys, outputDataPath):
         MeanPrey=np.append(MeanPrey,preyMeansAllMths,axis=0)
         PreyLow_CI=np.append(PreyLow_CI,np.array(preyQuantsAllMths)[...,0],axis=0)
         PreyHigh_CI=np.append(PreyHigh_CI,np.array(preyQuantsAllMths)[...,1],axis=0)
-    tableFilePathName = os.path.join(outputDataPath, 'monthlyDensities.csv')
+    tableFilePathName = os.path.join(outputDataResults, 'monthlyDensities.csv')
     with open (tableFilePathName, 'w', newline='') as f:
         headers = ['Area', 'Year','Rodents_Mean','Rodents_LowCI', 'Rodents_HighCI',
                    'Stoats_Mean','Stoats_LowCI', 'Stoats_HighCI','Prey_Mean',
@@ -430,7 +409,7 @@ def doMthlyTimeSeriesPlots(results, controlKeys, outputDataPath):
                              StoatsHigh_CI, MeanPrey, PreyLow_CI, PreyHigh_CI))
 
 
-def controlCountTable(results, outputDataPath):
+def controlCountTable(results, outputDataResults):
     countStructured = np.empty((1,), dtype=[('Mean', float), ('Low_CI', float), 
                     ('High_CI', float)])
     nIterations = len(results)
@@ -443,7 +422,7 @@ def controlCountTable(results, outputDataPath):
     countStructured['Mean'] = meanCount
     countStructured['Low_CI'] = quantsCount[0]
     countStructured['High_CI'] = quantsCount[1]
-    tableFilePathName = os.path.join(outputDataPath, 'controlCount.csv')
+    tableFilePathName = os.path.join(outputDataResults, 'controlCount.csv')
     np.savetxt(tableFilePathName, countStructured, fmt=['%.2f', '%.2f', '%.2f'],
                     comments = '', delimiter=',', header='Mean, Low_CI, High_CI')
 
@@ -460,7 +439,6 @@ def makeMaskPNG(tempDir, mask, fname, title, resizePercent, rodentGeoTrans):
 
     driver = gdal.GetDriverByName('KEA')
     ds = driver.Create(maskIMG, ncols, nrows, 3, gdal.GDT_Byte)
-
     ds.SetProjection(NZTM_WKT)
     ds.SetGeoTransform(rodentGeoTrans)
 
@@ -487,7 +465,8 @@ def makeMaskPNG(tempDir, mask, fname, title, resizePercent, rodentGeoTrans):
 #            ctx(img)
 #        img.save(filename=fname)
 
-def makeColourMapPNG(tempDir, density, fname, title, resizePercent, densityRange):
+def makeColourMapPNG(tempDir, density, fname, title, resizePercent, 
+        densityRange, rodentGeoTrans):
     """
     Using the colour map create a rgb PNG for the density array
     """
@@ -505,11 +484,13 @@ def makeColourMapPNG(tempDir, density, fname, title, resizePercent, densityRange
 
     driver = gdal.GetDriverByName('KEA')
     ds = driver.Create(densityIMG, ncols, nrows, 3, gdal.GDT_Byte)
+    ds.SetProjection(NZTM_WKT)
+    ds.SetGeoTransform(rodentGeoTrans)
+
 
     # rescale density so the range is 0-75
     density = (density / (densityRange[1] - densityRange[0])) * 75
     density = np.clip(density, 0, 75).astype(np.uint8)
-    #print('density', fname, density.min(), density.max())
 
     for n in range(3):
         band = ds.GetRasterBand(n+1)
@@ -537,6 +518,9 @@ def makeColourMapPNG(tempDir, density, fname, title, resizePercent, densityRange
 
     # write to .kea
     ds = driver.Create(rampIMG, rampWidth, nrows, 3, gdal.GDT_Byte)
+    ds.SetProjection(NZTM_WKT)
+    ds.SetGeoTransform(rodentGeoTrans)
+
 
     for n in range(3):
         band = ds.GetRasterBand(n+1)
@@ -584,7 +568,7 @@ def makeColourMapPNG(tempDir, density, fname, title, resizePercent, densityRange
 
 def doAreaPlot(i, key, preyMeansAllYears, preyQuantsAllYears, 
                 stoatMeansAllYears, stoatQuantsAllYears, 
-                rodentMeansAllYears, rodentQuantsAllYears, outputDataPath, burnin):
+                rodentMeansAllYears, rodentQuantsAllYears, outputDataResults, burnin):
     preyQuantsAllYears = np.array(preyQuantsAllYears)
     stoatQuantsAllYears = np.array(stoatQuantsAllYears)
     rodentQuantsAllYears = np.array(rodentQuantsAllYears)
@@ -624,14 +608,14 @@ def doAreaPlot(i, key, preyMeansAllYears, preyQuantsAllYears,
     
     outname = 'density_plot_%s.png' % i
 
-    filePathName = os.path.join(outputDataPath, outname)
+    filePathName = os.path.join(outputDataResults, outname)
 
     pylab.savefig(filePathName)
     pylab.cla()
 
 def doMthlyAreaPlot(i, key, preyMeansAllMths, preyQuantsAllMths, 
                 stoatMeansAllMths, stoatQuantsAllMths, 
-                rodentMeansAllMths, rodentQuantsAllMths, outputDataPath):
+                rodentMeansAllMths, rodentQuantsAllMths, outputDataResults):
     preyQuantsAllMths = np.array(preyQuantsAllMths)
     stoatQuantsAllMths = np.array(stoatQuantsAllMths)
     rodentQuantsAllMths = np.array(rodentQuantsAllMths)
@@ -671,15 +655,14 @@ def doMthlyAreaPlot(i, key, preyMeansAllMths, preyQuantsAllMths,
     
     outname = 'density_plot_mthly_%s.png' % i
 
-    filePathName = os.path.join(outputDataPath, outname)
+    filePathName = os.path.join(outputDataResults, outname)
 
     pylab.savefig(filePathName)
     pylab.cla()
 
-def doPlot(i, key, meansAllYears, quantsAllYears, outputDataPath):
+def doPlot(i, key, meansAllYears, quantsAllYears, outputDataResults):
     quantsAllYears = np.array(quantsAllYears)
 
-    #print('quantsAllYears', quantsAllYears)
     pylab.plot(meansAllYears, linewidth=3)
     pylab.plot(quantsAllYears[..., 0], linewidth=1)
     pylab.plot(quantsAllYears[..., 1], linewidth=1)
@@ -691,7 +674,7 @@ def doPlot(i, key, meansAllYears, quantsAllYears, outputDataPath):
     
     outname = 'prop_plot_%s.png' % i
 
-    filePathName = os.path.join(outputDataPath, outname)
+    filePathName = os.path.join(outputDataResults, outname)
 
     pylab.savefig(filePathName)
     pylab.cla()
@@ -723,8 +706,7 @@ def writeMultiTif(results, data, params, arrNames = None, yearIndx = None):
 
     for nn in arrNames:
         FName = nn + '_3D.tif'
-        outFNamePath = os.path.join(params.outputDataPath, FName)
-        print('FName', outFNamePath)
+        outFNamePath = os.path.join(outputDataResults, FName)
         raster_nn = results[0].popAllYears_3D[nn][yearIndx[0]:yearIndx[1]]
 
         (nrows, ncols) = np.shape(raster_nn[0])

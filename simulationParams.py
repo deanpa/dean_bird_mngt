@@ -148,7 +148,7 @@ class PreyParams(object):
 
         ##Control parameters
         ##Mast-reactive control: proportion of zone in mast required for reactive control and mth control applied
-        self.reactivePropMgmtMasting = 0.25  # 0.25    # 0.5  #0.5 # set > 0 to enable
+        self.reactivePropMgmtMasting = 0.0  # 0.25    # 0.5  #0.5 # set > 0 to enable
         self.mastCtrlMth = self.monthDict['Nov']   ## 'Nov' is default
         ##Tracking Tunnel reactive control:
         self.threshold_TT = 0.2   #(1 = no reac) Thres prop of TT with detections
@@ -293,7 +293,7 @@ class PreyParams(object):
         ## PREY SIGMA FOR HOME RANGE STANDARD DEVIATION OF BIVARIATE NORMAL KERNEL
         self.preySigma = 5000
         self.pLeadMax = {'preAdult': 0.2, 'adult' : 0.15}  # .15 and 0.1
-        self.removeLeadAction = True        
+        self.removeLeadAction = False        
 
         ## IMMIGRATION AND EMIGRATION PARAMETERS
         self.gammaProbEmigrate = np.array([0.1, 0.2, 0.4])   # gamma for rodent, stoats, 

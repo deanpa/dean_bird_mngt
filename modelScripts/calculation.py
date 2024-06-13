@@ -1438,17 +1438,20 @@ def trackingTunnelRate(densityRodent, g0_TT, sigma_TT,
     # density per m2
     den_m2 = densityRodent / (rodentResolution**2)         
     # number of rats in the tracking tunnel area (TTArea)
-    nRats = np.int8(np.round((den_m2 * TTArea), 0))
-    ## Eqn. 7
-    # generate some random distances
-    dist = rng.uniform(0.0, (4.0 * sigma_TT), nRats)
-    # probability of detection by a single tracking tunnel over 1 night
-    pdect = g0_TT * np.exp(-(dist**2) / 2.0 / (sigma_TT**2))
-    ## Eqn. 6
-    # probability of detection over multiple nights
-    PD = 1.0 - np.prod((1.0 - pdect)**nights_TT)
-    ## Eqn. 5
-    trackingRate = rng.binomial(nTunnels, PD, 1) / nTunnels
+    nRats = np.int32(np.round((den_m2 * TTArea), 0))
+    if nRats <= 0:
+        trackingRate = 0.0
+    else:
+        ## Eqn. 7
+        # generate some random distances
+        dist = rng.uniform(0.0, (4.0 * sigma_TT), nRats)
+        # probability of detection by a single tracking tunnel over 1 night
+        pdect = g0_TT * np.exp(-(dist**2) / 2.0 / (sigma_TT**2))
+        ## Eqn. 6
+        # probability of detection over multiple nights
+        PD = 1.0 - np.prod((1.0 - pdect)**nights_TT)
+        ## Eqn. 5
+        trackingRate = rng.binomial(nTunnels, PD, 1) / nTunnels
     return(trackingRate)
 
 

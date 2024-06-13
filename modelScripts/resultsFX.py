@@ -29,7 +29,7 @@ from modelScripts import preProcessing
 
 VIEWER_XSIZE = 500
 VIEWER_YSIZE = 500
-
+VECTORNAME = 'Kea_Model_Region3'
 
 
 sr = osr.SpatialReference()
@@ -67,7 +67,7 @@ FRAMERATE = 0.2
 COLOUR_RAMP_FRACTION = 0.05     # .1 # of the image width
 
 ## NUMBER OF YEARS OVER WHICH CALC PREY ANN GROWTH RATE
-ANNGROWTHYEARS = 3      ## CHANGE TO 5
+ANNGROWTHYEARS = 5      ## CHANGE TO 5
 
 
 def writeTmpArray(params, data, results):
@@ -89,6 +89,8 @@ def processResults(params, data, results):
     inputDataResults = params.inputDataPath
     AOI_FName = params.AOIShp
     movieFName = os.path.join(outputDataResults, 'results.wmv')
+
+    print('AOI', AOI_FName)
 
     # if results isn't already a list it came from testcalc.py (rather than testcalmulti.py)
     # so turn it into a list
@@ -174,6 +176,9 @@ def makeMovie(results, movieFName, AOI_FName, outputDataResults, rodentGeoTrans)
         makeColourMapPNG(tempDir, stoatDensity, stoatPNG, 'Stoats', 
             stoatResizePercent, STOAT_DENSITY_RANGE, rodentGeoTrans)
 
+
+
+
         preyDensity = popMovie['preyDensity'][yearn]
 
         # fudge
@@ -191,7 +196,7 @@ def makeMovie(results, movieFName, AOI_FName, outputDataResults, rodentGeoTrans)
 #        stretch.setBands((1,))
 #        stretch.setColorTable()
 #        viewer.addRasterInternal(frameDataPath, stretch)
-#        viewer.addVectorInternal(AOI_FName)
+#        viewer.addVectorInternal(AOI_FName, VECTORNAME)
         # Retrieve the 'layer' that represents the vector
 #        vecLayer = viewer.viewwidget.layers.getTopVectorLayer()
         # set management zone outline colour
@@ -203,6 +208,7 @@ def makeMovie(results, movieFName, AOI_FName, outputDataResults, rodentGeoTrans)
 ###        sbnth.citation = "Year {}".format(idx)
 ###        sbnth.getImage()
 #        viewer.saveCurrentViewInternal(frameDataPath)
+#        viewer.removeLayer()
 #        viewer.removeLayer()
         #################################################################
     

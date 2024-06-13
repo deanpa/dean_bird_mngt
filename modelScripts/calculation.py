@@ -222,7 +222,6 @@ def runModel(rawdata, params=None, loopIter=0):
                             rawdata.preyCorrectionK.shape) * preyPresence)
  
 
-
 ### TODO: CORRECT THIS. KEEP RESOL FOR STOATS AND PREY EQUAL FOR NOW
 
 #    stoat_preyIslandMask = resampleRasterDown(stoatIslandMask, rawdata.preyExtentMask.shape, 
@@ -244,7 +243,6 @@ def runModel(rawdata, params=None, loopIter=0):
     prey_raster = np.concatenate((preyByAgeRasts.transpose(2,0,1),prey_raster.reshape(1,
                         prey_raster.shape[0],prey_raster.shape[1])),axis=0)
     del preyByAgeRasts
-
 
 
     ## CORRECT PREY RECRUIT AND SURVIVAL PARAMETERS FOR HABITAT AREA

@@ -191,8 +191,8 @@ class PreyParams(object):
         self.rodentSurvDDcoef = 2 #2
         self.rodentTheta = 0.8  #1 gives Ricker model
         self.prpGrowRateControl = 1.0  # proportion of rodent growth before control is applied
-        self.rodentProbEatBait = 0.88  # 0.7 # pT
-        self.pRodentPres = 0.95
+        self.rodentProbEatBait = 0.9    #0.88  # 0.7 # pT
+        self.pRodentPres = 0.9
         self.rodentInitialMultiplier = 0.8     
         self.rodentMaxAltitude = 1100.0  # metres based on Christie Mt Misery paper (inc slightly from orig 1000m)
         
@@ -209,7 +209,7 @@ class PreyParams(object):
 
         ######## STOAT PARAMETERS
         #self.stoatProd = 0.71
-        stoatFec= 8.2   # 9.2  #num offspring recruited per generation
+        stoatFec= 8.   # 9.2  #num offspring recruited per generation
         self.stoatIRR = np.log(1+stoatFec/2) #convert to Instantaneous Rec Rate  
                         #Stoat breeding highly synchronised (daylength dependent) 
                         #so breed in one pulse/time step
@@ -218,14 +218,14 @@ class PreyParams(object):
                         #break up when young are 12-14 wks so say Jan recruitment
         #make sure dispersal happens after recuritment                        
         self.stoatSeasDisp = np.array([0,0,0,0,0,1,0,0,0,0,0,0], dtype=bool) #disperse Feb
-        self.stoatRecDDcoef = 0.08 #8
+        self.stoatRecDDcoef = 0.07  #0.08 #8
         self.stoatSurv = 0.94
         self.stoatSurvDDcoef = 0.095 #9.5
         self.stoatTheta = 1
         #self.stoatRecLag = 3 #calc recruitment based on rat numbers 3 mths before young stoats become in
         self.stoatPopSD = 0.22
-        self.pEncToxic = 0.006          # operates at stoat scale
-        self.pEatEncToxic = 0.9          # operates at stoat scale
+        self.pEncToxic = 0.0065          # operates at stoat scale
+        self.pEatEncToxic = 0.92          # operates at stoat scale
         self.stoatInitialMultiplier = .85
         self.pStoatPres = 0.75
         self.initialStoatN = 2.0 #4

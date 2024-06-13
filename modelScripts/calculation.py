@@ -664,8 +664,8 @@ def calcStoatPopulation(stoat_raster, rodent_raster, nToxicRodents, stoatMask, p
     seasRec = params.stoatSeasRec[mth]
     pSurv = (params.stoatSurv * np.exp(-((stoat_t/(params.stoatSurvDDcoef*rodent_t))
                                          **params.stoatTheta)))
-    recRate = ((np.exp(seasRec * params.stoatIRR)-1) * np.exp(-((stoat_t/(params.stoatRecDDcoef*rodent_t))
-                                                     **params.stoatTheta)))
+    recRate = ((np.exp(seasRec * params.stoatIRR)-1) * 
+        np.exp(-((stoat_t/(params.stoatRecDDcoef*rodent_t))**params.stoatTheta)))
     stoat_t = stoat_t * pSurv * (1 + recRate) 
 
 

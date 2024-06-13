@@ -173,7 +173,7 @@ class PreyParams(object):
         self.islandK = 2.0
         self.initialRodentN = 10
         #self.rodentProd = 0.3916
-        rodentFec= 6  #num offspring recruited per generation
+        rodentFec= 5  #num offspring recruited per generation
         self.rodentIRR = np.log(1+rodentFec/2)/4 #convert to monthly Instantaneous Rec Rate 
                         #divided by generation time (4 mths to sexual mturity) in this case
         #seasRec describes what proportion of population is breeding in each month
@@ -192,7 +192,7 @@ class PreyParams(object):
         self.rodentSurvDDcoef = 2 #2
         self.rodentTheta = 0.8  #1 gives Ricker model
         self.prpGrowRateControl = 1.0  # proportion of rodent growth before control is applied
-        self.rodentProbEatBait = 0.9    #0.88  # 0.7 # pT
+        self.rodentProbEatBait = 0.95    #0.88  # 0.7 # pT
         self.pRodentPres = 0.9
         self.rodentInitialMultiplier = 0.8     
         self.rodentMaxAltitude = 1100.0  # metres based on Christie Mt Misery paper (inc slightly from orig 1000m)
@@ -210,7 +210,7 @@ class PreyParams(object):
 
         ######## STOAT PARAMETERS
         #self.stoatProd = 0.71
-        stoatFec= 7.0   # 9.2  #num offspring recruited per generation
+        stoatFec= 6.0   # 9.2  #num offspring recruited per generation
         self.stoatIRR = np.log(1+stoatFec/2) #convert to Instantaneous Rec Rate  
                         #Stoat breeding highly synchronised (daylength dependent) 
                         #so breed in one pulse/time step
@@ -225,7 +225,7 @@ class PreyParams(object):
         self.stoatTheta = 1
         #self.stoatRecLag = 3 #calc recruitment based on rat numbers 3 mths before young stoats become in
         self.stoatPopSD = 0.22
-        self.pEncToxic = 0.007          # operates at stoat scale
+        self.pEncToxic = 0.008          # operates at stoat scale
         self.pEatEncToxic = 0.92          # operates at stoat scale
         self.stoatInitialMultiplier = .85
         self.pStoatPres = 0.75

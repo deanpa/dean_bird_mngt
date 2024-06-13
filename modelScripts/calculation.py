@@ -546,7 +546,7 @@ def runModel(rawdata, params=None, loopIter=0):
             prey_raster = doPreyGrowth(prey_raster, stoat_raster, params, 
                     rawdata.preyExtentMask, rodent_raster_stoat, nHectInRodent,
                     preyMastingMask, preyRecDecay_1D, preySurvDecay_1D, mth, 
-                    rawdata.pLeadDeath3D)
+                    rawdata.pLeadDeath3D, keepYear)
     
     
     
@@ -924,7 +924,7 @@ def doRodentGrowth(rawdata, params, rodent_raster, rodent_kMth, mth):
 
 def doPreyGrowth(prey_raster, stoat_raster, params, mask, 
         rodent_raster_prey, nHectInRodent, mastMsk, preyRecDecay_1D, 
-        preySurvDecay_1D, mth, pLeadDeath3D):
+        preySurvDecay_1D, mth, pLeadDeath3D, keepYear):
     """
     ## calc prey population growth by pixel
     """
@@ -968,15 +968,24 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
     mastInd = np.where(mastMsk[mask]>0,1,0)
     
     for x in range(4):
-          pSurv = (params.preySurv[x,mastInd] * np.exp(-((prey_t[4,:]/(preySurvDecay_1D))**params.preyTheta)) * 
+        pSurv = (params.preySurv[x,mastInd] * np.exp(-((prey_t[4,:]/(preySurvDecay_1D))**params.preyTheta)) * 
                    np.exp(-params.preyEtaStoat[x] * stoat_t * rodentSwitchMult_t) * 
                    np.exp(-params.preyEtaRodent[x] * rodent_t)) 
-          if pLeadDeath3D is not None:
-              if x<3:
-                  pSurv = pSurv * (1.0 - pLead_t[0])
-              else:
-                  pSurv = pSurv * (1.0 - pLead_t[1])
-          prey_t[x,:]=rng.binomial(prey_t[x,:],pSurv)
+        if pLeadDeath3D is not None:
+            if params.removeLeadAction:
+                if not keepYear:
+                    if x<3:
+                        pSurv = pSurv * (1.0 - pLead_t[0])
+                    else:
+                        pSurv = pSurv * (1.0 - pLead_t[1])
+            else:
+                if x<3:
+                    pSurv = pSurv * (1.0 - pLead_t[0])
+                else:
+                    pSurv = pSurv * (1.0 - pLead_t[1])
+
+
+        prey_t[x,:]=rng.binomial(prey_t[x,:],pSurv)
           
     ###  nb: total popn (prey_t[4,:]) is not updated b4 calculating dd-recruitment -
     #### this is cos clutch size/propn breeding is determined months earlier c.f. here

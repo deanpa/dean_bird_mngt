@@ -17,11 +17,11 @@ class PreyParams(object):
 
         ### SET YEARS AND BURN IN YEARS
 
-        self.burnin = 40
-        self.years = np.arange(40)
+        self.burnin = 5
+        self.years = np.arange(5)
 
         ### SET ITERATIONS
-        self.iter = 200
+        self.iter = 20
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
         self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
@@ -148,7 +148,7 @@ class PreyParams(object):
 
         ##Control parameters
         ##Mast-reactive control: proportion of zone in mast required for reactive control and mth control applied
-        self.reactivePropMgmtMasting = 0.0  # 0.25    # 0.5  #0.5 # set > 0 to enable
+        self.reactivePropMgmtMasting = 0.25    # 0.5  #0.5 # set > 0 to enable
         self.mastCtrlMth = self.monthDict['Nov']   ## 'Nov' is default
         ##Tracking Tunnel reactive control:
         self.threshold_TT = 0.2   #(1 = no reac) Thres prop of TT with detections
@@ -171,7 +171,7 @@ class PreyParams(object):
         self.islandK = 2.0
         self.initialRodentN = 10
         #self.rodentProd = 0.3916
-        rodentFec= 8  #num offspring recruited per generation
+        rodentFec= 6  #num offspring recruited per generation
         self.rodentIRR = np.log(1+rodentFec/2)/4 #convert to monthly Instantaneous Rec Rate 
                         #divided by generation time (4 mths to sexual mturity) in this case
         #seasRec describes what proportion of population is breeding in each month
@@ -196,8 +196,8 @@ class PreyParams(object):
         self.rodentMaxAltitude = 1100.0  # metres based on Christie Mt Misery paper (inc slightly from orig 1000m)
         
         ##rat bounce parameters###
-        self.rodentBouncePeriod = 36  #36 in months - time since control within which K/resources are multiplied to drive rat bounce
-        self.rodentBounceMult = 1.5 #2.0  #2 how much to multiply resources/Kmap by to drive rat bounce, set to 1 to turn off rat bounce
+        self.rodentBouncePeriod = 18  #36 in months - time since control within which K/resources are multiplied to drive rat bounce
+        self.rodentBounceMult = 1.1 #2.0  #2 how much to multiply resources/Kmap by to drive rat bounce, set to 1 to turn off rat bounce
         self.rodentBounceDecay = np.log(1/self.rodentBounceMult)/self.rodentBouncePeriod  #decay rate of bounce effect > mult goes to 1 at end of bounce period
         
         ######## TRACKING TUNNEL PARAMETERS
@@ -208,7 +208,7 @@ class PreyParams(object):
 
         ######## STOAT PARAMETERS
         #self.stoatProd = 0.71
-        stoatFec= 8.5   # 9.2  #num offspring recruited per generation
+        stoatFec= 7.0   # 9.2  #num offspring recruited per generation
         self.stoatIRR = np.log(1+stoatFec/2) #convert to Instantaneous Rec Rate  
                         #Stoat breeding highly synchronised (daylength dependent) 
                         #so breed in one pulse/time step
@@ -233,19 +233,21 @@ class PreyParams(object):
                                         #like do in reality (stoats in alpine due to mice)
         
         ## PREY SPECIES PARAMETERS
-        self.preyK = 20.0
-        self.pPreyPres = 0.75
+        self.preyK = 10.0
+        self.pPreyPres = 0.8
         self.initialpreyN = 5.0    #not used anymore?
-        self.preyInitialMultiplier = 0.5  #Binomial(pPreyPres)*preyK*preyInitialMultiplier 
+        self.preyInitialMultiplier = 0.75  #Binomial(pPreyPres)*preyK*preyInitialMultiplier 
                                           #used to initialise kea densities (@t=0)
         #self.preyPsi = 0.7  # Eqn 32
-        self.preyPsiStoat = 0.18  #  Effect of stoats on kea recruitment
-        self.preyEtaStoat = np.array([0.11, 0.04, 0.04, 0.04]) #Effect of stoats on kea survival in each age class (0-3)
+        self.preyPsiStoat = 0.15  #  Effect of stoats on kea recruitment
+        self.preyEtaStoat = np.array([0.10, 0.03, 0.03, 0.03]) #Effect of stoats on kea survival in each age class (0-3)
+#        self.preyPsiStoat = 0.18  #  Effect of stoats on kea recruitment
+#        self.preyEtaStoat = np.array([0.11, 0.04, 0.04, 0.04]) #Effect of stoats on kea survival in each age class (0-3)
         self.preyPsiRodent = 0.0  #Effect of rodents on kea recruitment
         self.preyEtaRodent = np.array([0.0, 0.0, 0.0, 0.0]) #Effect of rodents on kea survival in each age class (0-3), none here
         
         self.rodentThresh = 0.5 #0.5 Threshold rat density per ha at which stoat prey switching kicks in
-        self.stoatMult = 1.5 #3 Multiplier for stoat offtake of prey once prey switch kicks in
+        self.stoatMult = 1.15 #3 Multiplier for stoat offtake of prey once prey switch kicks in
 
         #self.preySurv = np.array([0.982, 0.992, 0.994, 0.998]) #mthly max surv prey for age class 0-4
         self.preySurv = np.array([[0.982, 0.982],  #annual survival for each age class

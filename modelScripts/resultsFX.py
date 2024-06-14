@@ -107,7 +107,7 @@ def processResults(params, data, results):
     rodentGeoTrans = data.rodentGeoTrans
 
     # then the movie
-    makeMovie(results, movieFName, AOI_FName, outputDataResults, rodentGeoTrans)
+#    makeMovie(results, movieFName, AOI_FName, outputDataResults, rodentGeoTrans)
 
     #########
     ###############################################################

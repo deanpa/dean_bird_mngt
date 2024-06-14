@@ -17,11 +17,11 @@ class PreyParams(object):
 
         ### SET YEARS AND BURN IN YEARS
 
-        self.burnin = 5
-        self.years = np.arange(5)
+        self.burnin = 20
+        self.years = np.arange(20)
 
         ### SET ITERATIONS
-        self.iter = 20
+        self.iter = 100
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
         self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
@@ -171,7 +171,7 @@ class PreyParams(object):
         self.islandK = 2.0
         self.initialRodentN = 10
         #self.rodentProd = 0.3916
-        rodentFec= 6  #num offspring recruited per generation
+        rodentFec= 8  #num offspring recruited per generation
         self.rodentIRR = np.log(1+rodentFec/2)/4 #convert to monthly Instantaneous Rec Rate 
                         #divided by generation time (4 mths to sexual mturity) in this case
         #seasRec describes what proportion of population is breeding in each month
@@ -208,7 +208,7 @@ class PreyParams(object):
 
         ######## STOAT PARAMETERS
         #self.stoatProd = 0.71
-        stoatFec= 7.0   # 9.2  #num offspring recruited per generation
+        stoatFec= 8.5   # 9.2  #num offspring recruited per generation
         self.stoatIRR = np.log(1+stoatFec/2) #convert to Instantaneous Rec Rate  
                         #Stoat breeding highly synchronised (daylength dependent) 
                         #so breed in one pulse/time step
@@ -223,7 +223,7 @@ class PreyParams(object):
         self.stoatTheta = 1
         #self.stoatRecLag = 3 #calc recruitment based on rat numbers 3 mths before young stoats become in
         self.stoatPopSD = 0.22
-        self.pEncToxic = 0.012   #.008 or .007          # operates at stoat scale
+        self.pEncToxic = 0.014   #.008 or .007          # operates at stoat scale
         self.pEatEncToxic = 0.95          # operates at stoat scale
         self.stoatInitialMultiplier = .85
         self.pStoatPres = 0.8
@@ -239,21 +239,20 @@ class PreyParams(object):
         self.preyInitialMultiplier = 0.75  #Binomial(pPreyPres)*preyK*preyInitialMultiplier 
                                           #used to initialise kea densities (@t=0)
         #self.preyPsi = 0.7  # Eqn 32
-        self.preyPsiStoat = 0.15  #  Effect of stoats on kea recruitment
-        self.preyEtaStoat = np.array([0.10, 0.03, 0.03, 0.03]) #Effect of stoats on kea survival in each age class (0-3)
-#        self.preyPsiStoat = 0.18  #  Effect of stoats on kea recruitment
-#        self.preyEtaStoat = np.array([0.11, 0.04, 0.04, 0.04]) #Effect of stoats on kea survival in each age class (0-3)
+#        self.preyEtaStoat = np.array([0.105, 0.04, 0.04, 0.03]) #Effect of stoats on kea survival in each age class (0-3)
+        self.preyPsiStoat = 0.18  #  Effect of stoats on kea recruitment
+        self.preyEtaStoat = np.array([0.11, 0.04, 0.04, 0.04]) #Effect of stoats on kea survival in each age class (0-3)
         self.preyPsiRodent = 0.0  #Effect of rodents on kea recruitment
         self.preyEtaRodent = np.array([0.0, 0.0, 0.0, 0.0]) #Effect of rodents on kea survival in each age class (0-3), none here
         
         self.rodentThresh = 0.5 #0.5 Threshold rat density per ha at which stoat prey switching kicks in
-        self.stoatMult = 1.15 #3 Multiplier for stoat offtake of prey once prey switch kicks in
+        self.stoatMult = 1.1 #3 Multiplier for stoat offtake of prey once prey switch kicks in
 
         #self.preySurv = np.array([0.982, 0.992, 0.994, 0.998]) #mthly max surv prey for age class 0-4
-        self.preySurv = np.array([[0.982, 0.982],  #annual survival for each age class
-                                 [0.992,  0.992],  #dim 0 = age class 0-3, dim 1 = nonmast, mast Surv
-                                 [0.994,  0.994],  #here no difference between nonmast and mast years
-                                 [0.998,  0.998]]) #adults potentially very high survival
+        self.preySurv = np.array([[0.98, 0.98],  #annual survival for each age class
+                                 [0.98,  0.98],  #dim 0 = age class 0-3, dim 1 = nonmast, mast Surv
+                                 [0.982,  0.982],  #here no difference between nonmast and mast years
+                                 [0.988,  0.988]]) #adults potentially very high survival
         self.preySurvDDcoef = 110.0 #this is effectively a carrying capacity (per 1km2) for Kea survival, 
                                     #since so large here effectively no density dependence in surv
         #self.preyProd = 0.1067
@@ -264,7 +263,7 @@ class PreyParams(object):
         self.preyFec = np.array([[0.0, 0.0],   #number of chicks fledged per breeding female per annum =2*0.5 (assumed even sex ratio)
                                  [0.0,  0.0],  #dim 0 = age class 0-3, dim 1 = nonmast, mast Fec 
                                  [0.0,  0.0],  #here no difference between nonmast and mast years
-                                 [2.5, 2.5]])  #only adults >3 years breed with 2 female chicks per female per annum /2 to get per capita fec
+                                 [2.75, 2.75]])  #only adults >3 years breed with 2 female chicks per female per annum /2 to get per capita fec
         #self.preySeasRec = np.array([0,0,0,0.3,0.4,0.3,0,0,0,0,0,0]) 
         SeasRec = np.array([[0,   0.0], #how recruitment is spread out across season here peaks in Jan
                             [0.0, 0.0], #dim 0 = mth 0-11, dim 1 = nonmast, mast rec
@@ -294,8 +293,9 @@ class PreyParams(object):
                                 #are not exposed to predation (cos no rats above 1100m =>no stoats)
         ## PREY SIGMA FOR HOME RANGE STANDARD DEVIATION OF BIVARIATE NORMAL KERNEL
         self.preySigma = 5000
-        self.pLeadMax = {'preAdult': 0.2, 'adult' : 0.15}  # .15 and 0.1
-        self.removeLeadAction = False        
+        ## ANNUAL PROBABILITY OF MORTALITY DUE TO LEAD AT HR CENTRE
+        self.pLeadMax = {'preAdult': 0.22, 'adult' : 0.18}  # .15 and 0.1
+        self.removeLeadAction = True      
 
         ## IMMIGRATION AND EMIGRATION PARAMETERS
         self.gammaProbEmigrate = np.array([0.1, 0.2, 0.4])   # gamma for rodent, stoats, 

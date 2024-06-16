@@ -237,8 +237,7 @@ class PreyData(object):
 
             makeProbLeadDeath(self.pLeadDeath3D, self.preyExtentMask, self.preAdultMonthPLead, 
                 self.adultMonthPLead, self.params.preySigma, self.nLeadPts, self.leadPoints, 
-                fullPreyExt, self.params.resolutions[2], self.preyNcols, self.preyNrows)            
-
+                fullPreyExt, self.params.resolutions[2], self.preyNcols, self.preyNrows)
         
             driver = gdal.GetDriverByName('KEA')
             ds = driver.Create('pLeadDiePreAdult.kea', self.preyNcols, self.preyNrows, 
@@ -248,7 +247,6 @@ class PreyData(object):
             band = ds.GetRasterBand(1)
             band.WriteArray(self.pLeadDeath3D[0])
             del ds
-    
             
             driver = gdal.GetDriverByName('KEA')
             ds = driver.Create('pLeadDieAdult.kea', self.preyNcols, self.preyNrows, 
@@ -257,6 +255,15 @@ class PreyData(object):
             ds.SetGeoTransform(self.preyGeoTrans)
             band = ds.GetRasterBand(1)
             band.WriteArray(self.pLeadDeath3D[1])
+            del ds
+        
+            driver = gdal.GetDriverByName('KEA')
+            ds = driver.Create('annualPLeadDiePreAdult.kea', self.preyNcols, 
+                self.preyNrows, 1, gdal.GDT_Float32)
+            ds.SetProjection(NZTM_WKT)
+            ds.SetGeoTransform(self.preyGeoTrans)
+            band = ds.GetRasterBand(1)
+            band.WriteArray(self.pLeadDeath3D[2])
             del ds
 
 
@@ -280,7 +287,7 @@ class PreyData(object):
             self.adultMonthPLead = 1.0 - np.exp(np.log(1.0 - self.params.pLeadMax['adult']) / 12.0)
 #            self.monthlyLeadProb = {'preAdult' : preAdultMonthPLead, 'adult' : adultMonthPLead}
             shpPreyKMap = np.shape(self.preyKMap)
-            self.pLeadDeath3D = np.zeros((2, shpPreyKMap[0], shpPreyKMap[1]), dtype = np.float32)
+            self.pLeadDeath3D = np.zeros((3, shpPreyKMap[0], shpPreyKMap[1]), dtype = np.float32)
         else:
             self.doLeadPoisoning = False
             self.pLeadDeath3D = None
@@ -751,5 +758,6 @@ def makeProbLeadDeath(pLeadDeath3D, preyExtentMask, preAdultMonthPLead, adultMon
 
             pLeadDeath3D[0, row, col] = 1.0 - pNotDiePreAdult
             pLeadDeath3D[1, row, col] = 1.0 - pNotDieAdult
+            pLeadDeath3D[2, row, col] = 1.0 - pNotDiePreAdult**12
 
 

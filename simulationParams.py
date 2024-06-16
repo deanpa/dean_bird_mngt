@@ -17,11 +17,11 @@ class PreyParams(object):
 
         ### SET YEARS AND BURN IN YEARS
 
-        self.burnin = 20
-        self.years = np.arange(20)
+        self.burnin = 40
+        self.years = np.arange(40)
 
         ### SET ITERATIONS
-        self.iter = 100
+        self.iter = 200
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
         self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
@@ -121,8 +121,8 @@ class PreyParams(object):
         # self.controlFile = os.path.join(self.inputDataPath, 'reactControl_kea1.csv')
     
         ### DEAN KEA SCENARIOS
-#        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
-        self.controlFile = os.path.join(self.inputDataPath, 'control_keaSc2_3.csv') # control3 is effectively no control (st yr set to 100)
+        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
+#        self.controlFile = os.path.join(self.inputDataPath, 'control_keaSc2_3.csv') # control3 is effectively no control (st yr set to 100)
 
         ## LEAD POINT DATA
         self.leadPointData = os.path.join(self.inputDataPath, 'leadHutsVillages.csv')
@@ -148,10 +148,10 @@ class PreyParams(object):
 
         ##Control parameters
         ##Mast-reactive control: proportion of zone in mast required for reactive control and mth control applied
-        self.reactivePropMgmtMasting = 0.25    # 0.5  #0.5 # set > 0 to enable
+        self.reactivePropMgmtMasting = 0.0  # 0.25    # 0.5  #0.5 # set > 0 to enable
         self.mastCtrlMth = self.monthDict['Nov']   ## 'Nov' is default
         ##Tracking Tunnel reactive control:
-        self.threshold_TT = 0.2   #(1 = no reac) Thres prop of TT with detections
+        self.threshold_TT = 1.0 # 0.2   #(1 = no reac) Thres prop of TT with detections
         self.reactiveAssessMth = self.monthDict['Jan']  #what month to do a mast prop or tracking tunnel assessment, mth7=Apr
                                                         ## DEFAULT IS 'Jan'
         self.reactiveCtrlDelay = 2  #delay in months from TT assessment to implementation of control
@@ -223,8 +223,8 @@ class PreyParams(object):
         self.stoatTheta = 1
         #self.stoatRecLag = 3 #calc recruitment based on rat numbers 3 mths before young stoats become in
         self.stoatPopSD = 0.22
-        self.pEncToxic = 0.014   #.008 or .007          # operates at stoat scale
-        self.pEatEncToxic = 0.95          # operates at stoat scale
+        self.pEncToxic = 0.02   #.008 or .007          # operates at stoat scale
+        self.pEatEncToxic = 0.96          # operates at stoat scale
         self.stoatInitialMultiplier = .85
         self.pStoatPres = 0.8
         self.initialStoatN = 2.0 #4
@@ -234,7 +234,7 @@ class PreyParams(object):
         
         ## PREY SPECIES PARAMETERS
         self.preyK = 10.0
-        self.pPreyPres = 0.8
+        self.pPreyPres = 0.4
         self.initialpreyN = 5.0    #not used anymore?
         self.preyInitialMultiplier = 0.75  #Binomial(pPreyPres)*preyK*preyInitialMultiplier 
                                           #used to initialise kea densities (@t=0)
@@ -246,7 +246,7 @@ class PreyParams(object):
         self.preyEtaRodent = np.array([0.0, 0.0, 0.0, 0.0]) #Effect of rodents on kea survival in each age class (0-3), none here
         
         self.rodentThresh = 0.5 #0.5 Threshold rat density per ha at which stoat prey switching kicks in
-        self.stoatMult = 1.1 #3 Multiplier for stoat offtake of prey once prey switch kicks in
+        self.stoatMult = 1.01 #3 Multiplier for stoat offtake of prey once prey switch kicks in
 
         #self.preySurv = np.array([0.982, 0.992, 0.994, 0.998]) #mthly max surv prey for age class 0-4
         self.preySurv = np.array([[0.98, 0.98],  #annual survival for each age class
@@ -263,7 +263,7 @@ class PreyParams(object):
         self.preyFec = np.array([[0.0, 0.0],   #number of chicks fledged per breeding female per annum =2*0.5 (assumed even sex ratio)
                                  [0.0,  0.0],  #dim 0 = age class 0-3, dim 1 = nonmast, mast Fec 
                                  [0.0,  0.0],  #here no difference between nonmast and mast years
-                                 [2.75, 2.75]])  #only adults >3 years breed with 2 female chicks per female per annum /2 to get per capita fec
+                                 [3.0, 3.0]])  #only adults >3 years breed with 2 female chicks per female per annum /2 to get per capita fec
         #self.preySeasRec = np.array([0,0,0,0.3,0.4,0.3,0,0,0,0,0,0]) 
         SeasRec = np.array([[0,   0.0], #how recruitment is spread out across season here peaks in Jan
                             [0.0, 0.0], #dim 0 = mth 0-11, dim 1 = nonmast, mast rec
@@ -295,7 +295,7 @@ class PreyParams(object):
         self.preySigma = 5000
         ## ANNUAL PROBABILITY OF MORTALITY DUE TO LEAD AT HR CENTRE
         self.pLeadMax = {'preAdult': 0.22, 'adult' : 0.18}  # .15 and 0.1
-        self.removeLeadAction = True      
+        self.removeLeadAction = False
 
         ## IMMIGRATION AND EMIGRATION PARAMETERS
         self.gammaProbEmigrate = np.array([0.1, 0.2, 0.4])   # gamma for rodent, stoats, 

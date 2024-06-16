@@ -19,6 +19,7 @@ from modelScripts import preProcessing
 from modelScripts import calcresults
 from rios.parallel import jobmanager
 import getpass
+import resource
 
 # Use the same environment variable as RIOS to define the type of
 # parallel processing.
@@ -135,6 +136,7 @@ def main(params):
     if userName == 'dean.anderson' or userName == 'dean':
         maxMem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
         print('Max Mem Usage in kilobytes', maxMem)
+
 
 if __name__ == '__main__':
     main()    

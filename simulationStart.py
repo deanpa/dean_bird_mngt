@@ -4,10 +4,7 @@ import sys
 import optparse
 from modelScripts import simulationMain
 import simulationParams
-#import os
-#import multiprocessing
-#from rios.parallel import jobmanager
-#import rios
+import resource
 
 class CmdArgs(object):
     def __init__(self):
@@ -26,6 +23,10 @@ if __name__ == '__main__':
     # params = simulationParams.PreyParams("Kea", int(1))
 
     simulationMain.main(params)
+
+
+    maxMem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    print('Max Mem Usage', maxMem)
 
 
 

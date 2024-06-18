@@ -52,7 +52,7 @@ class leadTest(object):
         pS = pS0 * np.exp(-dist**2 / 2.0 / self.preySigma**2)
         P.figure(figsize=(8,8))
         P.plot(dist, pS, 'k', linewidth = 4)
-        P.xlabel('Distance from HR centre (m)', fontsize = 14)
+        P.xlabel('Distance from lead point to HR centre (m)', fontsize = 14)
         P.ylabel('First year probability of survival', fontsize = 14)
         P.savefig('leadDecay.png', dpi = 150)
         P.show()

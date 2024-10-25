@@ -48,16 +48,48 @@ class leadTest(object):
 
     def plotDistDecay(self):
         dist = np.arange(0, self.preySigma * 3.0, 1)
-        pS0 = (1-self.pLeadMax['preAdult']) * self.preySurv[0]
-        pS = pS0 * np.exp(-dist**2 / 2.0 / self.preySigma**2)
+
+        pMort0 = self.pLeadMax['preAdult'] * (1 - self.preySurv[0])
+
+
+###        pS0 = (1-self.pLeadMax['preAdult']) * self.preySurv[0]
+
+
+        pSurv = (self.preySurv[0] * (1.0 - (self.pLeadMax['preAdult'] * 
+                (np.exp(-dist**2 / 2.0 / self.preySigma**2)))))
+
+
+###        pS = pS0 * np.exp(-dist**2 / 2.0 / self.preySigma**2)
         P.figure(figsize=(8,8))
-        P.plot(dist, pS, 'k', linewidth = 4)
+        P.plot(dist, pSurv, 'k', linewidth = 4)
         P.xlabel('Distance from lead point to HR centre (m)', fontsize = 14)
         P.ylabel('First year probability of survival', fontsize = 14)
         P.savefig('leadDecay.png', dpi = 150)
         P.show()
 
-        
+class RatBounce(object):
+    def __init__(self):
+        self.nMon = 24
+        self.mon = np.arange(self.nMon)
+        self.bouncePer = 18
+        self.bounceMulti = 1.5
+        self.bounceDecay = np.log(1.0 / self.bounceMulti) / self.bouncePer
+        self.kMth = 70.0
+
+ 
+
+    
+        self.kBounce = self.kMth * self.bounceMulti * np.exp(self.bounceDecay * self.mon)
+
+        self.plotBounce()
+
+
+
+    def plotBounce(self):
+        P.figure(figsize = (8,8))
+        P.plot(self.mon, self.kBounce)
+        P.show()
+
 
 
 
@@ -66,7 +98,9 @@ class leadTest(object):
 def main():
 
 #    survTest()
-    leadTest()
+#    leadTest()
+    RatBounce()
+
 
 if __name__ == '__main__':
     main()

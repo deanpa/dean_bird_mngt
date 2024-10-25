@@ -221,6 +221,7 @@ def runModel(rawdata, params=None, loopIter=0):
     prey_raster = (rng.poisson(params.preyInitialMultiplier * params.preyK, 
                             rawdata.preyCorrectionK.shape) * preyPresence)
  
+    print('shp prey raster 1', prey_raster.shape)
 
 ### TODO: CORRECT THIS. KEEP RESOL FOR STOATS AND PREY EQUAL FOR NOW
 
@@ -233,16 +234,23 @@ def runModel(rawdata, params=None, loopIter=0):
     prey_raster[adjustPreyIsland] = 2
     prey_raster[~rawdata.preyExtentMask] = 0
 
+    print('shp prey raster 2', prey_raster.shape)
 
 
     ## ADD AGE STRUCTURE TO EACH PIXEL IN PREY RASTER
     #split prey_raster into diff age classes
     ## EACH BAND IN 3D RASTER IS AN AGE GROUP (0-4)
     preyByAgeRasts = rng.multinomial(prey_raster, params.preyInitAgeStr)
+
+    print('shp prey raster 3', preyByAgeRasts.shape)
+
+
     ## ADD THE TOTAL NUMBER IN EACH PIXEL AS A 6TH BAND IN 3D RASTER
     prey_raster = np.concatenate((preyByAgeRasts.transpose(2,0,1),prey_raster.reshape(1,
                         prey_raster.shape[0],prey_raster.shape[1])),axis=0)
     del preyByAgeRasts
+
+    print('shp prey raster 4', prey_raster.shape)
 
 
     ## CORRECT PREY RECRUIT AND SURVIVAL PARAMETERS FOR HABITAT AREA
@@ -966,9 +974,10 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
     mastInd = np.where(mastMsk[mask]>0,1,0)
     
     for x in range(4):
-        pSurv = (params.preySurv[x,mastInd] * np.exp(-((prey_t[4,:]/(preySurvDecay_1D))**params.preyTheta)) * 
-                   np.exp(-params.preyEtaStoat[x] * stoat_t * rodentSwitchMult_t) * 
-                   np.exp(-params.preyEtaRodent[x] * rodent_t)) 
+        pSurv = (params.preySurv[x,mastInd] * 
+                    np.exp(-((prey_t[4,:]/(preySurvDecay_1D))**params.preyTheta)) * 
+                    np.exp(-params.preyEtaStoat[x] * stoat_t * rodentSwitchMult_t) * 
+                    np.exp(-params.preyEtaRodent[x] * rodent_t)) 
         if pLeadDeath3D is not None:
             if params.removeLeadAction:
                 if not keepYear:
@@ -989,11 +998,12 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
     #### this is cos clutch size/propn breeding is determined months earlier c.f. here
     #### which is when fledging/recruitment occurs
     for x in range(1,4):
-          recRate =  (params.preySeasRec[mth,mastInd]*params.preyPropBreedpa[mastInd]*params.preyFec[x,mastInd] * 
-                      np.exp(-((prey_t[4,:]/(preyRecDecay_1D))**params.preyTheta)) * 
-                      np.exp(-params.preyPsiStoat * stoat_t) *
-                      np.exp(-params.preyPsiRodent * rodent_t))         
-          prey_t[0,:]=prey_t[0,:]+rng.poisson(prey_t[x,:]*recRate)  #new recruits added to zero age class            
+        recRate =  (params.preySeasRec[mth,mastInd]*
+                        params.preyPropBreedpa[mastInd]*params.preyFec[x,mastInd] * 
+                        np.exp(-((prey_t[4,:]/(preyRecDecay_1D))**params.preyTheta)) * 
+                        np.exp(-params.preyPsiStoat * stoat_t) *
+                        np.exp(-params.preyPsiRodent * rodent_t))         
+        prey_t[0,:]=prey_t[0,:]+rng.poisson(prey_t[x,:]*recRate)  #new recruits added to zero age class            
     
     prey_t[4,:]=np.sum(prey_t[:4,:],axis=0)  #update total pop size
     

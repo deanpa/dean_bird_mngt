@@ -17,11 +17,11 @@ class PreyParams(object):
 
         ### SET YEARS AND BURN IN YEARS
 
-        self.burnin = 8
-        self.years = np.arange(8)
+        self.burnin = 5
+        self.years = np.arange(30)
 
         ### SET ITERATIONS
-        self.iter = 10
+        self.iter = 100
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
         self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
@@ -121,15 +121,14 @@ class PreyParams(object):
         # self.controlFile = os.path.join(self.inputDataPath, 'reactControl_kea1.csv')
     
         ### DEAN KEA SCENARIOS
-        self.controlFile = os.path.join(self.inputDataPath, 'reactControl_kea1.csv') # NO PRESCRIBED CONTROL
+###        self.controlFile = os.path.join(self.inputDataPath, 'reactControl_kea1.csv') # NO PRESCRIBED CONTROL
 ###        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
 
-#        self.controlFile = os.path.join(self.inputDataPath, 'control_keaSc2_3.csv') # control3 is effectively no control (st yr set to 100)
+        self.controlFile = os.path.join(self.inputDataPath, 'control_keaSc2_3.csv') # control3 is effectively no control (st yr set to 100)
 
         ## LEAD POINT DATA
-###        self.leadPointData = os.path.join(self.inputDataPath, 'leadHutsVillages.csv')
-        # self.leadPointData = os.path.join(self.inputDataPath, 'dummyLeadPoints.csv')
-        self.leadPointData = None
+        self.leadPointData = os.path.join(self.inputDataPath, 'leadHutsVillages.csv')
+###        self.leadPointData = None
 
         ##Table for monthly resource/reodent K-values
         # self.seasAdjResFile = os.path.join(self.inputDataPath, 'testRes5.csv')
@@ -150,10 +149,10 @@ class PreyParams(object):
 
         ##Control parameters
         ##Mast-reactive control: proportion of zone in mast required for reactive control and mth control applied
-        self.reactivePropMgmtMasting = 0.0  # 0.25    # 0.5  #0.5 # set > 0 to enable
+        self.reactivePropMgmtMasting = 0.25    # 0.5  #0.5 # set > 0 to enable
         self.mastCtrlMth = self.monthDict['Nov']   ## 'Nov' is default
         ##Tracking Tunnel reactive control:
-        self.threshold_TT = 1.0 # 0.2   #(1 = no reac) Thres prop of TT with detections
+        self.threshold_TT = 0.2 # 0.2   #(1 = no reac) Thres prop of TT with detections
         self.reactiveAssessMth = self.monthDict['Jan']  #what month to do a mast prop or tracking tunnel assessment, mth7=Apr
                                                         ## DEFAULT IS 'Jan'
         self.reactiveCtrlDelay = 2  #delay in months from TT assessment to implementation of control
@@ -210,7 +209,7 @@ class PreyParams(object):
 
         ######## STOAT PARAMETERS
         #self.stoatProd = 0.71
-        stoatFec= 8.5   # 9.2  #num offspring recruited per generation
+        stoatFec= 8.   # 9.2  #num offspring recruited per generation
         self.stoatIRR = np.log(1+stoatFec/2) #convert to Instantaneous Rec Rate  
                         #Stoat breeding highly synchronised (daylength dependent) 
                         #so breed in one pulse/time step
@@ -279,7 +278,7 @@ class PreyParams(object):
                             [0,   0],
                             [0,   0],
                             [0,   0]])         
-        self.preySeasRec = SeasRec/np.sum(SeasRec,0)  #normalise to make sure adds to 1  
+        self.preySeasRec = SeasRec/np.sum(SeasRec, axis = 0)  #normalise to make sure adds to 1  
         self.preyPropBreedpa = np.array([1.0, 1.0])   #added in to account for higher prop breeding in mast year (here no diff)  
         #self.preyMastMultFec = 1 #multiplies up recruitment rate if masting is occuring #not needed for kea but will be for kaka
         self.preyRecDDcoef = 10.00  #this is effectively a carrying capacity (per 1km2) for Kea recruitment

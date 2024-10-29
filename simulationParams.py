@@ -17,8 +17,8 @@ class PreyParams(object):
 
         ### SET YEARS AND BURN IN YEARS
 
-        self.burnin = 5
-        self.years = np.arange(30)
+        self.burnin = 0
+        self.years = np.arange(15)
 
         ### SET ITERATIONS
         self.iter = 100
@@ -296,7 +296,7 @@ class PreyParams(object):
         self.preySigma = 5000
         ## ANNUAL PROBABILITY OF MORTALITY DUE TO LEAD AT HR CENTRE
         self.pLeadMax = {'preAdult': 0.22, 'adult' : 0.18}  # .15 and 0.1
-        self.removeLeadAction = False
+        self.removeLeadAction = True    #True or False 
 
         ## IMMIGRATION AND EMIGRATION PARAMETERS
         self.gammaProbEmigrate = np.array([0.1, 0.2, 0.4])   # gamma for rodent, stoats, 

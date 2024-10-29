@@ -1129,7 +1129,7 @@ def doPreyDispersal(rawdata, prey_raster, params, mask, preyEmigrationWindowSize
     # Eqn 43
     ## EMIGRATION
     preyDispRaster = prey_raster[0,:,:]
-    probPreyEmigrate = np.zeros_like(preyDispRaster)
+    probPreyEmigrate = np.zeros_like(preyDispRaster, dtype=float)
     probPreyEmigrate[mask] = (1.0 - np.exp(-params.gammaProbEmigrate[2] * 
                 preyDispRaster[mask] / rawdata.preyCorrectionK[mask]))
     # Eqn 42

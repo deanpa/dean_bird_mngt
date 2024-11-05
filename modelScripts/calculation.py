@@ -1129,17 +1129,18 @@ def doPreyDispersal(rawdata, prey_raster, params, mask, preyEmigrationWindowSize
     # Eqn 43
     ## EMIGRATION
     preyDispRaster = prey_raster[0,:,:]
-    probPreyEmigrate = np.zeros_like(preyDispRaster)
-#    probPreyEmigrate = np.zeros_like(preyDispRaster, dtype=float)
+    probPreyEmigrate = np.zeros_like(preyDispRaster, dtype=float)
     probPreyEmigrate[mask] = (1.0 - np.exp(-params.gammaProbEmigrate[2] * 
                 preyDispRaster[mask] / rawdata.preyCorrectionK[mask]))
 
-    print('max min of prob Emig ################', np.min(probPreyEmigrate[mask]),
-        np.max(probPreyEmigrate[mask]), probPreyEmigrate[mask][probPreyEmigrate[mask]>0])
+#    print('max min of prob Emig ################', np.min(probPreyEmigrate[mask]),
+#        np.max(probPreyEmigrate[mask]))
 
 
     # Eqn 42
     prey_emigrant_raster = rng.binomial(preyDispRaster, probPreyEmigrate)
+
+#    print('emig raster #########################', np.max(prey_emigrant_raster))
 
 
     # Eqn 44-46

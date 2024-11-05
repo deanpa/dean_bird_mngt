@@ -18,10 +18,10 @@ class PreyParams(object):
         ### SET YEARS AND BURN IN YEARS
 
         self.burnin = 0
-        self.years = np.arange(15)
+        self.years = np.arange(30)
 
         ### SET ITERATIONS
-        self.iter = 100
+        self.iter = 200
         ## IS FIRST RUN; IF FALSE IT WON'T RUN PREPROCESSING TO SAVE TIME
         self.firstRun = True        # True or False
         ## DO WE SUMMARISE RESULTS FOR FULL EXTENT? TRUE OR FALSE
@@ -296,7 +296,7 @@ class PreyParams(object):
         self.preySigma = 5000
         ## ANNUAL PROBABILITY OF MORTALITY DUE TO LEAD AT HR CENTRE
         self.pLeadMax = {'preAdult': 0.22, 'adult' : 0.18}  # .15 and 0.1
-        self.removeLeadAction = True    #True or False 
+        self.removeLeadAction = False    #True or False 
 
         ## IMMIGRATION AND EMIGRATION PARAMETERS
         self.gammaProbEmigrate = np.array([0.1, 0.2, 0.4])   # gamma for rodent, stoats, 

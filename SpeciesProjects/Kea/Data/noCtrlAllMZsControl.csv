@@ -1,0 +1,6 @@
+AreaName,Year,Revisit,ControlIndicator
+test_MZ1.shp,200,300,False
+test_MZ2.shp,200,300,False
+test_MZ3.shp,200,300,False
+test_MZ4.shp,200,300,False
+test_AOI.shp,200,300,False

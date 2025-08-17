@@ -1,0 +1,122 @@
+<PAMDataset>
+  <PAMRasterBand band="1">
+    <Description>Band 1</Description>
+    <Histograms>
+      <HistItem>
+        <HistMin>-0.5</HistMin>
+        <HistMax>6.5</HistMax>
+        <BucketCount>7</BucketCount>
+        <IncludeOutOfRange>1</IncludeOutOfRange>
+        <Approximate>0</Approximate>
+        <HistCounts>0|715680|95823|73353|219241|122213|82357</HistCounts>
+      </HistItem>
+    </Histograms>
+  </PAMRasterBand>
+  <Subdataset name="//BAND1/DATA">
+    <PAMDataset>
+      <PAMRasterBand band="1">
+        <Metadata>
+          <MDI key="BLOCK_SIZE">256</MDI>
+          <MDI key="CLASS">IMAGE</MDI>
+          <MDI key="IMAGE_VERSION">1.2</MDI>
+          <MDI key="STATISTICS_APPROXIMATE">YES</MDI>
+          <MDI key="STATISTICS_MAXIMUM">6</MDI>
+          <MDI key="STATISTICS_MEAN">1.2538559465882</MDI>
+          <MDI key="STATISTICS_MINIMUM">0</MDI>
+          <MDI key="STATISTICS_STDDEV">1.8571035843019</MDI>
+          <MDI key="STATISTICS_VALID_PERCENT">100</MDI>
+        </Metadata>
+      </PAMRasterBand>
+    </PAMDataset>
+  </Subdataset>
+  <Subdataset name="//BAND1/ATT/DATA/FLOAT">
+    <PAMDataset>
+      <PAMRasterBand band="1">
+        <Metadata>
+          <MDI key="STATISTICS_MAXIMUM">715680</MDI>
+          <MDI key="STATISTICS_MEAN">186952.42857143</MDI>
+          <MDI key="STATISTICS_MINIMUM">0</MDI>
+          <MDI key="STATISTICS_STDDEV">224208.89729883</MDI>
+          <MDI key="STATISTICS_VALID_PERCENT">100</MDI>
+        </Metadata>
+      </PAMRasterBand>
+    </PAMDataset>
+  </Subdataset>
+  <Subdataset name="//BAND1/ATT/DATA/INT">
+    <PAMDataset>
+      <PAMRasterBand band="1">
+        <Metadata>
+          <MDI key="STATISTICS_MAXIMUM">1</MDI>
+          <MDI key="STATISTICS_MEAN">0.42857142857143</MDI>
+          <MDI key="STATISTICS_MINIMUM">0</MDI>
+          <MDI key="STATISTICS_STDDEV">0.49487165930539</MDI>
+          <MDI key="STATISTICS_VALID_PERCENT">100</MDI>
+        </Metadata>
+      </PAMRasterBand>
+    </PAMDataset>
+  </Subdataset>
+  <Subdataset name="//BAND1/OVERVIEWS/OVERVIEW1">
+    <PAMDataset>
+      <PAMRasterBand band="1">
+        <Metadata>
+          <MDI key="BLOCK_SIZE">256</MDI>
+          <MDI key="CLASS">IMAGE</MDI>
+          <MDI key="IMAGE_VERSION">1.2</MDI>
+          <MDI key="STATISTICS_MAXIMUM">6</MDI>
+          <MDI key="STATISTICS_MEAN">1.4957906027425</MDI>
+          <MDI key="STATISTICS_MINIMUM">0</MDI>
+          <MDI key="STATISTICS_STDDEV">1.7862993929695</MDI>
+          <MDI key="STATISTICS_VALID_PERCENT">100</MDI>
+        </Metadata>
+      </PAMRasterBand>
+    </PAMDataset>
+  </Subdataset>
+  <Subdataset name="//BAND1/OVERVIEWS/OVERVIEW2">
+    <PAMDataset>
+      <PAMRasterBand band="1">
+        <Metadata>
+          <MDI key="BLOCK_SIZE">178</MDI>
+          <MDI key="CLASS">IMAGE</MDI>
+          <MDI key="IMAGE_VERSION">1.2</MDI>
+          <MDI key="STATISTICS_MAXIMUM">6</MDI>
+          <MDI key="STATISTICS_MEAN">1.4919610155813</MDI>
+          <MDI key="STATISTICS_MINIMUM">0</MDI>
+          <MDI key="STATISTICS_STDDEV">1.7849706205365</MDI>
+          <MDI key="STATISTICS_VALID_PERCENT">100</MDI>
+        </Metadata>
+      </PAMRasterBand>
+    </PAMDataset>
+  </Subdataset>
+  <Subdataset name="//BAND1/OVERVIEWS/OVERVIEW3">
+    <PAMDataset>
+      <PAMRasterBand band="1">
+        <Metadata>
+          <MDI key="BLOCK_SIZE">89</MDI>
+          <MDI key="CLASS">IMAGE</MDI>
+          <MDI key="IMAGE_VERSION">1.2</MDI>
+          <MDI key="STATISTICS_MAXIMUM">6</MDI>
+          <MDI key="STATISTICS_MEAN">1.4906367041199</MDI>
+          <MDI key="STATISTICS_MINIMUM">0</MDI>
+          <MDI key="STATISTICS_STDDEV">1.7890566828173</MDI>
+          <MDI key="STATISTICS_VALID_PERCENT">100</MDI>
+        </Metadata>
+      </PAMRasterBand>
+    </PAMDataset>
+  </Subdataset>
+  <Subdataset name="//BAND1/OVERVIEWS/OVERVIEW4">
+    <PAMDataset>
+      <PAMRasterBand band="1">
+        <Metadata>
+          <MDI key="BLOCK_SIZE">44</MDI>
+          <MDI key="CLASS">IMAGE</MDI>
+          <MDI key="IMAGE_VERSION">1.2</MDI>
+          <MDI key="STATISTICS_MAXIMUM">6</MDI>
+          <MDI key="STATISTICS_MEAN">1.5065656565657</MDI>
+          <MDI key="STATISTICS_MINIMUM">0</MDI>
+          <MDI key="STATISTICS_STDDEV">1.7988372572338</MDI>
+          <MDI key="STATISTICS_VALID_PERCENT">100</MDI>
+        </Metadata>
+      </PAMRasterBand>
+    </PAMDataset>
+  </Subdataset>
+</PAMDataset>

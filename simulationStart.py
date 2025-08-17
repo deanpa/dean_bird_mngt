@@ -23,7 +23,7 @@ if __name__ == '__main__':
     cmdargs = CmdArgs()
 
     params = simulationParams.PreyParams(cmdargs.species, int(cmdargs.scenario))
-    # params = simulationParams.PreyParams("Kea", int(1))
+    #params = simulationParams.PreyParams("Robin", int(6))
 
     simulationMain.main(params)
 

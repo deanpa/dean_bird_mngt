@@ -27,6 +27,7 @@ def inv_logit(x):
     return np.exp(x) / (1 + np.exp(x))
 
 
+
 def runModel(rawdata, params=None, loopIter=0):
     """
     Run the Prey model for a given iteration number.
@@ -76,9 +77,9 @@ def runModel(rawdata, params=None, loopIter=0):
     if loopIter == 0:
         rodentShp = np.shape(rawdata.rodentExtentMask)
         results.popAllYears_3D = {'MastT': np.zeros((nYears, rodentShp[0], rodentShp[1]), 
-                                        dtype = np.bool),
+                                        dtype = bool),
                       'ControlT': np.zeros((nYears, rodentShp[0], rodentShp[1]), 
-                                        dtype = np.bool),     
+                                        dtype = bool),     
                       'rodentDensity': np.zeros((nYears, rodentShp[0], rodentShp[1]), 
                                         dtype = float),
                       'stoatDensity': np.zeros((nYears, stoatShp[0], stoatShp[1]), 
@@ -230,8 +231,8 @@ def runModel(rawdata, params=None, loopIter=0):
 
 
 
-    adjustPreyIsland = (prey_raster > 3) & stoatIslandMask  #stoat_preyIslandMask
-    prey_raster[adjustPreyIsland] = 2
+    # adjustPreyIsland = (prey_raster > 3) & stoatIslandMask  #stoat_preyIslandMask
+    # prey_raster[adjustPreyIsland] = 2
     prey_raster[~rawdata.preyExtentMask] = 0
 
 
@@ -259,7 +260,7 @@ def runModel(rawdata, params=None, loopIter=0):
 
     # set initial no mast in year t-1
     mastT_1 = False
-    oldMastingMask = np.zeros_like(beechMask, dtype=np.bool) 
+    oldMastingMask = np.zeros_like(beechMask, dtype=bool) 
     ## COLUMN 0 IS FOR CURRENT YEAR, COLUMN 1 IS FOR T-1
     propControlMaskMasting = np.zeros(nControlAreas, dtype=float) 
 #    propControlMaskMasting = np.zeros((nControlAreas,2), dtype=float) 
@@ -279,7 +280,7 @@ def runModel(rawdata, params=None, loopIter=0):
 
         #reactiveControlMask = None # nothing by default
 
-        mastingMask  = np.zeros_like(beechMask, dtype=np.bool)
+        mastingMask  = np.zeros_like(beechMask, dtype=bool)
         preyMastingMask = np.zeros_like(prey_raster[0,0:,0:], dtype=float)
 
         ## EMPTY OBJECT FOR STORING CONTROL MASK FOR ALL YEARS FOR RESULTS IN LOOP 0
@@ -324,7 +325,7 @@ def runModel(rawdata, params=None, loopIter=0):
             mastingMask = doMasting(rawdata, params, distArray, masthalfwinsize, 
                         beechMask)
             preyMastingMask = resampleRasterDown(mastingMask*1.0,prey_raster[0,0:,0:].shape, 
-                                                 statMethod = RESAMPLE_AVERAGE, pixelRescale=1)
+                                                  statMethod = RESAMPLE_AVERAGE, pixelRescale=1)
             #if masting year and doing control reactive to masting then assess prop mgmt areas masting
             if (params.reactivePropMgmtMasting > 0):
                 for count, (controlMask, startYear, revisit, 
@@ -379,8 +380,9 @@ def runModel(rawdata, params=None, loopIter=0):
             # rodent_kMth = np.where(timeSinceCtrl<params.rodentBouncePeriod,params.rodentBounceMult*rodent_kMth ,rodent_kMth)
             if mastT:
                 rodent_kMth = np.where(mastingMask==True,rawdata.mastSeasAdj[rawdata.kClasses,mth],rodent_kMth)
-            # #bounce adjustment shifted to after mast and crash adjustments are made
-            # rodent_kMth = np.where(timeSinceCtrl<params.rodentBouncePeriod,params.rodentBounceMult*rodent_kMth ,rodent_kMth)
+            
+            #bodge to get low rodents for continuous press control in an 'island' area
+            rodent_kMth = np.where(rawdata.islands==1,params.islandK*4,rodent_kMth)
             
             rodent_raster = doRodentGrowth(rawdata, params,
                 rodent_raster, rodent_kMth, mth)
@@ -537,10 +539,17 @@ def runModel(rawdata, params=None, loopIter=0):
             ## IF PREY RESOL != STOAT RESOL, HAVE TO REPLACE "rodent_raster_stoat" in
             ## THE FOLLOWING FX AND GET 'rodent_raster_prey' WITHIN THE FX. THIS IS
             ## FOR THE COMPETITION EFFECT BETWEEN RODENTS AND PREY.
+            ##toggle between these 2 calls depending on resoultion of stoats and rats to prey
             prey_raster = doPreyGrowth(prey_raster, stoat_raster, params, 
                     rawdata.preyExtentMask, rodent_raster_stoat, nHectInRodent,
                     preyMastingMask, preyRecDecay_1D, preySurvDecay_1D, mth, 
                     rawdata.pLeadDeath3D)
+            
+            ##send rodent raster as is 'cos same scale and send mastingMask as is too
+            # prey_raster = doPreyGrowth(prey_raster, stoat_raster, params, 
+            #         rawdata.preyExtentMask, rodent_raster, nHectInRodent,
+            #         mastingMask, preyRecDecay_1D, preySurvDecay_1D, mth, 
+            #         rawdata.pLeadDeath3D)
     
     
     
@@ -943,9 +952,8 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
 
     ###################################################################
     ###################################################################
-    ## DO THE FOLLOWING ONLY IF STOAT AND PREY RESOL ARE NOT EQUAL
-#    stoat_raster_prey = resampleRasterDown(stoat_raster, mask.shape, 
-#                       statMethod = RESAMPLE_SUM, pixelRescale = 1)
+    ## DO THE FOLLOWING ONLY IF STOAT RESOL > prey resolution
+    # stoat_raster_prey = resampleRasterUp(stoat_raster, mask.shape)
 
     ## MAKE 1-D ARRAYS FOR POPULATION UPDATE
 
@@ -954,15 +962,27 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
         pLead_t = pLeadDeath3D[:, mask]
     
     prey_t = prey_raster[:,mask]
+##toggle this also depending on whether prey has same resolution as stoat
     stoat_t = stoat_raster[mask]
+    # stoat_t = stoat_raster_prey[mask]
     rodent_t = rodent_raster_prey[mask]
     rodentSwitchMult_t = np.where(rodent_t<=params.rodentThresh,params.stoatMult,1)
     mastInd = np.where(mastMsk[mask]>0,1,0)
     
     for x in range(4):
           pSurv = (params.preySurv[x,mastInd] * np.exp(-((prey_t[4,:]/(preySurvDecay_1D))**params.preyTheta)) * 
-                   np.exp(-params.preyEtaStoat[x] * stoat_t * rodentSwitchMult_t) * 
-                   np.exp(-params.preyEtaRodent[x] * rodent_t)) 
+                     np.exp(-params.preyEtaStoat[x] * stoat_t * rodentSwitchMult_t) * 
+                     np.exp(-params.preyEtaRodent[x] * rodent_t)) 
+          ##this does a weibull survival function which if Mod>1 makes surv higher at low predator densities (than exponential
+          ##fn) but penalised more if predator densities really high
+          # pSurv = (params.preySurv[x,mastInd] * np.exp(-((prey_t[4,:]/(preySurvDecay_1D))**params.preyTheta)) * 
+          #           np.exp(-((params.preyEtaStoat[x] * stoat_t * rodentSwitchMult_t)**params.preyModEtaStoat[x])) * 
+          #           np.exp(-((params.preyEtaRodent[x] * rodent_t)**params.preyModEtaRodent[x]))) 
+          ##a power recruitment fn (alternative to exponential)
+          #pSurv = (params.preySurv[x,mastInd] * np.exp(-((prey_t[4,:]/(preySurvDecay_1D))**params.preyTheta)) * 
+          #           power_fn(stoat_t * rodentSwitchMult_t, params.preyEtaStoat[x]) * 
+          #          # power_fn(stoat_t, params.preyEtaStoat[x]) * 
+          #          power_fn(rodent_t,params.preyEtaRodent[x])) 
           if pLeadDeath3D is not None:
               if x<3:
                   pSurv = pSurv * (1.0 - pLead_t[0])
@@ -975,9 +995,20 @@ def doPreyGrowth(prey_raster, stoat_raster, params, mask,
     #### which is when fledging/recruitment occurs
     for x in range(1,4):
           recRate =  (params.preySeasRec[mth,mastInd]*params.preyPropBreedpa[mastInd]*params.preyFec[x,mastInd] * 
-                      np.exp(-((prey_t[4,:]/(preyRecDecay_1D))**params.preyTheta)) * 
-                      np.exp(-params.preyPsiStoat * stoat_t) *
-                      np.exp(-params.preyPsiRodent * rodent_t))         
+                        np.exp(-((prey_t[4,:]/(preyRecDecay_1D))**params.preyTheta)) * 
+                        np.exp(-params.preyPsiStoat * stoat_t) *
+                        np.exp(-params.preyPsiRodent * rodent_t))         
+          ##this does a weibull recruitment function which if Mod>1 makes recuritment largely unaffected at low 
+          ##predator densities (than exponential fn) but then penalised more if predator densities really high
+          # recRate =  (params.preySeasRec[mth,mastInd]*params.preyPropBreedpa[mastInd]*params.preyFec[x,mastInd] * 
+          #              np.exp(-((prey_t[4,:]/(preyRecDecay_1D))**params.preyTheta)) * 
+          #              np.exp(-((params.preyPsiStoat * stoat_t)**params.preyModPsiStoat)) *
+          #              np.exp(-((params.preyPsiRodent * rodent_t)**params.preyModPsiRodent)))         
+          ##a power recruitment fn (alternative to exponential)
+          #recRate =  (params.preySeasRec[mth,mastInd]*params.preyPropBreedpa[mastInd]*params.preyFec[x,mastInd] * 
+          #             np.exp(-((prey_t[4,:]/(preyRecDecay_1D))**params.preyTheta)) * 
+          #             power_fn(stoat_t, params.preyPsiStoat) *
+          #             power_fn(rodent_t, params.preyPsiRodent))         
           prey_t[0,:]=prey_t[0,:]+rng.poisson(prey_t[x,:]*recRate)  #new recruits added to zero age class            
     
     prey_t[4,:]=np.sum(prey_t[:4,:],axis=0)  #update total pop size
@@ -1300,6 +1331,29 @@ def resampleRasterDown(inarray, outSize, statMethod, pixelRescale):
                 outArray[newy, newx] = total / pixelRescale
     return outArray
 
+
+def resampleRasterUp(inarray, outSize):
+    """
+    Resamples an input array up to the given resolution 
+    replicates the lower resolution value across higher res pixels).
+    """    
+    if outSize[0] <= inarray.shape[0] or outSize[1] <= inarray.shape[1]:
+        raise ValueError('Array can only be increased in size')
+
+    newPixPerOldPix = int(np.ceil(outSize[0]/inarray.shape[0]))
+    outArray = np.empty(outSize, inarray.dtype)
+
+    # go through each new pixel
+    for oldx in range(inarray.shape[1]):
+        for oldy in range(inarray.shape[0]):
+            for x in range(newPixPerOldPix):
+                for y in range(newPixPerOldPix):
+                    newx = (oldx * newPixPerOldPix) + x
+                    newy = (oldy * newPixPerOldPix) + y
+                    outArray[newy, newx] = inarray[oldy, oldx]           
+    return outArray
+
+
 def getRodentMaskForFile(rodentControlList, shpFile):
     """
     Helper function. Goes through rodentControlList and returns the
@@ -1405,8 +1459,14 @@ def populateResultDensity(rodent_raster, rodentExtentMask, rodentControlList,
         rodentDensity_2D_mth[i, tMth] = sppDensity        
 
 
-
-
+def power_fn(Predt, decayRate):
+    """
+    Power function to describe predator impacts on prey surv and recr with pred density
+    a substitute for the default exponential decay
+    """
+    pmod=np.ones_like(Predt, dtype=float)
+    pmod[Predt>1]=Predt[Predt>1]**-decayRate  
+    return pmod
 
 
 

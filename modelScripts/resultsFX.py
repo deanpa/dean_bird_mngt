@@ -15,7 +15,7 @@ import pylab
 from wand.image import Image
 from wand.drawing import Drawing
 from modelScripts import calcresults
-from modelScripts import preProcessing
+#from modelScripts import preProcessing
 
 
 COMPRESSED_HFA = ['COMPRESSED=YES']

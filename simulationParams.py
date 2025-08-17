@@ -18,7 +18,7 @@ class PreyParams(object):
         ### SET YEARS AND BURN IN YEARS
 
         self.burnin = 3
-        self.years = np.arange(4)
+        self.years = np.arange(15)
         # self.burnin = 4
         # self.years = np.arange(6)
 
@@ -58,32 +58,37 @@ class PreyParams(object):
         print('############################')
 
         # ### SET DATA AND PATHS TO DIRECTORIES
-        self.extentShp = os.path.join(self.inputDataPath, 'fullExtent.shp')
-        self.AOIShp = os.path.join(self.inputDataPath, 'Kea_Model_Region3.shp')
-        ##########################################
-        ## TEST CONTROL ##########################
-        # self.extentShp = os.path.join(self.inputDataPath, 'test_fullExtent.shp')
+        # self.extentShp = os.path.join(self.inputDataPath, 'fullExtent.shp')
+        # self.AOIShp = os.path.join(self.inputDataPath, 'Kea_Model_Region3.shp')
+        self.extentShp = os.path.join(self.inputDataPath, 'Hauhung_RangitExtent.shp')
+        self.AOIShp = os.path.join(self.inputDataPath, 'Hauhung_RangitAOI.shp')
+        # ##########################################
+         # self.extentShp = os.path.join(self.inputDataPath, 'test_fullExtent.shp')
         # self.AOIShp = os.path.join(self.inputDataPath, 'test_AOI.shp')
-        #self.extentShp = os.path.join(self.inputDataPath, 'extentDummy.shp')
-        #self.AOIShp = os.path.join(self.inputDataPath, 'AOIDummy.shp')        
+        # self.extentShp = os.path.join(self.inputDataPath, 'extentDummy.shp')
+        # self.AOIShp = os.path.join(self.inputDataPath, 'AOIDummy.shp')        
         # self.extentShp = os.path.join(self.inputDataPath, 'EglintonExtent.shp')
         # self.AOIShp = os.path.join(self.inputDataPath, 'EglintonAOI.shp')        
         # #########################################
 
-        self.kClasses = os.path.join(self.inputDataPath, 'eco5_RAT.kea')
+        # self.kClasses = os.path.join(self.inputDataPath, 'resourceKeaRAT.grd')
+        self.kClasses = os.path.join(self.inputDataPath, 'Hauhung_RangitResourcesRAT.grd')
 #        self.kClasses = os.path.join(self.inputDataPath, 'seed_Kea2.img')    
         # self.kClasses = os.path.join(self.inputDataPath, 'test_resource_Kea.grd')    
 #        self.kClasses = os.path.join(self.inputDataPath, 'seed_KeaTemp.img')    
 #        self.kClasses = os.path.join(self.inputDataPath, 'resource_Kea.img')    
-        #self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummyPureBeech.grd')    
+        # self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummyPureBeech.grd')    
         # self.kClasses = os.path.join(self.inputDataPath, 'resourceEglinton.tif')    
 ##        self.kClasses = os.path.join(self.inputDataPath, 'resourcesDummy.grd')    
 
 
         ### Area trapped in recent times.
-        self.islands = os.path.join(self.inputDataPath, 'stoatTrapping750m.kea')
-        self.DEM = os.path.join(self.inputDataPath, 'demKea200m.kea')
-        self.preyHabitatShp = os.path.join(self.inputDataPath, 'Kea_Habitat.shp')
+        # self.islands = os.path.join(self.inputDataPath, 'stoatTrapping750m.kea')
+        # self.DEM = os.path.join(self.inputDataPath, 'demKea200m.kea')
+        # self.preyHabitatShp = os.path.join(self.inputDataPath, 'Kea_Habitat.shp')
+        self.islands = os.path.join(self.inputDataPath, 'Hauhung_RangitTrapping.tif')
+        self.DEM = os.path.join(self.inputDataPath, 'Hauhung_RangitDEM.tif')
+        self.preyHabitatShp = os.path.join(self.inputDataPath, 'Hauhung_RangitKakaExtent.shp')
         # self.islands = os.path.join(self.inputDataPath, 'stoatTrappingRaster.img')
         # self.DEM = os.path.join(self.inputDataPath, 'dem200_kea.img')
         # self.preyHabitatShp = os.path.join(self.inputDataPath, 'Kea_Habitat.shp')
@@ -110,7 +115,7 @@ class PreyParams(object):
 #        self.controlFile = os.path.join(self.inputDataPath, 'reactiveTestControl.csv') 
 #        self.controlFile = os.path.join(self.inputDataPath, 'reactiveMZ3Control.csv') 
 #        self.controlFile = os.path.join(self.inputDataPath, 'reactiveMZ4Control.csv') 
-##        self.controlFile = os.path.join(self.inputDataPath, 'noCtrlDummy.csv') 
+        # self.controlFile = os.path.join(self.inputDataPath, 'noCtrlDummy.csv') 
         # self.controlFile = os.path.join(self.inputDataPath, 'oneOffCtrlDummy.csv') 
         #self.controlFile = os.path.join(self.inputDataPath, 'dblNovCtrlDummy.csv') 
         # self.controlFile = os.path.join(self.inputDataPath, '3yrlyCtrlDummy.csv') 
@@ -119,17 +124,19 @@ class PreyParams(object):
         # self.controlFile = os.path.join(self.inputDataPath, 'reactiveCtrlEglinton.csv') 
         ## "3yrlyCtrlDummy.csv" or "noCtrlDummy.csv" or "oneOffCtrlDumm.csv"
         # self.controlFile = os.path.join(self.inputDataPath, 'reactControl_kea1.csv')
-        self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
+        # self.controlFile = os.path.join(self.inputDataPath, 'control_kea1.csv') # control3 is effectively no control (st yr set to 100)
+        self.controlFile = os.path.join(self.inputDataPath, 'controlForKaka.csv') # control3 is effectively no control (st yr set to 100)
 
         ## LEAD POINT DATA
-        self.leadPointData = os.path.join(self.inputDataPath, 'leadPtsRegion3.csv')
+        #self.leadPointData = os.path.join(self.inputDataPath, 'leadHutsVillages.csv')
+        # self.leadPointData = os.path.join(self.inputDataPath, 'leadPtsRegion3.csv')
         #self.leadPointData = os.path.join(self.inputDataPath, 'test_LeadPoints.csv')
         # self.leadPointData = os.path.join(self.inputDataPath, 'dummyLeadPoints.csv')
-#        self.leadPointData = None
+        self.leadPointData = None
 
         ##Table for monthly resource/reodent K-values
-        # self.seasAdjResFile = os.path.join(self.inputDataPath, 'testRes5.csv')
-        self.seasAdjResFile = os.path.join(self.inputDataPath, 'testRes4.csv')
+        self.seasAdjResFile = os.path.join(self.inputDataPath, 'testRes5.csv')
+        # self.seasAdjResFile = os.path.join(self.inputDataPath, 'testRes4.csv')
 
         ## SET PICKLE FILE NAMES FOR PRE-PROCESSING AND RESULTS
         preProcFName = 'preProc_' + scenDir + '.pkl'

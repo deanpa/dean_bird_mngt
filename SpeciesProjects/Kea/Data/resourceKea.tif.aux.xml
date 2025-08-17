@@ -1,0 +1,13 @@
+<PAMDataset>
+  <PAMRasterBand band="1">
+    <Description>BasicEco200</Description>
+    <Metadata>
+      <MDI key="STATISTICS_APPROXIMATE">YES</MDI>
+      <MDI key="STATISTICS_MAXIMUM">5</MDI>
+      <MDI key="STATISTICS_MEAN">1.5244196194798</MDI>
+      <MDI key="STATISTICS_MINIMUM">0</MDI>
+      <MDI key="STATISTICS_STDDEV">1.7282692474243</MDI>
+      <MDI key="STATISTICS_VALID_PERCENT">50.58</MDI>
+    </Metadata>
+  </PAMRasterBand>
+</PAMDataset>

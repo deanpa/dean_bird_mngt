@@ -1,0 +1,7 @@
+AreaName,Year,Revisit,ControlIndicator
+Hauhung500haCtrl.shp,200,300,False
+Hauhung1000haCtrl.shp,200,300,False
+Hauhung2500haCtrl.shp,200,300,False
+Hauhung5000haCtrl.shp,200,300,False
+Hauhung10000haCtrl.shp,200,300,False
+Hauhung_RangitAOI.shp,1,3,True

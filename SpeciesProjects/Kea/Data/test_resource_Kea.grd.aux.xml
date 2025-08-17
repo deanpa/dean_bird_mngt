@@ -1,0 +1,12 @@
+<PAMDataset>
+  <PAMRasterBand band="1">
+    <Description>test_resource_Kea</Description>
+    <Metadata>
+      <MDI key="STATISTICS_MAXIMUM">6</MDI>
+      <MDI key="STATISTICS_MEAN">4.2896708150536</MDI>
+      <MDI key="STATISTICS_MINIMUM">0</MDI>
+      <MDI key="STATISTICS_STDDEV">1.495094545158</MDI>
+      <MDI key="STATISTICS_VALID_PERCENT">53.41</MDI>
+    </Metadata>
+  </PAMRasterBand>
+</PAMDataset>

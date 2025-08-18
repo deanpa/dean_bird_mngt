@@ -367,23 +367,35 @@ def runModel(rawdata, params=None, loopIter=0):
             # rodent_kMap = rawdata.paramRodentCCLU[rawdata.kClasses] * 1
             # rodent_kMth = rodent_kMap.copy()
             rodent_kMth = rawdata.seasAdj[rawdata.kClasses,mth]
+
+#            print('yr', year_all, 'mth', mth, 'Unique rodent kmth', len(np.unique(rodent_kMth)), 
+#                'raw seasAdj', rawdata.seasAdj[:,mth], 'shp', np.shape(rodent_kMth))
+
              # print('t since:', timeSinceCtrl[1,15:25]) 
             # print('kvals b4:', rodent_kMth[1,15:25]) 
             #bounce adjustment shifted to before mast and crash adjustments are made so that these override the rat bounce effect
-            rodent_kMth = np.where(timeSinceCtrl<params.rodentBouncePeriod,
-                                   rodent_kMth*params.rodentBounceMult*np.exp(params.rodentBounceDecay*timeSinceCtrl),
-                                   rodent_kMth)
+            rodent_kMth = np.where(timeSinceCtrl < params.rodentBouncePeriod,
+                                rodent_kMth * params.rodentBounceMult * np.exp(
+                                params.rodentBounceDecay * timeSinceCtrl), rodent_kMth)
+
             # print('kvals after:', rodent_kMth[1,15:25])
             if mastT_1:
-                rodent_kMth = np.where(oldMastingMask==True,rawdata.crashSeasAdj[rawdata.kClasses,mth],rodent_kMth)
+                rodent_kMth = np.where(oldMastingMask==True,
+                    rawdata.crashSeasAdj[rawdata.kClasses,mth], rodent_kMth)
             # #bounce adjustment shifted to before mast  adjustments are made so that masting overrides the rat bounce effect
             # rodent_kMth = np.where(timeSinceCtrl<params.rodentBouncePeriod,params.rodentBounceMult*rodent_kMth ,rodent_kMth)
             if mastT:
                 rodent_kMth = np.where(mastingMask==True,rawdata.mastSeasAdj[rawdata.kClasses,mth],rodent_kMth)
+
             
             #bodge to get low rodents for continuous press control in an 'island' area
-            rodent_kMth = np.where(rawdata.islands==1,params.islandK*4,rodent_kMth)
+            # rodent_kMth = np.where(rawdata.islands==1,params.islandK*4,rodent_kMth)
             
+
+            # #bounce adjustment shifted to after mast and crash adjustments are made
+            # rodent_kMth = np.where(timeSinceCtrl<params.rodentBouncePeriod,params.rodentBounceMult*rodent_kMth ,rodent_kMth)
+
+
             rodent_raster = doRodentGrowth(rawdata, params,
                 rodent_raster, rodent_kMth, mth)
 
@@ -906,6 +918,7 @@ def doRodentGrowth(rawdata, params, rodent_raster, rodent_kMth, mth):
     ## RODENTS AND SEEDS FOR MTH MASKED BY EXTENT & seas adj
     rodent_t = rodent_raster[rawdata.rodentExtentMask]
     seed_t = rodent_kMth[rawdata.rodentExtentMask]
+
     ## SURVIVAL PROBABLITY
     pSurv = params.rodentSurv * np.exp(-((rodent_t/(seed_t*params.rodentSurvDDcoef))**params.rodentTheta))
     ## RECRUITMENT RATE
@@ -913,6 +926,7 @@ def doRodentGrowth(rawdata, params, rodent_raster, rodent_kMth, mth):
                np.exp(-((rodent_t/(seed_t*params.rodentRecDDcoef))**params.rodentTheta)))
     ## Eqn. 13 POPULATE MU RASTER
     mu[rawdata.rodentExtentMask] = rodent_t * pSurv * (1 + recRate) 
+
     # Eqn 12: Add stochasticity
     rodent_raster = rng.poisson(mu, rodent_raster.shape)
     # rodent_raster = np.round(mu).astype(int)

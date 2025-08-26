@@ -104,16 +104,8 @@ class PreyData(object):
         # Use to get stoat areas per zone -- still at rodent resolution 
         self.rodentExtentForStoats = self.rodentExtentMask.copy()
 
-
-        kMapDS = gdal.Open(self.params.kClasses)
-        ### MASK FOR CELLS THAT CAN MAST????
-        rodentHabLU = rat.readColumn(kMapDS, "RodentHab") == 1
-        rodentHabMask = rodentHabLU[self.kClasses]
-
-
         # remove non-habitat from rodentExtentMask -- at rodent resolution
-        self.rodentExtentMask[~rodentHabMask] = 0
-                             [self.kClasses == 0] = 0
+        self.rodentExtentMask[self.kClasses == 0] = 0
 
         # get preyCorrectionK to scale pixels near water or high elevation
         self.preyCorrectionK = scalePreyMask(self.finestResol, self.params.resolutions[2], 
@@ -152,7 +144,7 @@ class PreyData(object):
             self.params.preySurvDDcoef, self.params.preyRecDDcoef,
             maxPreyFec, self.params.preyTheta)
 
-#        kMapDS = gdal.Open(self.params.kClasses)
+        kMapDS = gdal.Open(self.params.kClasses)
         ### MASK FOR CELLS THAT CAN MAST????
         self.mastingLU = rat.readColumn(kMapDS, "Masts") > 0
         ### 'CC' is the carrying capacity at per ha level.
